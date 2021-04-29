@@ -1,0 +1,42 @@
+$small: 600px
+$medium: 900px
+  
+#stableStaticsTable
+  border-collapse: collapse
+  .trMonsterName
+    @media screen and (max-width: $small)
+      display: none
+  .monsterNumber
+    &.isZero
+      color: #d9d9d9
+  tbody
+    tr
+      td:hover
+        .number-control
+          display: inline-block !important
+      td:nth-last-child(1)
+        background-color: #ffedbd
+        border-left: 1px solid black
+    .number-control
+      position: absolute
+      right: 0px
+      margin: auto 0px
+  tfoot
+    tr
+      background-color: #e6ffff
+    tr
+    tr:nth-child(1)
+      td, th
+        border-top: 1px solid black
+      td:nth-last-child(1)
+        border-left: 1px solid black
+        background-color: #e8ffdb
+    
+#stableStaticsSaveState
+  position: fixed
+  width: 100px
+  right: 16px
+  bottom: 16px
+  background-color: white
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px
+  border-radius: 5px

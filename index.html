@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jay Wu</title>
+
+  <link rel="preload" href="css/index.css" as="style">
+  <link rel="stylesheet" href="css/index.css">
+
+</head>
+
+<body>
+
+  <div id="page-loader">
+    <div class="spinner mr-4">
+      <div class="spinner-head"></div> 
+    </div>
+    讀取中
+  </div>
+
+  <div id="app">
+
+    <div class="scroll-percent-bar-container">
+      <div class="scroll-percent-bar"></div>
+    </div>
+
+    <!-- About -->
+    <div class="page-header">
+      <div class="container" style="padding: 0px; display: flex; flex-direction: row; align-items: flex-end;">
+        <h1 class="title" style="flex: 1;">
+          Jay Wu
+        </h1>
+        <p class="sub-title"></p>
+
+        <div class="links-container">
+          <a href="https://github.com/wjprogramer" target="_blank">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://www.facebook.com/WJProgramer" target="_blank">
+            <i class="fab fa-facebook-square"></i>
+          </a>
+          <a href="https://play.google.com/store/apps/developer?id=WJprogramer" target="_blank">
+            <i class="fab fa-google-play"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <!-- START Experience -->
+      <h1 class="main-title">
+        <i class="fas fa-desktop"></i>
+        EXPERIENCE
+      </h1>
+
+      <div class="timeline-container">
+        <div class="timeline-item"
+          v-for="(experience, index) in experiencesList"
+          :id="experience.id"
+          :date-is="experience.startDateTime + ' ~ ' + experience.endDateTime"
+        >
+          <h1>
+            <b>
+              {{ experience.companyName }}
+            </b>
+            <span class="job-title">
+              | {{ experience.jobTitle }} 
+            </span>
+          </h1>
+          <p>
+            <span v-for="skill in experience.skills">
+              <label-angular v-if="skill === 'angular'"></label-angular>
+              <label-flask v-else-if="skill === 'flask'"></label-flask>
+              <label-flutter v-else-if="skill === 'flutter'"></label-flutter>
+              <label-react-js v-else-if="skill === 'react_js'"></label-react-js>
+              <label-react-native v-else-if="skill === 'react_native'"></label-react-native>
+              <label-spring v-else-if="skill === 'spring'"></label-spring>
+              <label-asp-net-mvc v-else-if="skill === 'asp_net_mvc'"></label-asp-net-mvc>
+            </span>
+          </p>
+          <div v-html="experience.description"></div>
+          <div v-for="project in experience.projects" class="card">
+            <div class="project-title">
+              {{ project.name }}
+            </div>
+            <div class="project-content">
+              <span v-html="project.description"></span><br v-if="project.description"/>
+              <span v-html="project.jobContent"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- END Experience -->
+
+      <!-- STTART University -->
+      <h1 class="main-title">
+        <i class="fas fa-graduation-cap"></i>
+        UNIVERSITY
+      </h1>
+
+      <div class="timeline-container">
+        <div class="timeline-item" 
+          v-for="(universityLifeEvent, index) in universityLifeList"
+          :id="universityLifeEvent.id"
+          :date-is="universityLifeEvent.endDateTime != '' ? universityLifeEvent.startDateTime + ' ~ ' + universityLifeEvent.endDateTime : universityLifeEvent.startDateTime"
+        >
+          <h1>
+            <b>
+              {{ universityLifeEvent.title }}
+            </b>
+            <span class="university-life-event-sub-title">
+              | {{ universityLifeEvent.subTitle }} 
+            </span>
+          </h1>
+          <div class="university-life-event-content">
+            <span v-html="universityLifeEvent.description"></span>
+            <span v-if="universityLifeEvent.externalLinks.android">
+              <br>
+              <a 
+                target="_blank"
+                :href="universityLifeEvent.externalLinks.android"
+              >
+                <button class="btn btn-accent mt-3 ml-auto" type="button" style="max-width: 100%;"><i class="fab fa-google-play"></i>&nbsp; Google Play </button>
+              </a>
+            </span>
+          </div>
+        </div>
+      </div>
+      <!-- END University -->
+
+      <!-- START Skills -->
+      <h1 class="main-title">
+        <i class="fas fa-code"></i>
+        SKILLS
+      </h1>
+      <p>以下是目前主要在使用的框架或語言</p>
+      <div class="skills-list">
+        <div class="card">
+          <div class="card-cover" style="background-color: #EEF9FF;">
+            <img src="images/flutter.png" alt="Flutter">
+          </div>
+          <div class="skill-content">
+            <div class="card-title">
+              <h4>Flutter</h4>
+            </div>
+            <p>
+              跨平台、框架易學，喜歡，升大四暑假左右開始接觸，實習之外的時間，晚上、假日都在寫
+            </p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-cover" style="background-color: black;">
+            <img src="images/react.png" alt="React JS">
+          </div>
+          <div class="skill-content">
+            <div class="card-title">
+              <h4>React JS</h4>
+            </div>
+            <p>
+              因工作需求而接觸，而 Flutter 機制與其有幾分相似，學起來還算順暢
+            </p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-cover">
+            <div class="card-cover-kotlin"></div>
+            <img src="images/kotlin.png" alt="Kotlin" style="z-index: 2;">
+          </div>
+          <div class="skill-content">
+            <div class="card-title">
+              <h4>Kotlin</h4>
+            </div>
+            <p>
+              喜歡簡潔的程式碼風格，個人主要用途：刷題、後端伺服器、Android
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- END Skills -->
+
+    </div>
+
+    <!-- START Contact -->
+    <section id="contact">
+      <div class="inverted-triangle"></div>
+      <div class="inverted-triangle"></div>
+      <div class="inverted-triangle"></div>
+  
+      <a href="mailto:wj.programer@gmail.com">
+        <button class="btn btn-primary" type="button" style="min-width: 200px; max-width: 100%;">
+          <i class="far fa-envelope"></i>&nbsp;
+          聯絡我
+        </button>
+      </a>
+      <a href="mailto:wj.programer@gmail.com">
+        <p style="margin: 8px; color: rgba(var(--primary-color-900), 0.5); font-size: 0.7em;">
+          開啟預設信箱程式
+        </p>
+      </a>
+    </section>
+    <!-- END Contact -->
+
+    <footer>
+      <div class="links-container">
+        <a href="https://github.com/wjprogramer" target="_blank">
+          <i class="fab fa-github"></i>
+        </a>
+        <a href="https://www.facebook.com/WJProgramer" target="_blank">
+          <i class="fab fa-facebook-square"></i>
+        </a>
+        <a href="https://play.google.com/store/apps/developer?id=WJprogramer" target="_blank">
+          <i class="fab fa-google-play"></i>
+        </a>
+      </div>
+      <div class="assets-link">
+        <a href="https://github.com/wjprogramer/public_resources" target="_blank">
+          本頁使用素材可以在此找到
+        </a>
+      </div>
+    </footer>
+  </div>
+
+</body>
+
+<!-- common init -->
+<script src="js/common.js"></script>
+
+<!-- framework -->
+<script src="js/modules/vue/3.0.5/vue.global.js"></script>
+
+<!-- data -->
+<script src="js/data/experiencesList.js"></script>
+<script src="js/data/universityLifeList.js"></script>
+
+<!-- modules -->
+<script src="js/modules/scrollPercentBar.js"></script>
+
+<!-- page js -->
+<script src="js/pages/index/index.js"></script>
+
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/8.2.5/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+   https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/8.2.5/firebase-analytics.js"></script>
+
+<script>
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+var firebaseConfig = {
+  apiKey: "AIzaSyBYFQGhlEa8MaNWnSLfBl4ZUl5UONCQIeI",
+  authDomain: "wjprogramer-github-io.firebaseapp.com",
+  projectId: "wjprogramer-github-io",
+  storageBucket: "wjprogramer-github-io.appspot.com",
+  messagingSenderId: "928323409026",
+  appId: "1:928323409026:web:3863079dd663c7562f509b",
+  measurementId: "G-90M2W65XHK"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+firebase.analytics();
+</script>
+
+</html>

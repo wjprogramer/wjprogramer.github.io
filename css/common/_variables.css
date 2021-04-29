@@ -1,0 +1,51 @@
+:root {
+  --white: 255, 255, 255;
+  --black: 46, 46, 46;
+
+  --primary-color:  33, 150, 243; /* #2196F3 */
+  --accent-color:   76, 175, 80; /* #4CAF50 */
+
+  --body-bg-color: 242, 246, 252;
+
+  --primary-color-50:  227, 242, 253; /* #E3F2FD */
+  --primary-color-100: 187, 222, 251; /* #BBDEFB */
+  --primary-color-200: 144, 202, 249; /* #90CAF9 */
+  --primary-color-300: 100, 181, 246; /* #64B5F6 */
+  --primary-color-400:  66, 165, 245; /* #42A5F5 */
+  --primary-color-500: var(--primary-color);
+  --primary-color-600:  30, 136, 229; /* #1E88E5 */
+  --primary-color-700:  25, 118, 210; /* #1976D2 */
+  --primary-color-800:  21, 101, 192; /* #1565C0 */
+  --primary-color-900:  13,  71, 161; /* #0D47A1 */
+
+  --accent-color-50: 232, 245, 233; /* #E8F5E9 */
+  --accent-color-100: 200, 230, 201; /* #C8E6C9 */
+  --accent-color-200: 165, 214, 167; /* #A5D6A7 */
+  --accent-color-300: 129, 199, 132; /* #81C784 */
+  --accent-color-400: 102, 187, 106; /* #66BB6A */
+  --accent-color-500: var(--accent-color);
+  --accent-color-600: 67, 160, 71; /* #43A047 */
+  --accent-color-700: 56, 142, 60; /* #388E3C */
+  --accent-color-800: 46, 125, 50; /* #2E7D32 */
+  --accent-color-900: 27, 94, 32; /* #1B5E20 */
+
+  --font-size-base:              0.875rem;
+  --font-size-lg:                var(--font-size-base) * 1.11429;
+  --font-size-sm:                var(--font-size-base) * .85714;
+
+  --font-weight-lighter:         lighter;
+  --font-weight-light:           300;
+  --font-weight-normal:          400;
+  --font-weight-bold:            700;
+  --font-weight-bolder:          bolder;
+  --font-weight-base:            var(--font-weight-normal);
+  --line-height-base:            1.6;
+
+  --h1-font-size:                calc(var(--font-size-base) * 2.5);
+  --h2-font-size:                calc(var(--font-size-base) * 2);
+  --h3-font-size:                calc(var(--font-size-base) * 1.75);
+  --h4-font-size:                calc(var(--font-size-base) * 1.5);
+  --h5-font-size:                calc(var(--font-size-base) * 1.25);
+  --h6-font-size:                .9rem;
+}
+

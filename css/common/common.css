@@ -1,0 +1,253 @@
+@import "_reset.css";
+@import "_variables.css";
+
+@import "_type.css";
+
+@import "../../icons/fontawesome-free-5.15.2-web/css/all.min.css";
+
+* {
+  transition: all 0.3s;
+}
+
+a {
+  text-decoration: none;
+  color: rgb(var(--black));
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+body {
+  background-color: rgba(var(--body-bg-color), 1);
+}
+
+h1 { font-size: var(--h1-font-size); }
+h2 { font-size: var(--h2-font-size); }
+h3 { font-size: var(--h3-font-size); }
+h4 { font-size: var(--h4-font-size); }
+h5 { font-size: var(--h5-font-size); }
+h6 { font-size: var(--h6-font-size); }
+
+button, [type="button"], [type="reset"], [type="submit"] {
+  -webkit-appearance: button;
+}
+
+button, select {
+  text-transform: none;
+}
+
+button, input {
+  overflow: visible;
+}
+
+input, button, select, optgroup, textarea {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+button {
+  border-radius: 0;
+}
+
+button:not(:disabled), [type="button"]:not(:disabled), [type="reset"]:not(:disabled), [type="submit"]:not(:disabled) {
+  cursor: pointer;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.mr-2, .mx-2 {
+  margin-right: 0.5rem !important;
+}
+
+.mb-1, .my-1 {
+  margin-bottom: 0.25rem !important;
+}
+
+.mt-1, .my-1 {
+  margin-top: 0.25rem !important;
+}
+
+.mt-3, .my-3 {
+  margin-top: 1rem !important;
+}
+
+.mr-3, .mx-3 {
+  margin-right: 1rem !important;
+}
+
+.mt-4, .my-4 {
+  margin-top: 1.5rem !important;
+}
+
+.mr-4, .mx-4 {
+  margin-right: 1.5rem !important;
+}
+
+.scroll-percent-bar-container {
+  box-sizing: border-box;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  padding-bottom: 20px;
+  z-index: 1;
+}
+
+.scroll-percent-bar {
+  box-sizing: inherit;
+  height: 4px;
+  width: 100%;
+  background-color: rgb(var(--primary-color-800));
+  -webkit-transform-origin: 0 50%;
+  transform-origin: 0 50%;
+  -webkit-transition: -webkit-transform 50ms;
+  transition: -webkit-transform 50ms;
+  transition: transform 50ms;
+  transition: transform 50ms,-webkit-transform 50ms;
+  -webkit-transform: scaleX(0);
+  transform: scaleX(0);
+  will-change: transform;
+  position: relative;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0px auto;
+  padding: 0px 16px;
+}
+
+.bg-primary {
+  background-color: rgb(var(--primary-color))
+}
+
+.btn {
+  display: inline-block;
+  font-weight: 400;
+  color: #69707a;
+  text-align: center;
+  vertical-align: middle;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: 0.875rem 1.125rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  border-radius: 0.35rem;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.btn:not(:disabled):not(.disabled) {
+  cursor: pointer;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: rgb(var(--primary-color-900));
+  border-color: rgba(var(--primary-color-900), 0.8);
+}
+
+.btn-primary * {
+  color: white;
+}
+
+.btn-primary:hover {
+  color: #fff;
+  background-color: rgb(var(--primary-color-700));
+  border-color: rgba(var(--primary-color-700), 0.8);
+}
+
+.btn-accent {
+  color: #fff;
+  background-color: rgb(var(--accent-color-700));
+  border-color: rgba(var(--accent-color-700), 0.8);
+}
+
+.btn-accent * {
+  color: white;
+}
+
+.btn-accent:hover {
+  color: #fff;
+  background-color: rgb(var(--accent-color-500));
+  border-color: rgba(var(--accent-color-500), 0.8);
+}
+
+.card {
+  background-color: white;
+  padding: 16px;
+  margin: 16px 0px;
+  box-shadow: 
+    0.05em 0.05em 0.3em rgba(var(--primary-color-900), 0.3);
+  border-radius: 8px;
+}
+
+#app {
+  opacity: 0;
+  transition: opacity 0.8s;
+}
+
+#page-loader {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  left: 0px;
+  top: 0px;
+  transition: opacity 0.8s;
+  background-color: rgba(var(--body-bg-color), 1);
+}
+
+/* #region Spinner */
+/*  
+ * Edited from: https://codepen.io/designingcoder/details/KKaNgMZ
+ * License: https://blog.codepen.io/documentation/licensing/
+ */
+.spinner {
+  width: 10em;
+  height: 10em;
+  border-top: 1em solid #6da9f5;
+  border-right: 1em solid transparent;
+  border-radius: 50%;
+  animation: spinner 0.6s linear infinite;
+  font-size: calc(var(--font-size-base) / 4);
+}
+
+.spinner > .spinner-head {
+  width: 1em;
+  height: 1em;
+  background-color: #6da9f5;
+  border-radius: 50%;
+  margin-left: 8.5em;
+  margin-top: 0.5em;
+}
+
+@keyframes spinner {
+  100% { transform: rotate(360deg) }
+}
+/* #endregion Spinner */
