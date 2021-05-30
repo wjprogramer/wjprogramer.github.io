@@ -1,0 +1,27 @@
+.app-icon {
+  width: 50px;
+}
+
+tr {
+  height: 100%;
+}
+
+th, td {
+  vertical-align: middle !important;
+  height: 100%;
+}
+
+th, td > * {
+  vertical-align : middle;
+  height: 100%;
+}
+
+.center {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  /* align-items: center;
+  align-content: center;
+  justify-items: center;
+  justify-content: center; */
+}
