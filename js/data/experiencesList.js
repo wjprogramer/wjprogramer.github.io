@@ -17,11 +17,28 @@ let experiencesList = [
   //   ]
   // },
   {
+    id: "sharent",
+    companyName: "家豪科技",
+    jobTitle: "Flutter App 工程師",
+    startDateTime: "2021/06/07",
+    endDateTime: "至今",
+    skills: ["flutter"],
+    description: "",
+    projects: [
+      {
+        name: "Sharent 房東助手",
+        description: "",
+        jobContent: "維護、開發",
+        skills: [],
+      }
+    ]
+  },
+  {
     id: "winsonic",
     companyName: "泓瑜科技",
     jobTitle: "前端工程師",
     startDateTime: "2020/11/02",
-    endDateTime: "至今",
+    endDateTime: "2021/06/04",
     skills: ["react_js", "react_native"],
     description: ``,
     projects: [

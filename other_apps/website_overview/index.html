@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jay</title>
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- HEADER -->
+    <section id="header">
+      <h1>Overview</h1>
+    </section>
+
+    <!-- MAIN CONTENT -->
+    <section id="main-content">
+      <div v-for="(webLink, index) in webLinks"
+        :id="index"
+      >
+        <h2>{{ webLink.title }}</h2>
+        <a :href="webLink.path">Link</a>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+
+    </footer>
+
+  </div>
+  
+</body>
+
+<script src="/js/modules/vue/3.0.5/vue.global.js"></script>
+<script src="js/index.js"></script>
+
+</html>
