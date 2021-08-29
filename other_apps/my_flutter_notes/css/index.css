@@ -25,3 +25,36 @@ th, td > * {
   justify-items: center;
   justify-content: center; */
 }
+
+.label::before {
+  display: inline-block;
+  color: white;
+  padding: 0px 8px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+.non-null-safety::before {
+  content: 'non-null-safety';
+  background: #ff9900;
+}
+
+.deprecated::before {
+  content: 'deprecated';
+  background: #f56342;
+}
+
+.null-safety::before {
+  content: 'null-safety';
+  background: #4bcc4b;
+}
+
+.package::before {
+  content: 'package';
+  background: #009dff;
+}
+
+.package-text::before {
+  content: '[Package]';
+  color: #009dff;
+}
