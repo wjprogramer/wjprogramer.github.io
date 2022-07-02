@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<span id="test"></span>
+
+<script>
+var qs = window.location.search;
+var res = '';
+
+if (qs.length > 0) {
+  var s = qs.substr(1);
+  var pairs = s.split('&');
+
+  for (var pair of pairs) {
+    var keyValue = pair.split('=');
+    res += `${keyValue[0]}: ${keyValue[1]}\n`;
+  }
+}
+
+console.log(res);
+
+document.getElementById('test').innerText = res;
+</script>
+
+</body>
+</html>
