@@ -75,7 +75,7 @@
               {{ experience.companyName }}
             </b>
             <span class="job-title">
-              | {{ experience.jobTitle }} 
+              | {{ experience.jobTitle }}
             </span>
           </h1>
           <p>
@@ -87,6 +87,8 @@
               <label-react-native v-else-if="skill === 'react_native'"></label-react-native>
               <label-spring v-else-if="skill === 'spring'"></label-spring>
               <label-asp-net-mvc v-else-if="skill === 'asp_net_mvc'"></label-asp-net-mvc>
+              <label-vue v-else-if="skill === 'vue'"></label-vue>
+              <label-express-js v-else-if="skill === 'express_js'"></label-express-js>
             </span>
           </p>
           <div v-html="experience.description"></div>

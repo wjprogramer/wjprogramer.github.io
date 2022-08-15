@@ -195,6 +195,32 @@
   color: rgb(var(--white));
 }
 
+.tech-label-vue .tech-label-head{
+  background-color: white;
+}
+
+.tech-label-vue .tech-label-name{
+  /* background: -webkit-linear-gradient(315deg, #42d392 25%, #647eff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; */
+  /* background: -webkit-linear-gradient(315deg, #42d392 25%, #647eff); */
+  /* text-shadow: black 0.1em 0.1em 0.5em */
+  /* background-color: white; */
+  background-color: #33a06f;
+  font-weight: bold;
+  /* color: #213547; */
+  color: white;
+}
+
+.tech-label-express-js .tech-label-head{
+  background-color: #333333;
+}
+
+.tech-label-express-js .tech-label-name{
+  background-color: #333333;
+  color: rgb(var(--white));
+}
+
 .inverted-triangle {
   width: 0;
   height: 0;

@@ -119,6 +119,30 @@ window.onload = (event) => {
           </div>
         </div>`,
       },
+      'label-vue': {
+        template: `<div style="display: inline-block;">
+          <div class="tech-label tech-label-vue">
+            <div class="tech-label-head">
+              <img src="images/vue.png" alt="">
+            </div>
+            <div class="tech-label-name">
+              Vue
+            </div>
+          </div>
+        </div>`,
+      },
+      'label-express-js': {
+        template: `<div style="display: inline-block;">
+          <div class="tech-label tech-label-express-js">
+            <div class="tech-label-head">
+              <img src="images/express_js.png" alt="">
+            </div>
+            <div class="tech-label-name">
+              Express JS
+            </div>
+          </div>
+        </div>`,
+      },
     },
   });
 

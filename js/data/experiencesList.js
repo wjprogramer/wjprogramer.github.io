@@ -22,7 +22,7 @@ let experiencesList = [
     jobTitle: "Flutter App 工程師",
     startDateTime: "2021/06/07",
     endDateTime: "至今",
-    skills: ["flutter"],
+    skills: ["flutter", "vue", "express_js"],
     description: "",
     projects: [
       {
