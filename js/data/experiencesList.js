@@ -17,11 +17,28 @@ let experiencesList = [
   //   ]
   // },
   {
+    id: "view-sonic",
+    companyName: "優派國際 (ViewSonic)",
+    jobTitle: "Flutter 工程師",
+    startDateTime: "2023/11/01 (預估)",
+    endDateTime: "至今",
+    skills: ["flutter"],
+    description: "",
+    projects: [
+      {
+        name: "--",
+        description: "",
+        jobContent: "--",
+        skills: [],
+      }
+    ]
+  },
+  {
     id: "sharent",
     companyName: "家豪科技",
     jobTitle: "Flutter App 工程師",
     startDateTime: "2021/06/07",
-    endDateTime: "至今",
+    endDateTime: "待定",
     skills: ["flutter", "vue", "express_js"],
     description: "",
     projects: [
