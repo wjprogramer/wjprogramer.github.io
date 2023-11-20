@@ -20,15 +20,15 @@ let experiencesList = [
     id: "view-sonic",
     companyName: "優派國際 (ViewSonic)",
     jobTitle: "Flutter 工程師",
-    startDateTime: "2023/11/01 (預估)",
+    startDateTime: "2023/11/01",
     endDateTime: "至今",
     skills: ["flutter"],
     description: "",
     projects: [
       {
-        name: "--",
+        name: "myViewBoard",
         description: "",
-        jobContent: "--",
+        jobContent: "維護、開發",
         skills: [],
       }
     ]
@@ -38,8 +38,8 @@ let experiencesList = [
     companyName: "家豪科技",
     jobTitle: "Flutter App 工程師",
     startDateTime: "2021/06/07",
-    endDateTime: "待定",
-    skills: ["flutter", "vue", "express_js"],
+    endDateTime: "2023/10/25", // 最後一天上班
+    skills: ["flutter", "vue", "express_js"], // TODO: add Nuxt
     description: "",
     projects: [
       {
@@ -47,7 +47,13 @@ let experiencesList = [
         description: "",
         jobContent: "維護、開發",
         skills: [],
-      }
+      },
+      {
+        name: "其他專案",
+        description: "",
+        jobContent: "開發",
+        skills: [],
+      },
     ]
   },
   {
