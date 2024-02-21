@@ -1,10 +1,10 @@
 {
   "applinks": {
-      "apps": [],
-      "details": [
+    "apps": [],
+    "details": [
       {
         "appID": "Q8PY44KU8H.com.wjprogram.flutterWidgetsPriv3",
-        "paths": ["*"]
+        "paths": ["/images/*"]
       }
     ]
   }
