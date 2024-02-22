@@ -72,19 +72,19 @@
     <h2>Info</h2>
 
     <ul>
-        <li>
-            getInstalledRelatedApps results: <span id="installed-related-apps-results"></span>
-        </li>
+<!--        <li>-->
+<!--            getInstalledRelatedApps results: <span id="installed-related-apps-results"></span>-->
+<!--        </li>-->
     </ul>
 
     <script>
         window.onload = async () => {
-            if (navigator.getInstalledRelatedApps) {
-                const e = await navigator.getInstalledRelatedApps();
-
-                const result = document.querySelector('#installed-related-apps-results');
-                result.innerHTML = JSON.stringify(e);
-            }
+            // if (navigator.getInstalledRelatedApps) {
+            //     const e = await navigator.getInstalledRelatedApps();
+            //
+            //     const result = document.querySelector('#installed-related-apps-results');
+            //     result.innerHTML = JSON.stringify(e);
+            // }
         }
     </script>
 
