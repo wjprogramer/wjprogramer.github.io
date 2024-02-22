@@ -6,27 +6,57 @@
 </head>
 <body>
 
-    <h1>Anchor ~</h1>
+    <h2>Anchor ~</h2>
 
     <p>This page is https://wjprogramer.github.io/images/flutter.png</p>
 
-    <a href="https://wjprogramer.github.io/images/flutter.png">
-        <img src="https://wjprogramer.github.io/images/flutter.png" alt="">
-    </a><br>
+    <ul>
+        <li>
+            <a href="https://wjprogramer.github.io/images/flutter.png">
+                <img src="https://wjprogramer.github.io/images/flutter.png" alt="">
+            </a><br>
+        </li>
+        <li>
+            <a href="https://wjprogramer.github.io/images/flutter.png" target="_blank">Same link, but target is _blank</a><br>
+        </li>
+        <li>
+            <a href="https://wjprogramer.github.io/images/flutter.png" target="_top">Same link, but target is _top</a><br>
+        </li>
+    </ul>
 
-    <a href="https://wjprogramer.github.io/images/flutter.png" target="_blank">Same link, but target is _blank</a><br>
-
-    <a href="https://wjprogramer.github.io/images/flutter.png" target="_top">Same link, but target is _top</a><br>
-
-    <h1>Should Cannot Open</h1>
+    <h2>Should Cannot Open</h2>
 
     <p>path not allowed</p>
 
-    <a href="https://wjprogramer.github.io">https://wjprogramer.github.io</a><br>
+    <ul>
+        <li><a href="https://wjprogramer.github.io">https://wjprogramer.github.io</a><br></li>
+        <li><a href="https://wjprogramer.github.io" target="_blank">Same link, but target is _blank</a><br></li>
+        <li><a href="https://wjprogramer.github.io" target="_top">Same link, but target is _top</a><br></li>
+    </ul>
 
-    <a href="https://wjprogramer.github.io" target="_blank">Same link, but target is _blank</a><br>
+    <h2>Android / App Link</h2>
 
-    <a href="https://wjprogramer.github.io" target="_top">Same link, but target is _top</a><br>
+    <a href="example://hello-world?a=1&b=2">example://hello-world?a=1&b=2</a>
+
+    <h2>Info</h2>
+
+    <ul>
+        <li>
+            getInstalledRelatedApps results: <span id="installed-related-apps-results"></span>
+        </li>
+    </ul>
+
+
+    <script>
+        window.onload = async () => {
+            if (navigator.getInstalledRelatedApps) {
+                const e = await navigator.getInstalledRelatedApps();
+
+                const result = document.querySelector('#installed-related-apps-results');
+                result.innerHTML = JSON.stringify(e);
+            }
+        }
+    </script>
 
 </body>
 </html>
