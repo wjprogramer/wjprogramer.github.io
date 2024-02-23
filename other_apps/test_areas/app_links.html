@@ -26,20 +26,20 @@
                 https://wjprogramer.github.io/images/flutter.png?a=1&b=2
             </a>
         </li>
-        <li>
-            <a href="https://wjprogramer.github.io/images/flutter.png" target="_blank">Same link, but target is _blank</a><br>
-        </li>
-        <li>
-            <a href="https://wjprogramer.github.io/images/flutter.png" target="_top">Same link, but target is _top</a><br>
-        </li>
+<!--        <li>-->
+<!--            <a href="https://wjprogramer.github.io/images/flutter.png" target="_blank">Same link, but target is _blank</a><br>-->
+<!--        </li>-->
+<!--        <li>-->
+<!--            <a href="https://wjprogramer.github.io/images/flutter.png" target="_top">Same link, but target is _top</a><br>-->
+<!--        </li>-->
     </ul>
 
     <h3>不可跳轉</h3>
 
     <ul>
         <li><a href="https://wjprogramer.github.io">https://wjprogramer.github.io</a><br></li>
-        <li><a href="https://wjprogramer.github.io" target="_blank">Same link, but target is _blank</a><br></li>
-        <li><a href="https://wjprogramer.github.io" target="_top">Same link, but target is _top</a><br></li>
+<!--        <li><a href="https://wjprogramer.github.io" target="_blank">Same link, but target is _blank</a><br></li>-->
+<!--        <li><a href="https://wjprogramer.github.io" target="_top">Same link, but target is _top</a><br></li>-->
     </ul>
 
     <h2>Android / Deep Link</h2>
@@ -48,16 +48,16 @@
 
     <ul>
         <li>
-            <a href="jayappscheme://hello-world">jayappscheme://hello-world</a>
-        </li>
-        <li>
-            <a href="jayappscheme://hello-world?a=1&b=2">jayappscheme://hello-world?a=1&b=2</a>
-        </li>
-        <li>
             <a href="jayappscheme://wjprogramer.github.io/#/book/hello-world">jayappscheme://wjprogramer.github.io/#/book/hello-world</a>
         </li>
         <li>
             <a href="jayappscheme://wjprogramer.github.io/#/book/hello-world?a=1&b=2">jayappscheme://wjprogramer.github.io/#/book/hello-world?a=1&b=2</a>
+        </li>
+        <li>
+            <a href="jayappscheme://hello-world">jayappscheme://hello-world</a>
+        </li>
+        <li>
+            <a href="jayappscheme://hello-world?a=1&b=2">jayappscheme://hello-world?a=1&b=2</a>
         </li>
     </ul>
 
@@ -70,6 +70,12 @@
         <li>如果沒有安裝 App 會沒辦法使用</li>
     </ul>
 
+    <h2>檢查是否安裝 App</h2>
+
+    <button onclick="checkInstalled('jayappscheme://')">Check Installed (jayappscheme://)</button>
+    <button onclick="checkInstalled('jayappscheme://wjprogramer.github.io/#/book/hello-world?a=1&b=2')">Check Installed (jayappscheme://wjprogramer.github.io/#/book/hello-world?a=1&b=2)</button>
+    <button onclick="checkInstalled('jayappscheme://hello-world')">Check Installed (jayappscheme://hello-world)</button>
+
 <!--    <h2>Info</h2>-->
 
 <!--    <ul>-->
@@ -79,6 +85,22 @@
 <!--    </ul>-->
 
     <script>
+        const checkInstalled = (uri) => {
+            var iframe = document.createElement("iframe");
+            var interval = setInterval(function() {
+                // Link to the App Store should go here -- only fires if deep link fails
+                window.location = "https://play.google.com/store/apps/details?id=com.rayark.cytus2&hl=zh-TW";
+            }, 500);
+            iframe.onload = function() {
+                clearInterval(interval);
+                iframe.parentNode.removeChild(iframe);
+                window.location.href = uri;
+            };
+            iframe.src = uri;
+            iframe.setAttribute("style", "display:none;");
+            document.body.appendChild(iframe);
+        }
+
         window.onload = async () => {
             // if (navigator.getInstalledRelatedApps) {
             //     const e = await navigator.getInstalledRelatedApps();
