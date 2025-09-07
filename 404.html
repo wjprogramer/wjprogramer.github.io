@@ -3,15 +3,21 @@
 <title>Redirecting…</title>
 <script>
   (function() {
+    // 你的 App 子路徑（注意最後不含斜線）
     var base = "/external_projects/sing_tools_web_app";
+
     var path = window.location.pathname || "/";
     var search = window.location.search || "";
     var hash = window.location.hash || "";
-    // 只處理落在你的 App 底下的 404
+
+    // 只有落在你的 App 子路徑底下才處理，其他專案不受影響
     if (path.startsWith(base + "/")) {
-      // 直接把使用者導向到你的 app 的 index.html（保留 query/hash）
-      var url = base + "/index.html" + search + hash;
+      // 取出子路徑（例：/counter、/x/y）
+      var tail = path.slice(base.length);
+      // 把原始子路徑 + 查詢 + hash 打包在 r 參數，交給 app 的 index.html
+      var url = base + "/index.html?r=" + encodeURIComponent(tail + search + hash);
       window.location.replace(url);
     }
+    // 其他路徑：不處理，交回你的通用 404 流程（例如顯示訊息或其他轉址）
   })();
 </script>
