@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Redirecting…</title>
+<script>
+  (function() {
+    var base = "/external_projects/sing_tools_web_app";
+    var path = window.location.pathname || "/";
+    var search = window.location.search || "";
+    var hash = window.location.hash || "";
+    // 只處理落在你的 App 底下的 404
+    if (path.startsWith(base + "/")) {
+      // 直接把使用者導向到你的 app 的 index.html（保留 query/hash）
+      var url = base + "/index.html" + search + hash;
+      window.location.replace(url);
+    }
+  })();
+</script>
