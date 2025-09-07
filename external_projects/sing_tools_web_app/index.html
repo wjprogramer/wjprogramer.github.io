@@ -33,6 +33,40 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!-- 放在最前面、在 Flutter 啟動前 -->
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search || "");
+        var r = params.get("r");
+        if (r) {
+          // 確保 r 以 / 開頭
+          if (r.charAt(0) !== "/") r = "/" + r;
+
+          // 取得 <base href> 作為前綴（去掉結尾斜線）
+          var baseEl = document.querySelector("base");
+          var base = (baseEl ? baseEl.getAttribute("href") : "/") || "/";
+          if (base.endsWith("/")) base = base.slice(0, -1);
+
+          // 把目前 URL 改成漂亮網址（去掉 ?r=...），保留原本的查詢與 hash（已包含在 r 裡）
+          // 這一步非常關鍵：讓 Flutter 啟動時看到的就是 /external_projects/sing_tools_web_app + r
+          window.history.replaceState(null, "", base + r);
+        }
+      } catch (e) {
+        // 靜默失敗，避免影響載入
+        console.warn("route restore failed:", e);
+      }
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('load', function(ev) {
+      _flutter.loader.loadEntrypoint({}).then(function(engineInitializer) {
+        return engineInitializer.initializeEngine();
+      }).then(function(appRunner) {
+        return appRunner.runApp();
+      });
+    });
+  </script>
 </body>
 </html>
