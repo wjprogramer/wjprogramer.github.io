@@ -113,6 +113,20 @@ export const toolsData = [
         description: '文字大小寫轉換'
       }
     ]
+  },
+  {
+    id: 'time',
+    name: '時間工具',
+    icon: 'schedule',
+    tools: [
+      {
+        id: 'crontab',
+        name: 'Crontab Guru',
+        icon: 'schedule',
+        path: '/cron/guru',
+        description: 'Cron 表達式解析與執行時間預覽'
+      }
+    ]
   }
 ];
 

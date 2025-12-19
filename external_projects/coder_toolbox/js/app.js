@@ -20,6 +20,7 @@ import { renderQrCode } from './pages/image/qrcode.js';
 import { renderDataUri } from './pages/image/data-uri.js';
 import { renderDiff } from './pages/text/diff.js';
 import { renderCase } from './pages/text/case.js';
+import { renderCrontabGuru } from './pages/cron/guru.js';
 
 /**
  * 初始化應用程式
@@ -71,6 +72,9 @@ function registerRoutes() {
     // 文字工具
     .register('/text/diff', renderDiff)
     .register('/text/case', renderCase)
+    
+    // 時間工具
+    .register('/cron/guru', renderCrontabGuru)
     
     // 關於頁面
     .register('/about', renderAbout);
@@ -147,6 +151,7 @@ function renderAbout() {
           <li style="margin-bottom: var(--spacing-sm);">Data URI 轉換</li>
           <li style="margin-bottom: var(--spacing-sm);">文字比較</li>
           <li style="margin-bottom: var(--spacing-sm);">大小寫轉換</li>
+          <li style="margin-bottom: var(--spacing-sm);">Crontab Guru - Cron 表達式解析</li>
         </ul>
         
         <h3 style="margin-bottom: var(--spacing-md);">📚 技術棧</h3>
