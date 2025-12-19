@@ -127,6 +127,27 @@ export const toolsData = [
         description: 'Cron 表達式解析與執行時間預覽'
       }
     ]
+  },
+  {
+    id: 'color',
+    name: '顏色工具',
+    icon: 'palette',
+    tools: [
+      {
+        id: 'color-converter',
+        name: '色彩格式轉換',
+        icon: 'colorize',
+        path: '/color/converter',
+        description: 'HEX、RGB、HSL 格式相互轉換'
+      },
+      {
+        id: 'color-palette',
+        name: '調色盤生成',
+        icon: 'palette',
+        path: '/color/palette',
+        description: '生成各種調色盤和漸層'
+      }
+    ]
   }
 ];
 

@@ -21,6 +21,8 @@ import { renderDataUri } from './pages/image/data-uri.js';
 import { renderDiff } from './pages/text/diff.js';
 import { renderCase } from './pages/text/case.js';
 import { renderCrontabGuru } from './pages/cron/guru.js';
+import { renderColorConverter } from './pages/color/converter.js';
+import { renderColorPalette } from './pages/color/palette.js';
 
 /**
  * 初始化應用程式
@@ -75,6 +77,10 @@ function registerRoutes() {
     
     // 時間工具
     .register('/cron/guru', renderCrontabGuru)
+    
+    // 顏色工具
+    .register('/color/converter', renderColorConverter)
+    .register('/color/palette', renderColorPalette)
     
     // 關於頁面
     .register('/about', renderAbout);
@@ -152,6 +158,8 @@ function renderAbout() {
           <li style="margin-bottom: var(--spacing-sm);">文字比較</li>
           <li style="margin-bottom: var(--spacing-sm);">大小寫轉換</li>
           <li style="margin-bottom: var(--spacing-sm);">Crontab Guru - Cron 表達式解析</li>
+          <li style="margin-bottom: var(--spacing-sm);">色彩格式轉換 (HEX/RGB/HSL)</li>
+          <li style="margin-bottom: var(--spacing-sm);">調色盤生成器</li>
         </ul>
         
         <h3 style="margin-bottom: var(--spacing-md);">📚 技術棧</h3>
