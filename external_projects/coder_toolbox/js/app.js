@@ -11,7 +11,15 @@ import { renderHome } from './pages/home.js';
 import { renderBase64 } from './pages/encoding/base64.js';
 import { renderUrlEncode } from './pages/encoding/url-encode.js';
 import { renderHash } from './pages/encoding/hash.js';
+import { renderUnicode } from './pages/encoding/unicode.js';
 import { renderJsonFormatter } from './pages/code/json.js';
+import { renderHtmlFormatter } from './pages/code/html-formatter.js';
+import { renderCssFormatter } from './pages/code/css-formatter.js';
+import { renderJsFormatter } from './pages/code/js-formatter.js';
+import { renderQrCode } from './pages/image/qrcode.js';
+import { renderDataUri } from './pages/image/data-uri.js';
+import { renderDiff } from './pages/text/diff.js';
+import { renderCase } from './pages/text/case.js';
 
 /**
  * 初始化應用程式
@@ -48,21 +56,21 @@ function registerRoutes() {
     .register('/encoding/base64', renderBase64)
     .register('/encoding/url', renderUrlEncode)
     .register('/encoding/hash', renderHash)
-    .register('/encoding/unicode', renderComingSoon('Unicode 編碼'))
+    .register('/encoding/unicode', renderUnicode)
     
     // 程式碼工具
     .register('/code/json', renderJsonFormatter)
-    .register('/code/html', renderComingSoon('HTML 格式化'))
-    .register('/code/css', renderComingSoon('CSS 格式化'))
-    .register('/code/js', renderComingSoon('JavaScript 格式化'))
+    .register('/code/html', renderHtmlFormatter)
+    .register('/code/css', renderCssFormatter)
+    .register('/code/js', renderJsFormatter)
     
     // 圖片工具
-    .register('/image/qrcode', renderComingSoon('QR Code 生成'))
-    .register('/image/datauri', renderComingSoon('Data URI 轉換'))
+    .register('/image/qrcode', renderQrCode)
+    .register('/image/datauri', renderDataUri)
     
     // 文字工具
-    .register('/text/diff', renderComingSoon('文字比較'))
-    .register('/text/case', renderComingSoon('大小寫轉換'))
+    .register('/text/diff', renderDiff)
+    .register('/text/case', renderCase)
     
     // 關於頁面
     .register('/about', renderAbout);
@@ -130,8 +138,15 @@ function renderAbout() {
           <li style="margin-bottom: var(--spacing-sm);">Base64 編碼/解碼</li>
           <li style="margin-bottom: var(--spacing-sm);">URL 編碼/解碼</li>
           <li style="margin-bottom: var(--spacing-sm);">Hash 計算 (MD5, SHA-1, SHA-256, SHA-512)</li>
+          <li style="margin-bottom: var(--spacing-sm);">Unicode / HTML 實體編碼</li>
           <li style="margin-bottom: var(--spacing-sm);">JSON 格式化/驗證</li>
-          <li style="margin-bottom: var(--spacing-sm);">更多工具開發中...</li>
+          <li style="margin-bottom: var(--spacing-sm);">HTML 格式化/壓縮</li>
+          <li style="margin-bottom: var(--spacing-sm);">CSS 格式化/壓縮</li>
+          <li style="margin-bottom: var(--spacing-sm);">JavaScript 格式化/壓縮</li>
+          <li style="margin-bottom: var(--spacing-sm);">QR Code 生成</li>
+          <li style="margin-bottom: var(--spacing-sm);">Data URI 轉換</li>
+          <li style="margin-bottom: var(--spacing-sm);">文字比較</li>
+          <li style="margin-bottom: var(--spacing-sm);">大小寫轉換</li>
         </ul>
         
         <h3 style="margin-bottom: var(--spacing-md);">📚 技術棧</h3>
