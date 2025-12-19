@@ -1,0 +1,87 @@
+/* ===== Toast Notifications ===== */
+
+.toast-container {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  transform: translateY(100px);
+  opacity: 0;
+  transition: var(--transition-normal);
+  pointer-events: auto;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast .material-icons-round {
+  font-size: 20px;
+}
+
+/* 成功 Toast */
+.toast.success {
+  border-color: var(--success);
+  box-shadow: 0 8px 32px var(--success-glow);
+}
+
+.toast.success .material-icons-round {
+  color: var(--success);
+}
+
+/* 錯誤 Toast */
+.toast.error {
+  border-color: var(--error);
+  box-shadow: 0 8px 32px var(--error-glow);
+}
+
+.toast.error .material-icons-round {
+  color: var(--error);
+}
+
+/* 警告 Toast */
+.toast.warning {
+  border-color: var(--warning);
+  box-shadow: 0 8px 32px var(--warning-glow);
+}
+
+.toast.warning .material-icons-round {
+  color: var(--warning);
+}
+
+/* ===== 響應式 ===== */
+@media (max-width: 599px) {
+  .toast-container {
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    transform: none;
+  }
+  
+  .toast {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

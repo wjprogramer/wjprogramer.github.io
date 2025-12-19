@@ -1,0 +1,98 @@
+/* ===== Coder Toolbox - CSS Variables ===== */
+
+:root {
+  /* ===== 玻璃效果 ===== */
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-bg-hover: rgba(255, 255, 255, 0.25);
+  --glass-bg-dark: rgba(0, 0, 0, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-border-subtle: rgba(255, 255, 255, 0.15);
+  --glass-shadow: rgba(0, 0, 0, 0.1);
+  --glass-blur: 20px;
+  --glass-radius: 24px;
+  --glass-radius-sm: 16px;
+  --glass-radius-xs: 12px;
+  --glass-radius-lg: 32px;
+
+  /* ===== 強調色 ===== */
+  --accent-color: #007aff;
+  --accent-hover: #0066d6;
+  --accent-glow: rgba(0, 122, 255, 0.4);
+  --accent-gradient: linear-gradient(135deg, #007aff, #5856d6);
+
+  /* ===== 文字色 ===== */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --text-placeholder: rgba(255, 255, 255, 0.5);
+
+  /* ===== 狀態色 ===== */
+  --success: #34c759;
+  --success-glow: rgba(52, 199, 89, 0.4);
+  --warning: #ff9f0a;
+  --warning-glow: rgba(255, 159, 10, 0.4);
+  --error: #ff3b30;
+  --error-glow: rgba(255, 59, 48, 0.4);
+
+  /* ===== 背景漸層 ===== */
+  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+
+  /* ===== 字型 ===== */
+  --font-primary: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  /* ===== 字型大小 ===== */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+  --text-4xl: 48px;
+
+  /* ===== 字重 ===== */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* ===== 間距 ===== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* ===== 動畫 ===== */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== 佈局 ===== */
+  --header-height: 64px;
+  --sidebar-width: 280px;
+  --content-max-width: 1200px;
+}
+
+/* ===== 深色模式 ===== */
+[data-theme="dark"] {
+  --glass-bg: rgba(0, 0, 0, 0.3);
+  --glass-bg-hover: rgba(0, 0, 0, 0.4);
+  --glass-bg-dark: rgba(0, 0, 0, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+/* ===== 減少動畫 ===== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0.01ms;
+    --transition-normal: 0.01ms;
+    --transition-slow: 0.01ms;
+  }
+}
+

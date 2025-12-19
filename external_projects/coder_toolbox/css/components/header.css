@@ -1,0 +1,98 @@
+/* ===== Header Component ===== */
+
+.app-header {
+  position: fixed;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  right: var(--spacing-md);
+  height: var(--header-height);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-lg);
+}
+
+/* Logo */
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: var(--transition-normal);
+}
+
+.header-logo:hover {
+  transform: scale(1.02);
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--accent-gradient);
+  border-radius: var(--glass-radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.logo-icon .material-icons-round {
+  font-size: 22px;
+  color: white;
+}
+
+.logo-text {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  letter-spacing: -0.5px;
+}
+
+/* 漢堡選單 (Mobile) */
+.header-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--glass-radius-xs);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-normal);
+}
+
+.header-menu-btn:hover {
+  background: var(--glass-bg-hover);
+}
+
+/* 導航按鈕 */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* ===== 響應式 ===== */
+@media (max-width: 959px) {
+  .app-header {
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+    right: var(--spacing-sm);
+  }
+  
+  .header-menu-btn {
+    display: flex;
+  }
+}
+
+@media (max-width: 599px) {
+  .app-header {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .logo-text {
+    display: none;
+  }
+}
+
