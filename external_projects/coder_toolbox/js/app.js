@@ -23,6 +23,9 @@ import { renderCase } from './pages/text/case.js';
 import { renderCrontabGuru } from './pages/cron/guru.js';
 import { renderColorConverter } from './pages/color/converter.js';
 import { renderColorPalette } from './pages/color/palette.js';
+import { renderJwt } from './pages/dev/jwt.js';
+import { renderUuid } from './pages/dev/uuid.js';
+import { renderLorem } from './pages/dev/lorem.js';
 
 /**
  * 初始化應用程式
@@ -81,6 +84,11 @@ function registerRoutes() {
     // 顏色工具
     .register('/color/converter', renderColorConverter)
     .register('/color/palette', renderColorPalette)
+    
+    // 開發者工具
+    .register('/dev/jwt', renderJwt)
+    .register('/dev/uuid', renderUuid)
+    .register('/dev/lorem', renderLorem)
     
     // 關於頁面
     .register('/about', renderAbout);
@@ -160,6 +168,9 @@ function renderAbout() {
           <li style="margin-bottom: var(--spacing-sm);">Crontab Guru - Cron 表達式解析</li>
           <li style="margin-bottom: var(--spacing-sm);">色彩格式轉換 (HEX/RGB/HSL)</li>
           <li style="margin-bottom: var(--spacing-sm);">調色盤生成器</li>
+          <li style="margin-bottom: var(--spacing-sm);">JWT 解析/生成</li>
+          <li style="margin-bottom: var(--spacing-sm);">UUID 生成器</li>
+          <li style="margin-bottom: var(--spacing-sm);">Lorem Ipsum 假文產生器</li>
         </ul>
         
         <h3 style="margin-bottom: var(--spacing-md);">📚 技術棧</h3>

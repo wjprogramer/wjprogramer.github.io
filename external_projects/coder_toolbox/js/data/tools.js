@@ -148,6 +148,34 @@ export const toolsData = [
         description: '生成各種調色盤和漸層'
       }
     ]
+  },
+  {
+    id: 'dev',
+    name: '開發者工具',
+    icon: 'code',
+    tools: [
+      {
+        id: 'jwt',
+        name: 'JWT 解析/生成',
+        icon: 'lock',
+        path: '/dev/jwt',
+        description: 'JWT Token 解析與生成'
+      },
+      {
+        id: 'uuid',
+        name: 'UUID 生成器',
+        icon: 'fingerprint',
+        path: '/dev/uuid',
+        description: '生成 UUID v1/v4 和短 UUID'
+      },
+      {
+        id: 'lorem',
+        name: 'Lorem Ipsum',
+        icon: 'text_fields',
+        path: '/dev/lorem',
+        description: '生成假文（Latin 和中文）'
+      }
+    ]
   }
 ];
 
