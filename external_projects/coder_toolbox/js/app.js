@@ -26,6 +26,7 @@ import { renderColorPalette } from './pages/color/palette.js';
 import { renderJwt } from './pages/dev/jwt.js';
 import { renderUuid } from './pages/dev/uuid.js';
 import { renderLorem } from './pages/dev/lorem.js';
+import { renderBarcodeGenerator } from './pages/barcode/generator.js';
 
 /**
  * 初始化應用程式
@@ -73,6 +74,9 @@ function registerRoutes() {
     // 圖片工具
     .register('/image/qrcode', renderQrCode)
     .register('/image/datauri', renderDataUri)
+    
+    // 條碼工具
+    .register('/barcode/generator', renderBarcodeGenerator)
     
     // 文字工具
     .register('/text/diff', renderDiff)

@@ -90,6 +90,13 @@ export const toolsData = [
         icon: 'photo_library',
         path: '/image/datauri',
         description: '圖片與 Data URI 轉換'
+      },
+      {
+        id: 'barcode',
+        name: '條碼生成器',
+        icon: 'qr_code_scanner',
+        path: '/barcode/generator',
+        description: '條碼與 QR Code 生成器（整合版）'
       }
     ]
   },
