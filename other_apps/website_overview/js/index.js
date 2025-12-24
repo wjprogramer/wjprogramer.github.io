@@ -54,6 +54,15 @@ window.onload = (event) => {
             visible: true,
           },
           {
+            title: 'Coder Toolbox',
+            group: GROUP_TYPE.NONE,
+            subTitle: '',
+            description: '程式開發者工具箱 - 編碼、格式化、加密等工具',
+            path: '/external_projects/coder_toolbox/',
+            imageSrc: '/favicons/android-chrome-512x512.png',
+            visible: true,
+          },
+          {
             title: 'Test Area',
             group: GROUP_TYPE.NONE,
             subTitle: '',
