@@ -279,3 +279,4 @@
 - https://en.wikipedia.org/wiki/Barcode - 條碼維基百科
 - https://en.wikipedia.org/wiki/QR_code - QR Code 維基百科
 
+

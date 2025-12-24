@@ -322,3 +322,4 @@ function initColorConverterEvents() {
   updateColor(currentColor);
 }
 
+

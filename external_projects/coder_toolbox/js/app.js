@@ -178,11 +178,22 @@ function renderAbout() {
         </ul>
         
         <h3 style="margin-bottom: var(--spacing-md);">📚 技術棧</h3>
-        <p style="color: var(--text-secondary);">
+        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
           純 HTML + CSS + JavaScript，無框架依賴<br>
           使用 CryptoJS 進行加密運算<br>
           採用 Liquid Glass 設計風格
         </p>
+        
+        <div style="text-align: center; margin-top: var(--spacing-xl); padding-top: var(--spacing-lg); border-top: 1px solid var(--glass-border-subtle);">
+          <a 
+            href="/other_apps/website_overview/" 
+            class="glass-btn primary"
+            style="text-decoration: none;"
+          >
+            <span class="material-icons-round">person</span>
+            返回作者頁面
+          </a>
+        </div>
       </div>
     </div>
   `;
