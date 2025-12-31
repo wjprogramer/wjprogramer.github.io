@@ -1,0 +1,165 @@
+{
+  "loading": "載入中...",
+  "app": {
+    "name": "敏捷估點",
+    "tagline": "讓估點更簡單、更有趣"
+  },
+  "common": {
+    "loading": "載入中...",
+    "save": "儲存",
+    "cancel": "取消",
+    "confirm": "確認",
+    "close": "關閉",
+    "back": "返回",
+    "next": "下一步",
+    "reset": "重設",
+    "clear": "清除",
+    "delete": "刪除",
+    "edit": "編輯",
+    "copy": "複製",
+    "copied": "已複製",
+    "copyFailed": "複製失敗",
+    "settings": "設定",
+    "language": "語言",
+    "theme": "主題",
+    "darkMode": "深色模式",
+    "lightMode": "淺色模式"
+  },
+  "home": {
+    "title": "敏捷估點",
+    "subtitle": "讓估點更簡單、更有趣",
+    "soloMode": "簡易模式",
+    "soloModeDesc": "單人選牌、翻牌練習",
+    "hostMode": "建立房間",
+    "hostModeDesc": "建立估點房間，邀請團隊成員",
+    "joinMode": "加入房間",
+    "joinModeDesc": "加入現有的估點房間",
+    "history": "歷史記錄",
+    "historyDesc": "查看過去的估點記錄"
+  },
+  "solo": {
+    "title": "簡易模式",
+    "instruction": "選擇一張牌，然後點擊確認",
+    "selectCard": "請選擇一張牌",
+    "selectedCard": "已選擇",
+    "confirm": "確定",
+    "flip": "翻牌",
+    "readyToReveal": "準備好要翻牌了嗎？",
+    "backToSelect": "重新選擇",
+    "yourChoice": "你的選擇",
+    "saveToHistory": "儲存到歷史",
+    "saved": "已儲存到歷史記錄",
+    "noCardSelected": "請先選擇一張牌",
+    "newRound": "新的一輪",
+    "clickToHide": "點擊卡片可翻回背面"
+  },
+  "cards": {
+    "infinity": "無限大",
+    "infinityDesc": "任務太大，需要拆分",
+    "question": "不確定",
+    "questionDesc": "需要更多資訊",
+    "coffee": "休息",
+    "coffeeDesc": "需要休息或討論"
+  },
+  "history": {
+    "title": "歷史記錄",
+    "empty": "尚無歷史記錄",
+    "clearAll": "清除全部",
+    "clearConfirm": "確定要清除所有歷史記錄嗎？",
+    "mode": "模式",
+    "solo": "簡易模式",
+    "host": "主持人",
+    "client": "參與者",
+    "value": "估點值",
+    "time": "時間"
+  },
+  "settings": {
+    "title": "設定",
+    "appearance": "外觀",
+    "language": "語言",
+    "languageDesc": "選擇顯示語言",
+    "theme": "主題",
+    "themeDesc": "選擇顯示主題",
+    "themeSystem": "跟隨系統",
+    "themeDark": "深色",
+    "themeLight": "淺色",
+    "data": "資料",
+    "clearHistory": "清除歷史記錄",
+    "clearHistoryDesc": "刪除所有估點歷史記錄",
+    "about": "關於",
+    "version": "版本"
+  },
+  "toast": {
+    "success": "成功",
+    "error": "錯誤",
+    "warning": "警告",
+    "info": "提示"
+  },
+  "host": {
+    "title": "建立房間",
+    "creating": "建立會議室中...",
+    "created": "會議室已建立",
+    "meetingId": "會議 ID",
+    "copyLink": "複製連結",
+    "copyId": "複製 ID",
+    "qrCode": "掃描 QR Code 加入",
+    "waitingForParticipants": "等待參與者加入...",
+    "participants": "參與者",
+    "participantCount": "人",
+    "noParticipants": "尚無參與者",
+    "startEstimation": "開始估點",
+    "flipCards": "翻牌",
+    "newRound": "新的一輪",
+    "closeMeeting": "結束會議",
+    "closeMeetingConfirm": "確定要結束會議嗎？所有參與者將會斷線。",
+    "kick": "踢除",
+    "kickConfirm": "確定要踢除此參與者嗎？",
+    "addToBlacklist": "加入黑名單",
+    "status": {
+      "waiting": "等待中",
+      "selecting": "選擇中",
+      "selected": "已選擇",
+      "revealed": "已翻牌"
+    },
+    "stats": {
+      "title": "估點結果",
+      "average": "平均",
+      "highest": "最高",
+      "lowest": "最低",
+      "noData": "尚無資料"
+    },
+    "errors": {
+      "createFailed": "建立會議室失敗",
+      "connectionError": "連線錯誤"
+    }
+  },
+  "join": {
+    "title": "加入房間",
+    "meetingId": "會議 ID",
+    "meetingIdPlaceholder": "輸入 6 位數會議 ID",
+    "name": "你的名稱",
+    "namePlaceholder": "輸入你的名稱",
+    "join": "加入",
+    "joining": "加入中...",
+    "connected": "已連線",
+    "disconnected": "已斷線",
+    "waitingForHost": "等待主持人開始估點...",
+    "selectCard": "請選擇一張牌",
+    "selectedCard": "你選擇了",
+    "waitingForFlip": "等待主持人翻牌...",
+    "leaveMeeting": "離開會議",
+    "leaveConfirm": "確定要離開會議嗎？",
+    "kicked": "你已被主持人踢除",
+    "blacklisted": "你已被加入黑名單",
+    "meetingClosed": "會議已結束",
+    "errors": {
+      "invalidMeetingId": "請輸入有效的會議 ID",
+      "invalidName": "請輸入你的名稱",
+      "meetingNotFound": "找不到此會議室",
+      "meetingFull": "會議室已滿",
+      "connectionFailed": "連線失敗",
+      "connectionTimeout": "連線逾時"
+    }
+  }
+}
+

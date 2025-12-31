@@ -1,0 +1,367 @@
+/* ===================================
+   Pokemon Card Style - Estimation Cards
+   =================================== */
+
+/* Card Grid Container */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 100px);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  justify-content: center;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .cards-grid {
+    grid-template-columns: repeat(5, 90px);
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .cards-grid {
+    grid-template-columns: repeat(4, 75px);
+    gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 400px) {
+  .cards-grid {
+    grid-template-columns: repeat(3, 70px);
+    gap: var(--spacing-sm);
+  }
+}
+
+/* ===================================
+   Card Component
+   =================================== */
+
+.card-wrapper {
+  perspective: 1000px;
+  cursor: pointer;
+  width: 100%;
+  aspect-ratio: 2.5 / 3.5;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform var(--transition-card);
+  will-change: transform;
+}
+
+.card.flipped {
+  transform: rotateY(180deg);
+}
+
+/* Card Faces */
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow var(--transition-base);
+}
+
+.card-front {
+  transform: rotateY(0deg);
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
+/* ===================================
+   Holographic Effect Layer
+   =================================== */
+
+.card-holo {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Holographic Gradient Overlay */
+.card-holo::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--holo-color-1),
+    var(--holo-color-2),
+    var(--holo-color-3),
+    var(--holo-color-4),
+    var(--holo-color-5),
+    var(--holo-color-6),
+    var(--holo-color-1)
+  );
+  opacity: 0.15;
+  mix-blend-mode: color-dodge;
+  animation: holoRotate 8s linear infinite paused;
+  transform: rotate(var(--holo-angle, 0deg));
+  transition: opacity var(--transition-base);
+}
+
+.card-wrapper:hover .card-holo::before,
+.card.selected .card-holo::before {
+  opacity: 0.3;
+  animation-play-state: running;
+}
+
+/* Shimmer Effect */
+.card-holo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    var(--shimmer-angle, 105deg),
+    transparent 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.card-wrapper:hover .card-holo::after,
+.card.selected .card-holo::after {
+  opacity: 1;
+}
+
+/* ===================================
+   Card Content
+   =================================== */
+
+.card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: var(--spacing-md);
+}
+
+.card-value {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-base);
+}
+
+.card-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Card Back Pattern */
+.card-back .card-content {
+  background: 
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(99, 102, 241, 0.1) 10px,
+      rgba(99, 102, 241, 0.1) 20px
+    );
+}
+
+.card-back .card-value {
+  font-size: clamp(2rem, 6vw, 3rem);
+  opacity: 0.8;
+}
+
+/* ===================================
+   Card States
+   =================================== */
+
+/* Hover State */
+.card-wrapper:hover .card-face {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.card-wrapper:hover .card-value {
+  transform: scale(1.05);
+}
+
+/* Selected State */
+.card.selected .card-face {
+  background: var(--card-bg-selected);
+  border-color: var(--color-primary);
+  box-shadow: 
+    var(--card-shadow-hover),
+    0 0 30px rgba(99, 102, 241, 0.4),
+    inset 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+.card.selected .card-value {
+  color: var(--color-primary-light);
+}
+
+/* Disabled State */
+.card-wrapper.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ===================================
+   3D Tilt Effect (JS controlled)
+   =================================== */
+
+.card-wrapper.tilt-active .card {
+  transition: none;
+}
+
+/* Inner glow on tilt */
+.card-inner-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--card-border-radius);
+  background: radial-gradient(
+    circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    rgba(255, 255, 255, 0.2) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity var(--transition-fast);
+}
+
+.card-wrapper:hover .card-inner-glow,
+.card-wrapper.tilt-active .card-inner-glow {
+  opacity: 1;
+}
+
+/* ===================================
+   Card Shine Effect
+   =================================== */
+
+.card-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--card-border-radius);
+  background: linear-gradient(
+    var(--shine-angle, 45deg),
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 45%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 55%,
+    transparent 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+  transition: opacity var(--transition-base);
+  background-size: 200% 200%;
+  background-position: var(--shine-pos, 100% 100%);
+}
+
+.card-wrapper:hover .card-shine {
+  opacity: 1;
+}
+
+/* ===================================
+   Special Cards (∞, ?, ☕)
+   =================================== */
+
+.card[data-special="infinity"] .card-value {
+  font-size: clamp(2rem, 6vw, 3rem);
+}
+
+.card[data-special="question"] .card-value {
+  font-size: clamp(2rem, 6vw, 3rem);
+}
+
+.card[data-special="coffee"] .card-value {
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+}
+
+/* ===================================
+   Card Border Glow Animation
+   =================================== */
+
+.card-border-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(var(--card-border-radius) + 2px);
+  background: conic-gradient(
+    from var(--border-angle, 0deg),
+    var(--color-primary),
+    var(--holo-color-2),
+    var(--holo-color-3),
+    var(--holo-color-4),
+    var(--color-primary)
+  );
+  opacity: 0;
+  z-index: -1;
+  transition: opacity var(--transition-base);
+}
+
+.card.selected .card-border-glow {
+  opacity: 1;
+  animation: borderRotate 3s linear infinite;
+}
+
+/* ===================================
+   Flipped Card Result Display
+   =================================== */
+
+.card-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.card-result-value {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===================================
+   Animations
+   =================================== */
+
+@keyframes holoRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes borderRotate {
+  from { --border-angle: 0deg; }
+  to { --border-angle: 360deg; }
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+

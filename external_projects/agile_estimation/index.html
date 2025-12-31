@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="敏捷估點工具 - Agile Estimation Tool">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>敏捷估點 | Agile Estimation</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/card.css">
+  <link rel="stylesheet" href="css/animations.css">
+  
+  <!-- Third-party Libraries (CDN) -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- SPA 內容會在這裡動態載入 -->
+    <div class="loading-screen">
+      <div class="loading-spinner"></div>
+      <p data-i18n="loading">載入中...</p>
+    </div>
+  </div>
+  
+  <!-- Toast 通知容器 -->
+  <div id="toast-container"></div>
+  
+  <!-- JavaScript Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
+

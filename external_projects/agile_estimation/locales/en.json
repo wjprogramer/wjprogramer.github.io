@@ -1,0 +1,165 @@
+{
+  "loading": "Loading...",
+  "app": {
+    "name": "Agile Estimation",
+    "tagline": "Make estimation simpler and more fun"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "reset": "Reset",
+    "clear": "Clear",
+    "delete": "Delete",
+    "edit": "Edit",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "settings": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode"
+  },
+  "home": {
+    "title": "Agile Estimation",
+    "subtitle": "Make estimation simpler and more fun",
+    "soloMode": "Solo Mode",
+    "soloModeDesc": "Practice card selection and reveal",
+    "hostMode": "Create Room",
+    "hostModeDesc": "Create a room and invite team members",
+    "joinMode": "Join Room",
+    "joinModeDesc": "Join an existing estimation room",
+    "history": "History",
+    "historyDesc": "View past estimation records"
+  },
+  "solo": {
+    "title": "Solo Mode",
+    "instruction": "Select a card, then click confirm",
+    "selectCard": "Select a card",
+    "selectedCard": "Selected",
+    "confirm": "Confirm",
+    "flip": "Reveal",
+    "readyToReveal": "Ready to reveal?",
+    "backToSelect": "Re-select",
+    "yourChoice": "Your Choice",
+    "saveToHistory": "Save to History",
+    "saved": "Saved to history",
+    "noCardSelected": "Please select a card first",
+    "newRound": "New Round",
+    "clickToHide": "Click the card to flip back"
+  },
+  "cards": {
+    "infinity": "Infinity",
+    "infinityDesc": "Task too large, needs breaking down",
+    "question": "Uncertain",
+    "questionDesc": "Need more information",
+    "coffee": "Break",
+    "coffeeDesc": "Need a break or discussion"
+  },
+  "history": {
+    "title": "History",
+    "empty": "No history yet",
+    "clearAll": "Clear All",
+    "clearConfirm": "Are you sure you want to clear all history?",
+    "mode": "Mode",
+    "solo": "Solo",
+    "host": "Host",
+    "client": "Client",
+    "value": "Value",
+    "time": "Time"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "language": "Language",
+    "languageDesc": "Select display language",
+    "theme": "Theme",
+    "themeDesc": "Select display theme",
+    "themeSystem": "System",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "data": "Data",
+    "clearHistory": "Clear History",
+    "clearHistoryDesc": "Delete all estimation history",
+    "about": "About",
+    "version": "Version"
+  },
+  "toast": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "host": {
+    "title": "Create Room",
+    "creating": "Creating meeting...",
+    "created": "Meeting created",
+    "meetingId": "Meeting ID",
+    "copyLink": "Copy Link",
+    "copyId": "Copy ID",
+    "qrCode": "Scan QR Code to join",
+    "waitingForParticipants": "Waiting for participants...",
+    "participants": "Participants",
+    "participantCount": "",
+    "noParticipants": "No participants yet",
+    "startEstimation": "Start Estimation",
+    "flipCards": "Flip Cards",
+    "newRound": "New Round",
+    "closeMeeting": "Close Meeting",
+    "closeMeetingConfirm": "Are you sure you want to close the meeting? All participants will be disconnected.",
+    "kick": "Kick",
+    "kickConfirm": "Are you sure you want to kick this participant?",
+    "addToBlacklist": "Add to Blacklist",
+    "status": {
+      "waiting": "Waiting",
+      "selecting": "Selecting",
+      "selected": "Selected",
+      "revealed": "Revealed"
+    },
+    "stats": {
+      "title": "Results",
+      "average": "Average",
+      "highest": "Highest",
+      "lowest": "Lowest",
+      "noData": "No data"
+    },
+    "errors": {
+      "createFailed": "Failed to create meeting",
+      "connectionError": "Connection error"
+    }
+  },
+  "join": {
+    "title": "Join Room",
+    "meetingId": "Meeting ID",
+    "meetingIdPlaceholder": "Enter 6-digit meeting ID",
+    "name": "Your Name",
+    "namePlaceholder": "Enter your name",
+    "join": "Join",
+    "joining": "Joining...",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "waitingForHost": "Waiting for host to start estimation...",
+    "selectCard": "Select a card",
+    "selectedCard": "You selected",
+    "waitingForFlip": "Waiting for host to flip cards...",
+    "leaveMeeting": "Leave Meeting",
+    "leaveConfirm": "Are you sure you want to leave the meeting?",
+    "kicked": "You have been kicked by the host",
+    "blacklisted": "You have been blacklisted",
+    "meetingClosed": "Meeting has ended",
+    "errors": {
+      "invalidMeetingId": "Please enter a valid meeting ID",
+      "invalidName": "Please enter your name",
+      "meetingNotFound": "Meeting not found",
+      "meetingFull": "Meeting is full",
+      "connectionFailed": "Connection failed",
+      "connectionTimeout": "Connection timeout"
+    }
+  }
+}
+
