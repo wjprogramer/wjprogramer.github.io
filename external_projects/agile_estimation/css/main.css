@@ -2,6 +2,19 @@
    Main Styles
    =================================== */
 
+/* ===================================
+   Font Face - Cubic-11
+   =================================== */
+@font-face {
+  font-family: 'Cubic-11';
+  src: url('../fonts/Cubic-11-1.451/fonts/web/Cubic_11.woff2') format('woff2'),
+       url('../fonts/Cubic-11-1.451/fonts/web/Cubic_11.woff') format('woff'),
+       url('../fonts/Cubic-11-1.451/fonts/ttf/Cubic_11.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Reset & Base */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -111,10 +124,11 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
+  font-family: 'Cubic-11', var(--font-display), sans-serif;
 }
 
 .logo {
-  font-family: var(--font-display);
+  font-family: 'Cubic-11', var(--font-display), sans-serif;
   font-size: var(--font-size-xl);
   font-weight: 700;
   background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent));

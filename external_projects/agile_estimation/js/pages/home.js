@@ -97,6 +97,7 @@ export function renderHome() {
       }
       
       .home-title {
+        font-family: 'Cubic-11', var(--font-display), sans-serif;
         font-size: clamp(2.5rem, 8vw, 4rem);
         background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent));
         -webkit-background-clip: text;
@@ -154,6 +155,7 @@ export function renderHome() {
       }
       
       .menu-card-title {
+        font-family: 'Cubic-11', var(--font-display), sans-serif;
         font-size: var(--font-size-lg);
         margin-bottom: var(--spacing-xs);
       }
