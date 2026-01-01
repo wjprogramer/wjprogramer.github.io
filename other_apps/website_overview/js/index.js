@@ -63,6 +63,15 @@ window.onload = (event) => {
             visible: true,
           },
           {
+            title: 'Agile Estimation Tool',
+            group: GROUP_TYPE.NONE,
+            subTitle: '',
+            description: '敏捷開發估點工具 - 支援單人與多人協作模式',
+            path: '/external_projects/agile_estimation/',
+            imageSrc: '/favicons/android-chrome-512x512.png',
+            visible: true,
+          },
+          {
             title: 'Test Area',
             group: GROUP_TYPE.NONE,
             subTitle: '',

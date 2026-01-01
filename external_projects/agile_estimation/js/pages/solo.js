@@ -18,6 +18,8 @@ import { addHistory } from '../data/history.js';
 let selectedCard = null;
 let isConfirmed = false;  // 是否已確認選擇（進入翻牌階段）
 let isRevealed = false;   // 是否已翻牌（顯示正面）
+let gyroscopeHandler = null;  // 陀螺儀事件處理器
+let hoverHandler = null;  // 滑鼠 hover 事件處理器
 
 /**
  * 渲染簡易模式頁面
@@ -192,7 +194,22 @@ export function renderSolo() {
       }
       
       .reveal-card.flipped {
-        transform: rotateY(180deg);
+        transform: perspective(1000px) rotateY(180deg);
+      }
+      
+      /* 當使用陀螺儀或 hover 時，只在傾斜時移除 transition，翻牌時保留 */
+      .reveal-card.interactive {
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      /* 當卡片正在傾斜時，移除 transition 以獲得即時響應 */
+      .reveal-card.interactive.tilting {
+        transition: none;
+      }
+      
+      /* 當卡片正在翻牌時，確保 transition 生效，並且 hover 效果不會干擾 */
+      .reveal-card.interactive.flipping {
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
       }
       
       .reveal-card .card-face {
@@ -277,15 +294,7 @@ export function renderSolo() {
         align-items: center;
       }
       
-      /* Hover hint for flip */
-      .reveal-card-wrapper:hover .reveal-card:not(.flipped) {
-        transform: rotateY(15deg);
-      }
-      
-      /* Hover hint for unflip */
-      .reveal-card-wrapper:hover .reveal-card.flipped {
-        transform: rotateY(165deg);
-      }
+      /* 移除原本的 hover hint，因為現在由 JavaScript 控制 */
       
       .hidden {
         display: none !important;
@@ -505,6 +514,9 @@ function goToRevealPhase() {
   // 切換階段
   selectPhase.classList.add('hidden');
   revealPhase.classList.remove('hidden');
+  
+  // 初始化卡片互動效果（陀螺儀或 hover）
+  initRevealCardInteraction();
 }
 
 /**
@@ -513,6 +525,9 @@ function goToRevealPhase() {
 function goToSelectPhase() {
   isConfirmed = false;
   isRevealed = false;
+  
+  // 清理互動效果
+  cleanupRevealCardInteraction();
   
   const selectPhase = document.getElementById('select-phase');
   const revealPhase = document.getElementById('reveal-phase');
@@ -527,6 +542,13 @@ function goToSelectPhase() {
 function toggleFlip() {
   const revealCard = document.getElementById('reveal-card');
   
+  // 標記為正在翻牌，這會暫時禁用 hover/陀螺儀效果
+  revealCard.classList.add('flipping');
+  revealCard.classList.remove('tilting');
+  
+  // 清除當前的 transform，讓 CSS 類別控制翻牌動畫
+  revealCard.style.transform = '';
+  
   if (isRevealed) {
     // 翻回背面
     revealCard.classList.remove('flipped');
@@ -537,8 +559,64 @@ function toggleFlip() {
     isRevealed = true;
   }
   
+  // 監聽翻牌動畫完成
+  const handleTransitionEnd = (e) => {
+    // 確保是 transform 的 transition 結束
+    if (e.propertyName === 'transform') {
+      revealCard.classList.remove('flipping');
+      revealCard.removeEventListener('transitionend', handleTransitionEnd);
+      
+      // 更新傾斜效果的基礎角度（動畫完成後）
+      updateTiltBaseAngle();
+    }
+  };
+  
+  revealCard.addEventListener('transitionend', handleTransitionEnd, { once: true });
+  
   // 更新 UI
   updateRevealPhaseUI();
+}
+
+/**
+ * 更新傾斜效果的基礎角度（根據翻牌狀態）
+ */
+function updateTiltBaseAngle() {
+  const revealCard = document.getElementById('reveal-card');
+  if (!revealCard) return;
+  
+  // 如果卡片有互動效果，需要更新基礎角度
+  if (revealCard.classList.contains('interactive')) {
+    // 如果沒有正在傾斜，清除 inline style 讓 CSS transition 生效
+    if (!revealCard.classList.contains('tilting')) {
+      // 清除 transform，讓 CSS 類別控制翻牌動畫
+      revealCard.style.transform = '';
+    } else {
+      // 如果正在傾斜，需要更新基礎角度但保持傾斜
+      // 實際的傾斜角度會在下一次事件觸發時更新
+      const isFlipped = revealCard.classList.contains('flipped');
+      const baseRotateY = isFlipped ? 180 : 0;
+      
+      // 嘗試從現有的 transform 中提取傾斜角度
+      const currentTransform = revealCard.style.transform;
+      let rotateX = 0;
+      let rotateY = 0;
+      
+      if (currentTransform) {
+        const rotateXMatch = currentTransform.match(/rotateX\(([^)]+)\)/);
+        const rotateYMatch = currentTransform.match(/rotateY\(([^)]+)\)/);
+        if (rotateXMatch) rotateX = parseFloat(rotateXMatch[1]) || 0;
+        if (rotateYMatch) {
+          const totalRotateY = parseFloat(rotateYMatch[1]) || 0;
+          // 從總角度中提取純傾斜角度（減去之前的基礎角度）
+          const prevBaseRotateY = isFlipped ? 0 : 180;
+          rotateY = totalRotateY - prevBaseRotateY;
+        }
+      }
+      
+      // 套用新的基礎角度和傾斜角度
+      revealCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${baseRotateY + rotateY}deg)`;
+    }
+  }
 }
 
 /**
@@ -604,7 +682,242 @@ function resetAndStartNew() {
     card.classList.remove('selected');
   });
   
+  // 清理互動效果
+  cleanupRevealCardInteraction();
+  
   // 切換到選擇階段
   selectPhase.classList.remove('hidden');
   revealPhase.classList.add('hidden');
+}
+
+/**
+ * 檢測是否支援陀螺儀
+ * @returns {boolean} 是否支援陀螺儀
+ */
+function isGyroscopeSupported() {
+  return 'DeviceOrientationEvent' in window && 
+         typeof DeviceOrientationEvent.requestPermission === 'function';
+}
+
+/**
+ * 請求陀螺儀權限（iOS 13+）
+ * @returns {Promise<boolean>} 是否獲得權限
+ */
+async function requestGyroscopePermission() {
+  try {
+    if (isGyroscopeSupported()) {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      return permission === 'granted';
+    }
+    return true; // 非 iOS 13+ 不需要權限
+  } catch (error) {
+    console.warn('陀螺儀權限請求失敗:', error);
+    return false;
+  }
+}
+
+/**
+ * 檢測是否有滑鼠輸入裝置
+ * @returns {Promise<boolean>} 是否有滑鼠輸入
+ */
+function hasMouseInput() {
+  return new Promise((resolve) => {
+    // 方法 1: 使用 Media Query 檢測精確指標（滑鼠）
+    if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+      resolve(true);
+      return;
+    }
+    
+    // 方法 2: 檢測是否為觸控裝置
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // 如果沒有觸控支援，假設有滑鼠
+    if (!isTouchDevice) {
+      resolve(true);
+      return;
+    }
+    
+    // 方法 3: 如果有觸控支援，等待一小段時間看是否有滑鼠移動
+    // 這適用於混合裝置（如 Surface）
+    let hasMouseMoved = false;
+    const mouseMoveHandler = () => {
+      hasMouseMoved = true;
+    };
+    
+    window.addEventListener('mousemove', mouseMoveHandler, { once: true, passive: true });
+    
+    // 等待 200ms 檢測是否有滑鼠移動
+    setTimeout(() => {
+      window.removeEventListener('mousemove', mouseMoveHandler);
+      resolve(hasMouseMoved);
+    }, 200);
+  });
+}
+
+/**
+ * 初始化翻牌階段的卡片互動效果
+ */
+async function initRevealCardInteraction() {
+  const revealCard = document.getElementById('reveal-card');
+  const revealCardWrapper = document.getElementById('reveal-card-wrapper');
+  
+  if (!revealCard || !revealCardWrapper) return;
+  
+  // 優先檢測是否有滑鼠輸入（滑鼠優先）
+  const hasMouse = await hasMouseInput();
+  
+  if (hasMouse) {
+    // 偵測到滑鼠，優先使用 hover 效果
+    initHoverTilt(revealCardWrapper, revealCard);
+  } else {
+    // 沒有滑鼠，檢測是否支援陀螺儀
+    const hasGyroscope = 'DeviceOrientationEvent' in window;
+    
+    if (hasGyroscope) {
+      // 嘗試請求權限（iOS 13+）
+      const hasPermission = await requestGyroscopePermission();
+      
+      if (hasPermission) {
+        // 使用陀螺儀效果
+        initGyroscopeTilt(revealCard);
+      } else {
+        // 權限被拒絕，使用 hover 效果作為備用
+        initHoverTilt(revealCardWrapper, revealCard);
+      }
+    } else {
+      // 不支援陀螺儀，使用 hover 效果
+      initHoverTilt(revealCardWrapper, revealCard);
+    }
+  }
+}
+
+/**
+ * 初始化陀螺儀傾斜效果
+ * @param {HTMLElement} card - 卡片元素
+ */
+function initGyroscopeTilt(card) {
+  // 清理之前的處理器
+  if (gyroscopeHandler) {
+    window.removeEventListener('deviceorientation', gyroscopeHandler);
+  }
+  
+  // 標記為互動模式
+  card.classList.add('interactive');
+  
+  gyroscopeHandler = (event) => {
+    // 如果正在翻牌，不更新 transform
+    if (card.classList.contains('flipping')) {
+      return;
+    }
+    
+    // 取得裝置傾斜角度
+    // beta: 前後傾斜（-180 到 180）
+    // gamma: 左右傾斜（-90 到 90）
+    const beta = event.beta || 0;   // 前後傾斜
+    const gamma = event.gamma || 0; // 左右傾斜
+    
+    // 限制傾斜角度範圍（最大 15 度）
+    // 將 beta 和 gamma 映射到 -15 到 15 度之間
+    const maxTilt = 15;
+    const rotateX = Math.max(-maxTilt, Math.min(maxTilt, beta * 0.15));
+    const rotateY = Math.max(-maxTilt, Math.min(maxTilt, gamma * 0.15));
+    
+    // 標記為正在傾斜，移除 transition
+    card.classList.add('tilting');
+    
+    // 套用 3D 傾斜效果
+    // 注意：翻牌狀態下需要保留 rotateY(180deg)，所以需要調整
+    const isFlipped = card.classList.contains('flipped');
+    const baseRotateY = isFlipped ? 180 : 0;
+    
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${baseRotateY + rotateY}deg)`;
+  };
+  
+  window.addEventListener('deviceorientation', gyroscopeHandler);
+}
+
+/**
+ * 初始化滑鼠 hover 傾斜效果
+ * @param {HTMLElement} wrapper - 卡片容器元素
+ * @param {HTMLElement} card - 卡片元素
+ */
+function initHoverTilt(wrapper, card) {
+  // 清理之前的處理器
+  if (hoverHandler) {
+    wrapper.removeEventListener('mousemove', hoverHandler);
+    wrapper.removeEventListener('mouseleave', hoverHandler);
+  }
+  
+  // 標記為互動模式
+  card.classList.add('interactive');
+  
+  const handleMouseMove = (e) => {
+    // 如果正在翻牌，不更新 transform
+    if (card.classList.contains('flipping')) {
+      return;
+    }
+    
+    const rect = wrapper.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // 計算旋轉角度（最大 15 度）
+    const rotateX = ((y - centerY) / centerY) * -15;
+    const rotateY = ((x - centerX) / centerX) * 15;
+    
+    // 標記為正在傾斜，移除 transition
+    card.classList.add('tilting');
+    
+    // 套用 3D 傾斜效果
+    // 注意：翻牌狀態下需要保留 rotateY(180deg)，所以需要調整
+    const isFlipped = card.classList.contains('flipped');
+    const baseRotateY = isFlipped ? 180 : 0;
+    
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${baseRotateY + rotateY}deg)`;
+  };
+  
+  const handleMouseLeave = () => {
+    // 移除傾斜標記，恢復 transition
+    card.classList.remove('tilting');
+    
+    // 重設為原始狀態
+    const isFlipped = card.classList.contains('flipped');
+    const baseRotateY = isFlipped ? 180 : 0;
+    card.style.transform = `perspective(1000px) rotateY(${baseRotateY}deg)`;
+  };
+  
+  hoverHandler = handleMouseMove;
+  
+  wrapper.addEventListener('mousemove', handleMouseMove);
+  wrapper.addEventListener('mouseleave', handleMouseLeave);
+}
+
+/**
+ * 清理翻牌階段的卡片互動效果
+ */
+function cleanupRevealCardInteraction() {
+  // 清理陀螺儀事件
+  if (gyroscopeHandler) {
+    window.removeEventListener('deviceorientation', gyroscopeHandler);
+    gyroscopeHandler = null;
+  }
+  
+  // 清理 hover 事件
+  const revealCardWrapper = document.getElementById('reveal-card-wrapper');
+  if (revealCardWrapper && hoverHandler) {
+    revealCardWrapper.removeEventListener('mousemove', hoverHandler);
+    revealCardWrapper.removeEventListener('mouseleave', hoverHandler);
+    hoverHandler = null;
+  }
+  
+  // 重設卡片變換和類別
+  const revealCard = document.getElementById('reveal-card');
+  if (revealCard) {
+    revealCard.classList.remove('interactive', 'tilting', 'flipping');
+    const isFlipped = revealCard.classList.contains('flipped');
+    const baseRotateY = isFlipped ? 180 : 0;
+    revealCard.style.transform = `perspective(1000px) rotateY(${baseRotateY}deg)`;
+  }
 }
