@@ -65,8 +65,11 @@
   "history": {
     "title": "History",
     "empty": "No history yet",
+    "limitHint": "Maximum 10 records can be saved. Starred records will not be automatically deleted.",
     "clearAll": "Clear All",
     "clearConfirm": "Are you sure you want to clear all history?",
+    "deleteConfirm": "Are you sure you want to delete this history record? This action cannot be undone.",
+    "deleted": "History record deleted",
     "mode": "Mode",
     "solo": "Solo Mode",
     "host": "Host Mode",
@@ -89,7 +92,9 @@
     "unstar": "Unstar",
     "starred": "Starred",
     "unstarred": "Unstarred",
-    "maxStarredReached": "Maximum number of starred items reached ({{max}})"
+    "maxStarredReached": "Maximum number of starred items reached ({{max}})",
+    "reopenMeeting": "Reopen Meeting",
+    "reopenMeetingHint": "Will restore meeting state, allowing you to continue or restart estimation for issues"
   },
   "settings": {
     "title": "Settings",
@@ -119,8 +124,10 @@
   },
   "host": {
     "title": "Create Room",
+    "meetingRoom": "Meeting Room",
     "creating": "Creating meeting...",
     "created": "Meeting created",
+    "meetingRestored": "Meeting restored",
     "meetingId": "Meeting ID",
     "copyLink": "Copy Link",
     "copyId": "Copy ID",
@@ -133,7 +140,9 @@
     "hostNamePlaceholder": "Enter host name",
     "meetingName": "Meeting Name",
     "meetingNamePlaceholder": "Enter meeting name (optional)",
-    "meetingNameHint": "Leave empty to use Meeting ID as name",
+    "meetingNameHint": "Leave empty to use Meeting ID as default name, can be modified later",
+    "renameMeeting": "Rename Meeting",
+    "meetingRenamed": "Meeting name updated",
     "participateInEstimation": "Participate in Estimation",
     "participateInEstimationDesc": "Whether the host participates in estimation (selects a card)",
     "createMeeting": "Create Meeting",
@@ -191,6 +200,7 @@
     "errors": {
       "createFailed": "Failed to create meeting",
       "connectionError": "Connection error",
+      "restoreFailed": "Failed to restore meeting",
       "nameRequired": "Please enter host name"
     },
     "messages": {
@@ -253,6 +263,7 @@
     "myAverage": "My Average",
     "estimationHistory": "Estimation History",
     "noEstimationHistory": "No estimation records for this meeting",
+    "showFullResults": "Show Full Results",
     "errors": {
       "invalidMeetingId": "Please enter a valid meeting ID",
       "invalidName": "Please enter your name",

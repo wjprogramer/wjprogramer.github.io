@@ -7,12 +7,14 @@ import { storage } from '../utils/storage/index.js';
 import { createMockStorage } from '../utils/storage/factory.js';
 import { i18n } from '../utils/i18n.js';
 import { theme } from '../utils/theme.js';
-import { addHistory, getHistory, clearHistory } from '../data/history.js';
+import { addHistory, getHistory, clearHistory, setStorage, resetStorage } from '../data/history.js';
 import { createTestHostManager, createTestClientManager, wait } from '../webrtc/test-helpers.js';
 import { EstimationState } from '../webrtc/peer-manager.js';
 
 // 測試結果
 let testResults = [];
+let filterMode = 'all'; // 'all', 'passed', 'failed'
+let groupExpanded = {}; // 追蹤每個群組的展開狀態
 
 /**
  * 渲染測試頁面
@@ -35,49 +37,10 @@ export function renderTest() {
         <h1>測試頁面</h1>
         <p class="test-desc">點擊下方按鈕開始測試各種業務邏輯</p>
         
-        <div class="test-controls">
-          <button class="btn btn-primary btn-lg" id="run-all-tests-btn">
-            執行所有測試
-          </button>
-          <button class="btn btn-secondary" id="clear-results-btn">
-            清除結果
-          </button>
-        </div>
-        
-        <div class="test-sections">
-          <div class="test-section">
-            <h2>Storage 測試</h2>
-            <button class="btn btn-primary" data-test="storage">測試 Storage</button>
-          </div>
-          
-          <div class="test-section">
-            <h2>統計計算測試</h2>
-            <button class="btn btn-primary" data-test="stats">測試統計計算</button>
-          </div>
-          
-          <div class="test-section">
-            <h2>極端值識別測試</h2>
-            <button class="btn btn-primary" data-test="extreme">測試極端值識別</button>
-          </div>
-          
-          <div class="test-section">
-            <h2>歷史記錄測試</h2>
-            <button class="btn btn-primary" data-test="history">測試歷史記錄</button>
-          </div>
-          
-          <div class="test-section">
-            <h2>Issue 管理測試</h2>
-            <button class="btn btn-primary" data-test="issue">測試 Issue 管理</button>
-          </div>
-          
-          <div class="test-section">
-            <h2>WebRTC 翻牌測試</h2>
-            <button class="btn btn-primary" data-test="webrtc">測試 WebRTC 翻牌</button>
-          </div>
-        </div>
-        
         <div class="test-results" id="test-results">
           <h2>測試結果</h2>
+          <div id="test-results-summary"></div>
+          <div id="test-results-filters"></div>
           <div id="test-results-content"></div>
         </div>
       </div>
@@ -93,30 +56,6 @@ export function renderTest() {
         margin-bottom: var(--spacing-lg);
       }
       
-      .test-controls {
-        display: flex;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-xl);
-      }
-      
-      .test-sections {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-xl);
-      }
-      
-      .test-section {
-        background: var(--color-bg-secondary);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-      }
-      
-      .test-section h2 {
-        font-size: var(--font-size-lg);
-        margin-bottom: var(--spacing-md);
-        color: var(--color-text-primary);
-      }
       
       .test-results {
         background: var(--color-bg-secondary);
@@ -159,19 +98,116 @@ export function renderTest() {
         color: var(--color-text-secondary);
       }
       
+      #test-results-summary {
+        margin-bottom: var(--spacing-md);
+      }
+      
       .test-summary {
-        margin-top: var(--spacing-md);
-        padding-top: var(--spacing-md);
-        border-top: 1px solid var(--color-border);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-sm);
         font-weight: 600;
+        font-size: var(--font-size-lg);
+        margin-bottom: var(--spacing-md);
       }
       
       .test-summary.pass {
+        background: rgba(34, 197, 94, 0.1);
         color: #22c55e;
+        border: 2px solid #22c55e;
       }
       
       .test-summary.fail {
+        background: rgba(239, 68, 68, 0.1);
         color: #ef4444;
+        border: 2px solid #ef4444;
+      }
+      
+      #test-results-filters {
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .test-filters {
+        display: flex;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+      }
+      
+      .test-filters .btn {
+        min-width: 100px;
+      }
+      
+      .test-group {
+        margin-bottom: var(--spacing-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+      
+      .test-group-header {
+        display: flex;
+        align-items: center;
+        padding: var(--spacing-md);
+        background: var(--color-bg-tertiary);
+        cursor: pointer;
+        user-select: none;
+        gap: var(--spacing-sm);
+        transition: background-color 0.2s;
+      }
+      
+      .test-group-header:hover {
+        background: var(--color-bg-hover);
+      }
+      
+      .test-group-toggle-icon {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        min-width: 16px;
+        display: inline-block;
+      }
+      
+      .test-group-name {
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+        color: var(--color-text-primary);
+        flex: 1;
+      }
+      
+      .test-group-stats {
+        display: flex;
+        gap: var(--spacing-md);
+        font-size: var(--font-size-sm);
+      }
+      
+      .test-group-stats .stat-pass {
+        color: #22c55e;
+      }
+      
+      .test-group-stats .stat-fail {
+        color: #ef4444;
+      }
+      
+      .test-group-stats .stat-total {
+        color: var(--color-text-secondary);
+      }
+      
+      .test-group-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+      
+      .test-group-content.expanded {
+        max-height: 10000px;
+        transition: max-height 0.5s ease-in;
+      }
+      
+      .test-group-content.collapsed {
+        max-height: 0;
+      }
+      
+      .test-group-content .test-result-item {
+        margin: var(--spacing-xs) var(--spacing-md);
+        margin-bottom: var(--spacing-xs);
       }
     </style>
   `;
@@ -179,8 +215,8 @@ export function renderTest() {
   // 套用翻譯
   i18n.applyTranslations();
   
-  // 設定事件監聽
-  setupEventListeners();
+  // 自動執行所有測試
+  runAllTests();
   
   return () => {
     // 清理工作
@@ -189,31 +225,10 @@ export function renderTest() {
 }
 
 /**
- * 設定事件監聽
+ * 設定事件監聽（目前不需要，因為自動執行測試）
  */
 function setupEventListeners() {
-  // 執行所有測試
-  document.getElementById('run-all-tests-btn')?.addEventListener('click', () => {
-    runAllTests();
-  });
-  
-  // 清除結果
-  document.getElementById('clear-results-btn')?.addEventListener('click', () => {
-    clearTestResults();
-  });
-  
-  // 個別測試按鈕
-  document.querySelectorAll('[data-test]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const testName = btn.dataset.test;
-      clearTestResults();
-      runTest(testName).catch(err => {
-        console.error('測試執行錯誤:', err);
-        addTestResult(`測試執行錯誤: ${err.message}`, false, testName);
-        showTestSummary();
-      });
-    });
-  });
+  // 目前不需要任何事件監聽
 }
 
 /**
@@ -223,12 +238,19 @@ async function runAllTests() {
   clearTestResults();
   addTestResult('開始執行所有測試...', true, '系統');
   
-  const tests = ['storage', 'stats', 'extreme', 'history', 'issue', 'closest', 'webrtc'];
+  const tests = ['storage', 'stats', 'extreme', 'history', 'issue', 'closest', 'webrtc', 'meeting-history', 'rename-meeting', 'reopen-meeting'];
   
   for (const test of tests) {
-    await runTest(test);
+    console.log(`執行測試: ${test}`);
+    try {
+      await runTest(test);
+    } catch (error) {
+      console.error(`測試 ${test} 執行時發生錯誤:`, error);
+      addTestResult(`測試 ${test} 執行時發生錯誤: ${error.message}`, false, '系統');
+    }
   }
   
+  console.log('所有測試執行完成');
   showTestSummary();
 }
 
@@ -236,6 +258,7 @@ async function runAllTests() {
  * 執行單個測試
  */
 async function runTest(testName) {
+  console.log(`[runTest] 開始執行測試: ${testName}`);
   try {
     switch (testName) {
       case 'storage':
@@ -257,14 +280,41 @@ async function runTest(testName) {
         testClosestCardValue();
         break;
       case 'webrtc':
-        await testWebRTC();
+        console.log(`[runTest] 準備執行 testWebRTC`);
+        console.log(`[runTest] testWebRTC 函數類型:`, typeof testWebRTC);
+        try {
+          await testWebRTC();
+          console.log(`[runTest] testWebRTC 執行完成`);
+        } catch (innerError) {
+          console.error(`[runTest] testWebRTC 內部錯誤:`, innerError);
+          throw innerError; // 重新拋出，讓外層 catch 處理
+        }
+        break;
+      case 'meeting-history':
+        console.log(`[runTest] 準備執行 testMeetingHistory`);
+        await testMeetingHistory();
+        console.log(`[runTest] testMeetingHistory 執行完成`);
+        break;
+      case 'rename-meeting':
+        console.log(`[runTest] 準備執行 testRenameMeeting`);
+        await testRenameMeeting();
+        console.log(`[runTest] testRenameMeeting 執行完成`);
+        break;
+      case 'reopen-meeting':
+        console.log(`[runTest] 準備執行 testReopenMeeting`);
+        await testReopenMeeting();
+        console.log(`[runTest] testReopenMeeting 執行完成`);
         break;
       default:
         addTestResult(`未知的測試: ${testName}`, false, '系統');
     }
+    console.log(`[runTest] 測試 ${testName} 執行成功`);
   } catch (error) {
-    console.error('測試執行錯誤:', testName, error);
+    console.error(`[runTest] 測試執行錯誤: ${testName}`, error);
     addTestResult(`測試執行錯誤: ${error.message}`, false, testName);
+    console.error('錯誤堆疊:', error.stack);
+  } finally {
+    console.log(`[runTest] 測試 ${testName} 執行結束`);
   }
   
   showTestSummary();
@@ -410,12 +460,19 @@ function testExtremeValues() {
 
 /**
  * 測試歷史記錄
- * 注意：此測試使用實際的 storage（通過 history.js），會在測試前後清理資料
+ * 使用 MockStorage 避免影響實際環境
  */
 function testHistory() {
   const testName = '歷史記錄測試';
   
+  // 保存原始 storage
+  const originalStorage = storage;
+  
   try {
+    // 使用 MockStorage 避免影響實際環境
+    const mockStorage = createMockStorage();
+    setStorage(mockStorage);
+    
     // 清除歷史（確保測試環境乾淨）
     clearHistory();
     
@@ -437,11 +494,11 @@ function testHistory() {
     const history2 = getHistory();
     assert(history2.length === 0, testName, '清除歷史記錄');
     
-    // 清理
-    clearHistory();
-    
   } catch (error) {
     addTestResult(`${testName}: ${error.message}`, false, testName);
+  } finally {
+    // 恢復原始 storage
+    resetStorage();
   }
 }
 
@@ -731,6 +788,16 @@ function getLastRoundResult(issue) {
 }
 
 /**
+ * HTML 跳脫
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
  * 斷言
  */
 function assert(condition, testName, message) {
@@ -744,8 +811,13 @@ function assert(condition, testName, message) {
  * 添加測試結果
  */
 function addTestResult(message, passed, testName) {
-  testResults.push({ message, passed, testName, timestamp: new Date() });
-  updateTestResultsDisplay();
+  try {
+    testResults.push({ message, passed, testName, timestamp: new Date() });
+    updateTestResultsDisplay();
+  } catch (error) {
+    console.error('addTestResult 錯誤:', error);
+    // 即使顯示更新失敗，也不影響測試執行
+  }
 }
 
 /**
@@ -755,36 +827,143 @@ function updateTestResultsDisplay() {
   const content = document.getElementById('test-results-content');
   if (!content) return;
   
-  content.innerHTML = testResults.map(result => `
-    <div class="test-result-item ${result.passed ? 'pass' : 'fail'}">
-      <div class="test-name">${result.passed ? '✓' : '✗'} ${result.message}</div>
-      <div class="test-message">${result.testName} - ${new Date(result.timestamp).toLocaleTimeString()}</div>
-    </div>
-  `).join('');
+  // 根據 filterMode 過濾結果
+  let filteredResults = testResults;
+  if (filterMode === 'passed') {
+    filteredResults = testResults.filter(r => r.passed);
+  } else if (filterMode === 'failed') {
+    filteredResults = testResults.filter(r => !r.passed);
+  }
+  
+  // 按 testName 分組
+  const groupedResults = {};
+  filteredResults.forEach(result => {
+    const groupName = result.testName || '其他';
+    if (!groupedResults[groupName]) {
+      groupedResults[groupName] = [];
+    }
+    groupedResults[groupName].push(result);
+  });
+  
+  // 生成 HTML
+  const groupsHTML = Object.keys(groupedResults).sort().map(groupName => {
+    const groupResults = groupedResults[groupName];
+    const passedCount = groupResults.filter(r => r.passed).length;
+    const failedCount = groupResults.filter(r => !r.passed).length;
+    const totalCount = groupResults.length;
+    // 確保狀態正確初始化
+    if (groupExpanded[groupName] === undefined) {
+      groupExpanded[groupName] = true; // 預設展開
+    }
+    const isExpanded = groupExpanded[groupName] === true;
+    
+    return `
+      <div class="test-group" data-group="${groupName}">
+        <div class="test-group-header" data-group-toggle="${groupName}">
+          <span class="test-group-toggle-icon">${isExpanded ? '▼' : '▶'}</span>
+          <span class="test-group-name">${escapeHtml(groupName)}</span>
+          <span class="test-group-stats">
+            <span class="stat-pass">通過: ${passedCount}</span>
+            <span class="stat-fail">失敗: ${failedCount}</span>
+            <span class="stat-total">總計: ${totalCount}</span>
+          </span>
+        </div>
+        <div class="test-group-content ${isExpanded ? 'expanded' : 'collapsed'}">
+          ${groupResults.map(result => `
+            <div class="test-result-item ${result.passed ? 'pass' : 'fail'}">
+              <div class="test-name">${result.passed ? '✓' : '✗'} ${escapeHtml(result.message)}</div>
+              <div class="test-message">${new Date(result.timestamp).toLocaleTimeString()}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  content.innerHTML = groupsHTML;
+  
+  // 綁定展開/收合事件（使用事件委派，避免重複綁定）
+  content.querySelectorAll('[data-group-toggle]').forEach(header => {
+    // 移除舊的事件監聽器（如果有的話）
+    const newHeader = header.cloneNode(true);
+    header.parentNode.replaceChild(newHeader, header);
+    
+    // 綁定新的事件監聽器
+    newHeader.addEventListener('click', (e) => {
+      e.stopPropagation(); // 防止事件冒泡
+      const groupName = newHeader.dataset.groupToggle;
+      // 確保狀態正確初始化
+      if (groupExpanded[groupName] === undefined) {
+        groupExpanded[groupName] = true; // 預設展開
+      }
+      groupExpanded[groupName] = !groupExpanded[groupName];
+      updateTestResultsDisplay();
+    });
+  });
+  
+  // 更新摘要和過濾器
+  updateTestSummary();
+  updateTestFilters();
 }
 
 /**
- * 顯示測試摘要
+ * 更新測試摘要
  */
-function showTestSummary() {
+function updateTestSummary() {
+  const summaryContainer = document.getElementById('test-results-summary');
+  if (!summaryContainer) return;
+  
   const total = testResults.length;
   const passed = testResults.filter(r => r.passed).length;
   const failed = total - passed;
   
-  const content = document.getElementById('test-results-content');
-  if (!content) return;
+  summaryContainer.innerHTML = `
+    <div class="test-summary ${failed === 0 ? 'pass' : 'fail'}">
+      總計: ${total} | 通過: ${passed} | 失敗: ${failed}
+    </div>
+  `;
+}
+
+/**
+ * 更新測試過濾器
+ */
+function updateTestFilters() {
+  const filtersContainer = document.getElementById('test-results-filters');
+  if (!filtersContainer) return;
   
-  const summary = document.createElement('div');
-  summary.className = `test-summary ${failed === 0 ? 'pass' : 'fail'}`;
-  summary.textContent = `總計: ${total} | 通過: ${passed} | 失敗: ${failed}`;
+  const total = testResults.length;
+  const passed = testResults.filter(r => r.passed).length;
+  const failed = total - passed;
   
-  // 移除舊的摘要
-  const oldSummary = content.querySelector('.test-summary');
-  if (oldSummary) {
-    oldSummary.remove();
-  }
+  filtersContainer.innerHTML = `
+    <div class="test-filters">
+      <button class="btn btn-sm ${filterMode === 'all' ? 'btn-primary' : 'btn-secondary'}" data-filter="all">
+        全部 (${total})
+      </button>
+      <button class="btn btn-sm ${filterMode === 'passed' ? 'btn-primary' : 'btn-secondary'}" data-filter="passed">
+        通過 (${passed})
+      </button>
+      <button class="btn btn-sm ${filterMode === 'failed' ? 'btn-primary' : 'btn-secondary'}" data-filter="failed">
+        失敗 (${failed})
+      </button>
+    </div>
+  `;
   
-  content.appendChild(summary);
+  // 綁定過濾器按鈕事件
+  filtersContainer.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterMode = btn.dataset.filter;
+      updateTestResultsDisplay();
+    });
+  });
+}
+
+/**
+ * 顯示測試摘要（向後兼容）
+ */
+function showTestSummary() {
+  updateTestSummary();
+  updateTestFilters();
 }
 
 /**
@@ -804,15 +983,33 @@ function clearTestResults() {
 async function testWebRTC() {
   const testName = 'WebRTC 翻牌測試';
   
+  let hostManager = null;
+  let clientManager1 = null;
+  let clientManager2 = null;
+  
   try {
+    console.log(`[testWebRTC] 函數開始執行`);
     addTestResult(`${testName}: 開始測試...`, true, testName);
+    console.log(`[testWebRTC] 已添加開始測試訊息`);
     
     // 創建 Host Manager
-    const { hostManager, peerFactory } = createTestHostManager('Host');
+    console.log(`[testWebRTC] 準備創建 Host Manager`);
+    const result = createTestHostManager('Host');
+    console.log(`[testWebRTC] Host Manager 創建完成`, result);
+    hostManager = result.hostManager;
+    const peerFactory = result.peerFactory;
+    console.log(`[testWebRTC] Host Manager 和 Peer Factory 已取得`);
     
     // 創建 Client Managers
-    const { clientManager: clientManager1 } = createTestClientManager({ peerFactory });
-    const { clientManager: clientManager2 } = createTestClientManager({ peerFactory });
+    console.log(`[testWebRTC] 準備創建 Client Manager 1`);
+    const client1Result = createTestClientManager({ peerFactory });
+    console.log(`[testWebRTC] Client Manager 1 創建完成`);
+    clientManager1 = client1Result.clientManager;
+    console.log(`[testWebRTC] 準備創建 Client Manager 2`);
+    const client2Result = createTestClientManager({ peerFactory });
+    console.log(`[testWebRTC] Client Manager 2 創建完成`);
+    clientManager2 = client2Result.clientManager;
+    console.log(`[testWebRTC] 所有 Manager 創建完成，準備開始測試案例 1`);
     
     // === 測試案例 1: 建立會議和加入 ===
     addTestResult(`${testName}: 測試案例 1 - 建立會議和加入`, true, testName);
@@ -830,6 +1027,9 @@ async function testWebRTC() {
     assert(participants.length === 2, testName, '測試案例 1.3: 兩個 Client 成功加入會議');
     assert(participants.find(p => p.name === 'Client1') !== undefined, testName, '測試案例 1.4: Client1 已加入');
     assert(participants.find(p => p.name === 'Client2') !== undefined, testName, '測試案例 1.5: Client2 已加入');
+    
+    // 測試案例 1 完成
+    addTestResult(`${testName}: 測試案例 1 完成`, true, testName);
     
     // === 測試案例 2: 只有部分參與者選取時可以翻牌 ===
     addTestResult(`${testName}: 測試案例 2 - 部分參與者未選取時翻牌`, true, testName);
@@ -963,11 +1163,658 @@ async function testWebRTC() {
     assert(Math.abs(average2 - 16.5) < 0.01, testName, '測試案例 7.4: 平均值為 16.5 (13+20)/2');
     
     addTestResult(`${testName}: 所有測試案例完成`, true, testName);
+    console.log(`${testName}: 測試完成`);
+    
+  } catch (error) {
+    const errorMessage = error.message || String(error);
+    addTestResult(`${testName}: ${errorMessage}`, false, testName);
+    console.error('WebRTC 測試錯誤:', error);
+    console.error('錯誤堆疊:', error.stack);
+    // 不重新拋出錯誤，讓後續測試可以繼續執行
+  } finally {
+    // 清理資源
+    try {
+      if (hostManager && typeof hostManager.closeMeeting === 'function') {
+        hostManager.closeMeeting();
+      }
+      if (clientManager1 && typeof clientManager1.leaveMeeting === 'function') {
+        clientManager1.leaveMeeting();
+      }
+      if (clientManager2 && typeof clientManager2.leaveMeeting === 'function') {
+        clientManager2.leaveMeeting();
+      }
+    } catch (cleanupError) {
+      console.error('清理資源時發生錯誤:', cleanupError);
+      // 不讓清理錯誤影響測試執行
+    }
+  }
+}
+
+/**
+ * 測試會議記錄儲存機制
+ * 驗證建立會議和各種操作都會正確儲存到 storage
+ */
+async function testMeetingHistory() {
+  const testName = '會議記錄儲存測試';
+  
+  try {
+    addTestResult(`${testName}: 開始測試...`, true, testName);
+    
+    // 使用 Mock Storage 避免影響實際環境
+    const mockStorage = createMockStorage();
+    setStorage(mockStorage);
+    
+    try {
+    
+    // === 測試案例 1: 建立會議時儲存 ===
+    addTestResult(`${testName}: 測試案例 1 - 建立會議時儲存`, true, testName);
+    const meetingId = 'TEST-MEETING-001';
+    const meetingName = '測試會議';
+    
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 0,
+        issues: []
+      });
+      
+      const history1 = getHistory();
+    assert(history1.length === 1, testName, '測試案例 1.1: 建立會議後 history 中有記錄');
+    assert(history1[0].meetingId === meetingId, testName, '測試案例 1.2: 會議 ID 正確');
+    assert(history1[0].meetingName === meetingName, testName, '測試案例 1.3: 會議名稱正確');
+    assert(history1[0].participants === 0, testName, '測試案例 1.4: 參與者數量為 0');
+    assert(Array.isArray(history1[0].issues), testName, '測試案例 1.5: issues 是陣列');
+    assert(history1[0].issues.length === 0, testName, '測試案例 1.6: 初始 issues 為空');
+    assert(history1[0].completedAt === null, testName, '測試案例 1.7: 會議未完成');
+    
+    // === 測試案例 2: 建立 issue 時更新 ===
+    addTestResult(`${testName}: 測試案例 2 - 建立 issue 時更新`, true, testName);
+    const issue1 = {
+      issueId: 'issue-1',
+      issueTitle: 'Issue 1',
+      issueDescription: 'Description 1',
+      rounds: [],
+      finalDecision: null,
+      completedAt: null
+    };
+    
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 1,
+        issues: [issue1]
+      });
+      
+      const history2 = getHistory();
+    const meetingRecord2 = history2.find(r => r.meetingId === meetingId);
+    assert(meetingRecord2.issues.length === 1, testName, '測試案例 2.1: issue 已新增');
+    assert(meetingRecord2.issues[0].issueId === 'issue-1', testName, '測試案例 2.2: issue ID 正確');
+    assert(meetingRecord2.issues[0].issueTitle === 'Issue 1', testName, '測試案例 2.3: issue 標題正確');
+    assert(meetingRecord2.participants === 1, testName, '測試案例 2.4: 參與者數量已更新');
+    
+    // === 測試案例 3: 翻牌時更新輪次結果 ===
+    addTestResult(`${testName}: 測試案例 3 - 翻牌時更新輪次結果`, true, testName);
+    const round1 = {
+      roundNumber: 1,
+      results: [
+        { name: 'Participant1', card: '8' },
+        { name: 'Participant2', card: '13' }
+      ],
+      completedAt: new Date().toISOString()
+    };
+    
+    const issue1WithRound = {
+      ...issue1,
+      rounds: [round1]
+    };
+    
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 2,
+        issues: [issue1WithRound]
+      });
+      
+      const history3 = getHistory();
+    const meetingRecord3 = history3.find(r => r.meetingId === meetingId);
+    assert(meetingRecord3.issues[0].rounds.length === 1, testName, '測試案例 3.1: 輪次已新增');
+    assert(meetingRecord3.issues[0].rounds[0].roundNumber === 1, testName, '測試案例 3.2: 輪次編號正確');
+    assert(meetingRecord3.issues[0].rounds[0].results.length === 2, testName, '測試案例 3.3: 結果數量正確');
+    assert(meetingRecord3.participants === 2, testName, '測試案例 3.4: 參與者數量已更新');
+    
+    // === 測試案例 4: 新的一輪時更新 ===
+    addTestResult(`${testName}: 測試案例 4 - 新的一輪時更新`, true, testName);
+    const round2 = {
+      roundNumber: 2,
+      results: [
+        { name: 'Participant1', card: '5' },
+        { name: 'Participant2', card: '8' }
+      ],
+      completedAt: new Date().toISOString()
+    };
+    
+    const issue1WithTwoRounds = {
+      ...issue1,
+      rounds: [round1, round2]
+    };
+    
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 2,
+        issues: [issue1WithTwoRounds]
+      });
+      
+      const history4 = getHistory();
+    const meetingRecord4 = history4.find(r => r.meetingId === meetingId);
+    assert(meetingRecord4.issues[0].rounds.length === 2, testName, '測試案例 4.1: 有兩個輪次');
+    assert(meetingRecord4.issues[0].rounds[1].roundNumber === 2, testName, '測試案例 4.2: 第二輪編號正確');
+    
+    // === 測試案例 5: 完成 issue 時更新 ===
+    addTestResult(`${testName}: 測試案例 5 - 完成 issue 時更新`, true, testName);
+    const completedIssue1 = {
+      ...issue1WithTwoRounds,
+      finalDecision: '8',
+      completedAt: new Date().toISOString()
+    };
+    
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 2,
+        issues: [completedIssue1]
+      });
+      
+      const history5 = getHistory();
+    const meetingRecord5 = history5.find(r => r.meetingId === meetingId);
+    assert(meetingRecord5.issues[0].finalDecision === '8', testName, '測試案例 5.1: 最終決定已設定');
+    assert(meetingRecord5.issues[0].completedAt !== null, testName, '測試案例 5.2: 完成時間已設定');
+    
+    // === 測試案例 6: 多個 issue ===
+    addTestResult(`${testName}: 測試案例 6 - 多個 issue`, true, testName);
+    const issue2 = {
+      issueId: 'issue-2',
+      issueTitle: 'Issue 2',
+      issueDescription: 'Description 2',
+      rounds: [],
+      finalDecision: null,
+      completedAt: null
+    };
+    
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 2,
+        issues: [completedIssue1, issue2]
+      });
+      
+      const history6 = getHistory();
+    const meetingRecord6 = history6.find(r => r.meetingId === meetingId);
+    assert(meetingRecord6.issues.length === 2, testName, '測試案例 6.1: 有兩個 issue');
+    assert(meetingRecord6.issues[1].issueId === 'issue-2', testName, '測試案例 6.2: 第二個 issue ID 正確');
+    
+    // === 測試案例 7: 參與者變更時更新 ===
+    addTestResult(`${testName}: 測試案例 7 - 參與者變更時更新`, true, testName);
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 3, // 參與者數量變更
+        issues: [completedIssue1, issue2]
+      });
+      
+      const history7 = getHistory();
+    const meetingRecord7 = history7.find(r => r.meetingId === meetingId);
+    assert(meetingRecord7.participants === 3, testName, '測試案例 7.1: 參與者數量已更新');
+    
+    // === 測試案例 8: 會議結束時標記完成 ===
+    addTestResult(`${testName}: 測試案例 8 - 會議結束時標記完成`, true, testName);
+    const completedAt = new Date().toISOString();
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName,
+        participants: 3,
+        issues: [completedIssue1, issue2],
+        completedAt: completedAt
+      });
+      
+      const history8 = getHistory();
+    const meetingRecord8 = history8.find(r => r.meetingId === meetingId);
+    assert(meetingRecord8.completedAt === completedAt, testName, '測試案例 8.1: 會議完成時間已設定');
+    
+      // === 測試案例 9: 驗證資料完整性 ===
+      addTestResult(`${testName}: 測試案例 9 - 驗證資料完整性`, true, testName);
+      const finalHistory = getHistory();
+      const finalRecord = finalHistory.find(r => r.meetingId === meetingId);
+      
+      assert(finalRecord !== undefined, testName, '測試案例 9.1: 會議記錄存在');
+      assert(finalRecord.mode === 'host', testName, '測試案例 9.2: 模式正確');
+      assert(finalRecord.issues.length === 2, testName, '測試案例 9.3: issue 數量正確');
+      assert(finalRecord.issues[0].rounds.length === 2, testName, '測試案例 9.4: 第一個 issue 的輪次數量正確');
+      assert(finalRecord.issues[0].rounds[0].results.length === 2, testName, '測試案例 9.5: 第一輪結果數量正確');
+      
+      addTestResult(`${testName}: 所有測試案例完成`, true, testName);
+      
+    } finally {
+      // 恢復原始 storage
+      resetStorage();
+    }
     
   } catch (error) {
     addTestResult(`${testName}: ${error.message}`, false, testName);
-    console.error('WebRTC 測試錯誤:', error);
+    console.error('會議記錄儲存測試錯誤:', error);
     console.error('錯誤堆疊:', error.stack);
+    // 確保在錯誤時也恢復 storage
+    resetStorage();
+  }
+}
+
+/**
+ * 測試會議名稱重新命名功能
+ */
+async function testRenameMeeting() {
+  const testName = '會議名稱重新命名測試';
+  
+  try {
+    addTestResult(`${testName}: 開始測試...`, true, testName);
+    
+    // 使用 Mock Storage 避免影響實際環境
+    const mockStorage = createMockStorage();
+    setStorage(mockStorage);
+    
+    try {
+      // === 測試案例 1: 建立會議時設定名稱 ===
+      addTestResult(`${testName}: 測試案例 1 - 建立會議時設定名稱`, true, testName);
+      const meetingId = 'TEST-RENAME-001';
+      const initialName = '初始會議名稱';
+      
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName: initialName,
+        participants: 0,
+        issues: []
+      });
+      
+      const history1 = getHistory();
+    const record1 = history1.find(r => r.meetingId === meetingId);
+    assert(record1 !== undefined, testName, '測試案例 1.1: 會議記錄已建立');
+    assert(record1.meetingName === initialName, testName, '測試案例 1.2: 初始會議名稱正確');
+    
+    // === 測試案例 2: 會議中修改會議名稱 ===
+    addTestResult(`${testName}: 測試案例 2 - 會議中修改會議名稱`, true, testName);
+    const newName1 = '修改後的會議名稱';
+    
+      addHistory({
+        mode: 'host',
+        meetingId,
+        meetingName: newName1,
+        participants: 2,
+        issues: []
+      });
+      
+      const history2 = getHistory();
+    const record2 = history2.find(r => r.meetingId === meetingId);
+    assert(record2.meetingName === newName1, testName, '測試案例 2.1: 會議名稱已更新');
+    assert(record2.participants === 2, testName, '測試案例 2.2: 其他資料未受影響');
+    
+    // === 測試案例 3: 再次修改會議名稱 ===
+    addTestResult(`${testName}: 測試案例 3 - 再次修改會議名稱`, true, testName);
+    const newName2 = '第二次修改的名稱';
+    
+      addHistory({
+      mode: 'host',
+      meetingId,
+      meetingName: newName2,
+      participants: 2,
+      issues: []
+    });
+    
+      const history3 = getHistory();
+    const record3 = history3.find(r => r.meetingId === meetingId);
+    assert(record3.meetingName === newName2, testName, '測試案例 3.1: 會議名稱再次更新');
+    
+    // === 測試案例 4: 將會議名稱設為空（使用會議 ID） ===
+    addTestResult(`${testName}: 測試案例 4 - 將會議名稱設為空`, true, testName);
+    
+      addHistory({
+      mode: 'host',
+      meetingId,
+      meetingName: '',
+      participants: 2,
+      issues: []
+    });
+    
+      const history4 = getHistory();
+    const record4 = history4.find(r => r.meetingId === meetingId);
+    assert(record4.meetingName === null, testName, '測試案例 4.1: 空字串應轉換為 null');
+    
+    // === 測試案例 5: 會議結束後修改會議名稱 ===
+    addTestResult(`${testName}: 測試案例 5 - 會議結束後修改會議名稱`, true, testName);
+    const completedAt = new Date().toISOString();
+    const finalName = '會議結束後的名稱';
+    
+      addHistory({
+      mode: 'host',
+      meetingId,
+      meetingName: finalName,
+      participants: 2,
+      issues: [
+        {
+          issueId: 'issue-1',
+          issueTitle: 'Issue 1',
+          issueDescription: 'Description 1',
+          rounds: [],
+          finalDecision: '8',
+          completedAt: completedAt
+        }
+      ],
+      completedAt: completedAt
+    });
+    
+      const history5 = getHistory();
+    const record5 = history5.find(r => r.meetingId === meetingId);
+    assert(record5.meetingName === finalName, testName, '測試案例 5.1: 會議結束後名稱已更新');
+    assert(record5.completedAt === completedAt, testName, '測試案例 5.2: 完成時間正確');
+    assert(record5.issues.length === 1, testName, '測試案例 5.3: Issue 資料未受影響');
+    
+    // === 測試案例 6: 只更新會議名稱，不影響其他資料 ===
+    addTestResult(`${testName}: 測試案例 6 - 只更新會議名稱，不影響其他資料`, true, testName);
+    const nameOnly = '僅更新名稱';
+    
+    // 先建立一個有完整資料的記錄
+      addHistory({
+      mode: 'host',
+      meetingId: 'TEST-RENAME-002',
+      meetingName: '原始名稱',
+      participants: 3,
+      issues: [
+        {
+          issueId: 'issue-1',
+          issueTitle: 'Issue 1',
+          rounds: [{ roundNumber: 1, results: [{ name: 'User1', card: '5' }] }],
+          finalDecision: '5',
+          completedAt: completedAt
+        }
+      ],
+      completedAt: completedAt
+    });
+    
+    // 只更新會議名稱
+      addHistory({
+      mode: 'host',
+      meetingId: 'TEST-RENAME-002',
+      meetingName: nameOnly,
+      participants: 3,
+      issues: [
+        {
+          issueId: 'issue-1',
+          issueTitle: 'Issue 1',
+          rounds: [{ roundNumber: 1, results: [{ name: 'User1', card: '5' }] }],
+          finalDecision: '5',
+          completedAt: completedAt
+        }
+      ],
+      completedAt: completedAt
+    });
+    
+      const history6 = getHistory();
+    const record6 = history6.find(r => r.meetingId === 'TEST-RENAME-002');
+    assert(record6.meetingName === nameOnly, testName, '測試案例 6.1: 會議名稱已更新');
+    assert(record6.participants === 3, testName, '測試案例 6.2: 參與者數量未變');
+    assert(record6.issues.length === 1, testName, '測試案例 6.3: Issue 數量未變');
+    assert(record6.issues[0].issueId === 'issue-1', testName, '測試案例 6.4: Issue ID 未變');
+    assert(record6.issues[0].rounds.length === 1, testName, '測試案例 6.5: 輪次資料未變');
+    assert(record6.completedAt === completedAt, testName, '測試案例 6.6: 完成時間未變');
+    
+      addTestResult(`${testName}: 所有測試案例完成`, true, testName);
+      
+    } finally {
+      // 恢復原始 storage
+      resetStorage();
+    }
+    
+  } catch (error) {
+    addTestResult(`${testName}: ${error.message}`, false, testName);
+    console.error('會議名稱重新命名測試錯誤:', error);
+    console.error('錯誤堆疊:', error.stack);
+    // 確保在錯誤時也恢復 storage
+    resetStorage();
+  }
+}
+
+/**
+ * 測試從歷史記錄重新開啟會議功能
+ */
+async function testReopenMeeting() {
+  const testName = '重新開啟會議測試';
+  
+  try {
+    addTestResult(`${testName}: 開始測試...`, true, testName);
+    
+    // 使用 Mock Storage 避免影響實際環境
+    const mockStorage = createMockStorage();
+    setStorage(mockStorage);
+    
+    try {
+      // === 測試案例 1: 建立一個有已完成 Issue 的會議記錄 ===
+      addTestResult(`${testName}: 測試案例 1 - 建立有已完成 Issue 的會議記錄`, true, testName);
+      const meetingId = 'TEST-REOPEN-001';
+      const meetingName = '測試會議';
+      const completedAt = new Date().toISOString();
+      
+      addHistory({
+      mode: 'host',
+      meetingId,
+      meetingName,
+      participants: 2,
+      issues: [
+        {
+          issueId: 'issue-1',
+          issueTitle: 'Issue 1',
+          issueDescription: 'Description 1',
+          rounds: [
+            {
+              roundNumber: 1,
+              results: [
+                { name: 'User1', card: '5' },
+                { name: 'User2', card: '8' }
+              ],
+              average: 6.5,
+              highest: 8,
+              lowest: 5
+            }
+          ],
+          finalDecision: '8',
+          completedAt: completedAt
+        }
+      ],
+      completedAt: completedAt
+    });
+    
+      const history1 = getHistory();
+    const record1 = history1.find(r => r.meetingId === meetingId);
+    assert(record1 !== undefined, testName, '測試案例 1.1: 會議記錄已建立');
+    assert(record1.issues.length === 1, testName, '測試案例 1.2: Issue 數量正確');
+    assert(record1.issues[0].finalDecision === '8', testName, '測試案例 1.3: Issue 已完成');
+    
+    // === 測試案例 2: 模擬重新開啟會議，Issue 應重置為未開始 ===
+    addTestResult(`${testName}: 測試案例 2 - 重新開啟會議，Issue 重置為未開始`, true, testName);
+    
+    // 模擬重新開啟會議的資料轉換（保留歷史輪次）
+    const restoreData = {
+      meetingId: record1.meetingId,
+      meetingName: record1.meetingName,
+      issues: record1.issues.map(issue => {
+        return {
+          id: issue.issueId,
+          title: issue.issueTitle,
+          description: issue.issueDescription || '',
+          status: 'notStarted', // 重置為未開始，允許重新估點
+          rounds: issue.rounds ? issue.rounds.map(round => ({
+            roundNumber: round.roundNumber,
+            results: round.results ? round.results.map(r => ({
+              name: r.name,
+              card: r.card
+            })) : [],
+            completedAt: round.completedAt || null
+          })) : [], // 保留所有歷史輪次
+          finalDecision: issue.finalDecision || null, // 保留最終決定（作為參考）
+          completedAt: null // 清除完成時間，允許重新估點
+        };
+      })
+    };
+    
+    assert(restoreData.issues.length === 1, testName, '測試案例 2.1: Issue 數量正確');
+    assert(restoreData.issues[0].status === 'notStarted', testName, '測試案例 2.2: Issue 狀態重置為未開始');
+    assert(restoreData.issues[0].rounds.length === 1, testName, '測試案例 2.3: 輪次已保留');
+    assert(restoreData.issues[0].rounds[0].roundNumber === 1, testName, '測試案例 2.4: 輪次編號正確');
+    assert(restoreData.issues[0].rounds[0].results.length === 2, testName, '測試案例 2.5: 輪次結果已保留');
+    assert(restoreData.issues[0].finalDecision === '8', testName, '測試案例 2.6: 最終決定已保留（作為參考）');
+    assert(restoreData.issues[0].completedAt === null, testName, '測試案例 2.7: 完成時間已清除');
+    assert(restoreData.issues[0].id === 'issue-1', testName, '測試案例 2.8: Issue ID 保持不變');
+    assert(restoreData.issues[0].title === 'Issue 1', testName, '測試案例 2.9: Issue 標題保持不變');
+    assert(restoreData.issues[0].description === 'Description 1', testName, '測試案例 2.10: Issue 描述保持不變');
+    
+    // === 測試案例 3: 重新開啟有未完成 Issue 的會議 ===
+    addTestResult(`${testName}: 測試案例 3 - 重新開啟有未完成 Issue 的會議`, true, testName);
+    
+      addHistory({
+      mode: 'host',
+      meetingId: 'TEST-REOPEN-002',
+      meetingName: '測試會議 2',
+      participants: 1,
+      issues: [
+        {
+          issueId: 'issue-2',
+          issueTitle: 'Issue 2',
+          issueDescription: 'Description 2',
+          rounds: [],
+          finalDecision: null,
+          completedAt: null
+        }
+      ],
+      completedAt: null
+    });
+    
+      const history2 = getHistory();
+    const record2 = history2.find(r => r.meetingId === 'TEST-REOPEN-002');
+    assert(record2 !== undefined, testName, '測試案例 3.1: 會議記錄已建立');
+    assert(record2.issues.length === 1, testName, '測試案例 3.2: Issue 數量正確');
+    assert(record2.issues[0].finalDecision === null, testName, '測試案例 3.3: Issue 未完成');
+    
+    // 模擬重新開啟（保留歷史輪次）
+    const restoreData2 = {
+      meetingId: record2.meetingId,
+      meetingName: record2.meetingName,
+      issues: record2.issues.map(issue => {
+        return {
+          id: issue.issueId,
+          title: issue.issueTitle,
+          description: issue.issueDescription || '',
+          status: 'notStarted',
+          rounds: issue.rounds ? issue.rounds.map(round => ({
+            roundNumber: round.roundNumber,
+            results: round.results ? round.results.map(r => ({
+              name: r.name,
+              card: r.card
+            })) : [],
+            completedAt: round.completedAt || null
+          })) : [],
+          finalDecision: issue.finalDecision || null,
+          completedAt: null
+        };
+      })
+    };
+    
+    assert(restoreData2.issues[0].status === 'notStarted', testName, '測試案例 3.4: 未完成的 Issue 也重置為未開始');
+    assert(restoreData2.issues[0].rounds.length === 0, testName, '測試案例 3.5: 未完成的 Issue 沒有輪次');
+    
+    // === 測試案例 4: 重新開啟有多個 Issue 的會議 ===
+    addTestResult(`${testName}: 測試案例 4 - 重新開啟有多個 Issue 的會議`, true, testName);
+    
+      addHistory({
+      mode: 'host',
+      meetingId: 'TEST-REOPEN-003',
+      meetingName: '測試會議 3',
+      participants: 3,
+      issues: [
+        {
+          issueId: 'issue-3',
+          issueTitle: 'Issue 3',
+          issueDescription: 'Description 3',
+          rounds: [{ roundNumber: 1, results: [{ name: 'User1', card: '5' }] }],
+          finalDecision: '5',
+          completedAt: completedAt
+        },
+        {
+          issueId: 'issue-4',
+          issueTitle: 'Issue 4',
+          issueDescription: 'Description 4',
+          rounds: [],
+          finalDecision: null,
+          completedAt: null
+        }
+      ],
+      completedAt: completedAt
+    });
+    
+      const history3 = getHistory();
+    const record3 = history3.find(r => r.meetingId === 'TEST-REOPEN-003');
+    assert(record3 !== undefined, testName, '測試案例 4.1: 會議記錄已建立');
+    assert(record3.issues.length === 2, testName, '測試案例 4.2: 有兩個 Issue');
+    
+    // 模擬重新開啟（保留歷史輪次）
+    const restoreData3 = {
+      meetingId: record3.meetingId,
+      meetingName: record3.meetingName,
+      issues: record3.issues.map(issue => {
+        return {
+          id: issue.issueId,
+          title: issue.issueTitle,
+          description: issue.issueDescription || '',
+          status: 'notStarted',
+          rounds: issue.rounds ? issue.rounds.map(round => ({
+            roundNumber: round.roundNumber,
+            results: round.results ? round.results.map(r => ({
+              name: r.name,
+              card: r.card
+            })) : [],
+            completedAt: round.completedAt || null
+          })) : [],
+          finalDecision: issue.finalDecision || null,
+          completedAt: null
+        };
+      })
+    };
+    
+    assert(restoreData3.issues.length === 2, testName, '測試案例 4.3: 兩個 Issue 都恢復');
+    assert(restoreData3.issues[0].status === 'notStarted', testName, '測試案例 4.4: 第一個 Issue 重置為未開始');
+    assert(restoreData3.issues[1].status === 'notStarted', testName, '測試案例 4.5: 第二個 Issue 重置為未開始');
+    assert(restoreData3.issues[0].rounds.length === 1, testName, '測試案例 4.6: 第一個 Issue 的輪次已保留');
+    assert(restoreData3.issues[0].rounds[0].results.length === 1, testName, '測試案例 4.7: 第一個 Issue 的輪次結果已保留');
+    assert(restoreData3.issues[1].rounds.length === 0, testName, '測試案例 4.8: 第二個 Issue 沒有輪次');
+    
+      addTestResult(`${testName}: 所有測試案例完成`, true, testName);
+      
+    } finally {
+      // 恢復原始 storage
+      resetStorage();
+    }
+    
+  } catch (error) {
+    addTestResult(`${testName}: ${error.message}`, false, testName);
+    console.error('重新開啟會議測試錯誤:', error);
+    console.error('錯誤堆疊:', error.stack);
+    // 確保在錯誤時也恢復 storage
+    resetStorage();
   }
 }
 

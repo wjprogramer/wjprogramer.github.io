@@ -45,7 +45,7 @@ export function renderHost() {
         <a href="#/" class="btn btn-ghost" id="back-btn">
           ← <span data-i18n="common.back">返回</span>
         </a>
-        <div class="logo" data-i18n="host.title">建立房間</div>
+        <div class="logo" id="page-title" data-i18n="host.title">建立房間</div>
               <div class="header-actions">
                 <div class="lang-dropdown-container">
                   <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
@@ -96,7 +96,7 @@ export function renderHost() {
                 maxlength="50"
                 autocomplete="off"
               >
-              <p class="form-hint" data-i18n="host.meetingNameHint">留空將使用會議 ID 作為名稱</p>
+              <p class="form-hint" data-i18n="host.meetingNameHint">留空將使用會議 ID 作為預設名稱，後續仍可修改</p>
             </div>
             
             <div class="form-group">
@@ -130,8 +130,13 @@ export function renderHost() {
           <!-- 會議資訊區 -->
           <div class="meeting-info-section">
             <div class="meeting-info-card">
-              <div id="meeting-name-display" class="meeting-name-display hidden">
-                <span class="meeting-name-value" id="meeting-name">-</span>
+              <div id="meeting-name-display" class="meeting-name-display">
+                <div style="display: flex; align-items: center; justify-content: center; gap: var(--spacing-sm);">
+                  <span class="meeting-name-value" id="meeting-name">-</span>
+                  <button class="btn btn-ghost btn-sm" id="rename-meeting-btn" title="重新命名會議">
+                    ✏️
+                  </button>
+                </div>
               </div>
               <div class="meeting-id-display">
                 <span class="meeting-id-label" data-i18n="host.meetingId">會議 ID</span>
@@ -174,20 +179,6 @@ export function renderHost() {
               </div>
             </div>
             
-            <!-- 當前選中的 Issue 資訊 -->
-            <div id="current-issue-info" class="current-issue-info hidden">
-              <div class="current-issue-header">
-                <h4>
-                  <span data-i18n="host.currentIssue">當前 Issue</span>: 
-                  <span id="current-issue-title" class="issue-title-display">-</span>
-                </h4>
-                <span id="current-issue-status" class="issue-status-badge"></span>
-              </div>
-              <p class="issue-description" id="issue-description"></p>
-              <p class="issue-round-info">
-                <span data-i18n="host.roundNumber">輪次</span>: <span id="current-round-number">1</span>
-              </p>
-            </div>
           </div>
           
           <!-- 參與者區 -->
@@ -233,39 +224,49 @@ export function renderHost() {
           
           <!-- 結果區 -->
           <div class="results-section hidden" id="results-section">
-            <div class="section-header">
-              <h3 data-i18n="host.stats.title">估點結果</h3>
+            <!-- 單人模式：卡片翻牌顯示 -->
+            <div id="solo-reveal-container" class="solo-reveal-container hidden">
+              <div class="reveal-card-wrapper" id="host-reveal-card-wrapper">
+                <!-- 卡片會在這裡顯示 -->
+              </div>
             </div>
             
-            <div class="results-stats" id="results-stats">
-              <!-- 統計資訊會在這裡顯示 -->
-            </div>
-            
-            <div class="results-cards" id="results-cards">
-              <!-- 結果卡片會在這裡顯示 -->
-            </div>
-            
-            <!-- 統計圖表 -->
-            <div id="chart-container" class="chart-container hidden">
-              <canvas id="results-chart"></canvas>
-            </div>
-            
-            <!-- 極端值分析 -->
-            <div id="extreme-values-section" class="extreme-values-section hidden">
-              <h4 data-i18n="host.extremeValues">極端值</h4>
-              <div id="extreme-values-display"></div>
-            </div>
-            
-            <!-- Host 最終決定 -->
-            <div id="final-decision-section" class="final-decision-section hidden">
-              <h4 data-i18n="host.finalDecision">最終決定</h4>
-              <div id="final-decision-options"></div>
+            <!-- 多人模式：統計結果顯示 -->
+            <div id="multi-results-container" class="multi-results-container hidden">
+              <div class="section-header">
+                <h3 data-i18n="host.stats.title">估點結果</h3>
+              </div>
+              
+              <div class="results-stats" id="results-stats">
+                <!-- 統計資訊會在這裡顯示 -->
+              </div>
+              
+              <div class="results-cards" id="results-cards">
+                <!-- 結果卡片會在這裡顯示 -->
+              </div>
+              
+              <!-- 統計圖表 -->
+              <div id="chart-container" class="chart-container hidden">
+                <canvas id="results-chart"></canvas>
+              </div>
+              
+              <!-- 極端值分析 -->
+              <div id="extreme-values-section" class="extreme-values-section hidden">
+                <h4 data-i18n="host.extremeValues">極端值</h4>
+                <div id="extreme-values-display"></div>
+              </div>
+              
+              <!-- Host 最終決定 -->
+              <div id="final-decision-section" class="final-decision-section hidden">
+                <h4 data-i18n="host.finalDecision">最終決定</h4>
+                <div id="final-decision-options"></div>
+              </div>
             </div>
           </div>
           
           <!-- 結束會議按鈕 -->
           <div class="close-meeting-section">
-            <button class="btn btn-ghost btn-danger" id="close-meeting-btn">
+            <button class="btn btn-danger" id="close-meeting-btn">
               <span data-i18n="host.closeMeeting">結束會議</span>
             </button>
           </div>
@@ -300,15 +301,26 @@ export function renderHost() {
       
       /* 設定表單 */
       .setup-card {
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl);
         max-width: 500px;
         margin: 0 auto;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       .setup-card h2 {
         margin-bottom: var(--spacing-lg);
+        text-align: center;
+      }
+      
+      .setup-card .btn-block {
+        width: 100%;
+        display: block;
+      }
+      
+      .setup-card .btn {
         text-align: center;
       }
       
@@ -361,8 +373,10 @@ export function renderHost() {
       .host-card-selection {
         margin-bottom: var(--spacing-lg);
         padding: var(--spacing-lg);
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       .host-selection-header {
@@ -377,6 +391,7 @@ export function renderHost() {
       
       .host-cards-container {
         margin-top: var(--spacing-md);
+        padding: 0 var(--spacing-md);
       }
       
       /* 會議資訊區 */
@@ -385,10 +400,12 @@ export function renderHost() {
       }
       
       .meeting-info-card {
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl);
         text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       .meeting-name-display {
@@ -461,9 +478,11 @@ export function renderHost() {
       /* Issue 管理區 */
       .issue-section {
         margin-bottom: var(--spacing-xl);
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: var(--spacing-lg);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       .issue-section .section-header {
@@ -517,15 +536,22 @@ export function renderHost() {
       }
       
       .issue-item.selected {
-        border-color: var(--color-primary);
-        background: var(--color-bg-secondary);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        border-color: var(--color-success);
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--color-text-primary);
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
         cursor: default;
+      }
+      
+      .issue-item.selected .issue-item-title {
+        color: var(--color-success);
+        font-weight: 600;
       }
       
       .issue-item.selected:hover {
         transform: none;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        opacity: 0.95;
       }
       
       .issue-item.selected .select-issue-btn {
@@ -666,25 +692,6 @@ export function renderHost() {
         font-size: var(--font-size-base);
       }
       
-      .current-issue-info {
-        margin-top: var(--spacing-lg);
-        padding: var(--spacing-md);
-        background: var(--color-bg-primary);
-        border-radius: var(--radius-md);
-        border: 2px solid var(--color-primary);
-      }
-      
-      .current-issue-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: var(--spacing-sm);
-      }
-      
-      .current-issue-header h4 {
-        margin: 0;
-        color: var(--color-text-primary);
-      }
       
       /* 參與者區 */
       .participants-section {
@@ -701,10 +708,12 @@ export function renderHost() {
       }
       
       .participants-list {
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: var(--spacing-md);
         min-height: 100px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       .empty-state {
@@ -802,10 +811,12 @@ export function renderHost() {
       }
       
       .stat-card {
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         padding: var(--spacing-md);
         text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       }
       
       .stat-label {
@@ -828,12 +839,132 @@ export function renderHost() {
         justify-content: center;
       }
       
+      /* 單人模式卡片翻牌顯示 */
+      .solo-reveal-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-xl);
+        min-height: 400px;
+      }
+      
+      .reveal-card-wrapper {
+        width: 180px;
+        height: 252px;
+        margin: var(--spacing-xl) 0;
+        perspective: 1000px;
+      }
+      
+      .reveal-card {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .reveal-card.flipped {
+        transform: rotateY(180deg);
+      }
+      
+      .reveal-card .card-face {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+        border-radius: var(--card-border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-bg);
+        border: var(--card-border);
+        box-shadow: var(--card-shadow-hover);
+        overflow: hidden;
+      }
+      
+      .reveal-card .card-front {
+        transform: rotateY(180deg);
+      }
+      
+      .reveal-card .card-back {
+        transform: rotateY(0deg);
+      }
+      
+      .reveal-card .card-value {
+        font-family: var(--font-display);
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: var(--color-text-primary);
+      }
+      
+      .reveal-card .card-front .card-value {
+        background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .reveal-card .card-holo {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--card-border-radius);
+        background: conic-gradient(
+          from 0deg,
+          var(--holo-color-1),
+          var(--holo-color-2),
+          var(--holo-color-3),
+          var(--holo-color-4),
+          var(--holo-color-5),
+          var(--holo-color-6),
+          var(--holo-color-1)
+        );
+        opacity: 0.2;
+        mix-blend-mode: color-dodge;
+        animation: holoRotate 4s linear infinite;
+      }
+      
+      /* Card back pattern */
+      .reveal-card .card-back {
+        background: 
+          repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(99, 102, 241, 0.1) 10px,
+            rgba(99, 102, 241, 0.1) 20px
+          ),
+          var(--card-bg);
+      }
+      
+      .reveal-card .card-back .card-value {
+        opacity: 0.6;
+      }
+      
+      .solo-no-card {
+        text-align: center;
+        padding: var(--spacing-xl);
+        color: var(--color-text-secondary);
+      }
+      
+      @media (max-width: 767px) {
+        .reveal-card-wrapper {
+          width: 150px;
+          height: 210px;
+        }
+        
+        .reveal-card .card-value {
+          font-size: 2.5rem;
+        }
+      }
+      
       .result-card-item {
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         padding: var(--spacing-md);
         text-align: center;
         min-width: 100px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       }
       
       .result-card-name {
@@ -877,8 +1008,10 @@ export function renderHost() {
       .extreme-values-section {
         margin-top: var(--spacing-lg);
         padding: var(--spacing-lg);
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       .extreme-values-section h4 {
@@ -914,8 +1047,10 @@ export function renderHost() {
       .final-decision-section {
         margin-top: var(--spacing-lg);
         padding: var(--spacing-lg);
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       .final-decision-section h4 {
@@ -1009,19 +1144,42 @@ export function renderHost() {
       
       .modal-header h3 {
         margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: 600;
         color: var(--color-text-primary);
+      }
+      
+      .modal-header .btn-ghost.btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-xl);
+        line-height: 1;
       }
       
       .modal-body {
         padding: var(--spacing-lg);
       }
       
+      .modal-body p {
+        margin: 0;
+        color: var(--color-text-primary);
+        line-height: 1.6;
+      }
+      
       .modal-footer {
         display: flex;
         justify-content: flex-end;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-md);
         padding: var(--spacing-lg);
         border-top: 1px solid var(--color-border);
+      }
+      
+      .modal-footer .btn {
+        min-width: 80px;
       }
       
       textarea.form-input {
@@ -1033,9 +1191,11 @@ export function renderHost() {
       .chart-container {
         margin-top: var(--spacing-lg);
         padding: var(--spacing-lg);
-        background: var(--color-bg-secondary);
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         height: 300px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       
       #results-chart {
@@ -1050,12 +1210,15 @@ export function renderHost() {
       }
       
       .btn-danger {
-        color: var(--color-error);
+        background: var(--color-error);
+        border-color: var(--color-error);
+        color: white;
       }
       
-      .btn-danger:hover {
+      .btn-danger:hover:not(:disabled) {
         background: var(--color-error);
         color: white;
+        opacity: 0.9;
       }
       
       @media (max-width: 767px) {
@@ -1090,6 +1253,22 @@ export function renderHost() {
   
   // 初始化 Issue 列表
   updateIssuesList();
+  
+  // 檢查是否有恢復會議的資料
+  const restoreDataStr = sessionStorage.getItem('restoreMeetingData');
+  if (restoreDataStr) {
+    try {
+      const restoreData = JSON.parse(restoreDataStr);
+      sessionStorage.removeItem('restoreMeetingData'); // 清除，避免重複使用
+      
+      // 自動恢復會議
+      restoreMeeting(restoreData);
+      return cleanup;
+    } catch (err) {
+      console.error('Failed to restore meeting:', err);
+      // 如果恢復失敗，繼續正常流程
+    }
+  }
   
   // 設定事件監聽
   setupEventListeners();
@@ -1208,6 +1387,11 @@ function setupEventListeners() {
     }
   });
   
+  // 重新命名會議按鈕
+  document.getElementById('rename-meeting-btn')?.addEventListener('click', () => {
+    showRenameMeetingModal();
+  });
+  
   // 開始估點
   document.getElementById('start-btn')?.addEventListener('click', () => {
     startEstimation();
@@ -1234,10 +1418,17 @@ function setupEventListeners() {
   });
   
   // 返回按鈕 - 確認是否結束會議
-  document.getElementById('back-btn')?.addEventListener('click', (e) => {
+  document.getElementById('back-btn')?.addEventListener('click', async (e) => {
     if (hostManager && hostManager.state === ConnectionState.CONNECTED) {
       e.preventDefault();
-      if (confirm(i18n.t('host.closeMeetingConfirm'))) {
+      const confirmed = await showConfirmModal({
+        title: i18n.t('common.confirm'),
+        message: i18n.t('host.closeMeetingConfirm'),
+        type: 'danger',
+        confirmText: 'common.confirm',
+        cancelText: 'common.cancel'
+      });
+      if (confirmed) {
         hostManager.closeMeeting();
         window.location.hash = '#/';
       }
@@ -1282,6 +1473,8 @@ async function createMeeting(name) {
       toastSuccess(`${participant.name} ${i18n.t('join.connected')}`);
       updateParticipantsList();
       updateControlButtons();
+      // 更新會議記錄（參與者加入時更新參與者數量）
+      saveMeetingToHistory();
     };
     
     hostManager.onParticipantLeave = (participant) => {
@@ -1289,11 +1482,15 @@ async function createMeeting(name) {
       toastWarning(`${participant.name} ${i18n.t('join.disconnected')}`);
       updateParticipantsList();
       updateControlButtons();
+      // 更新會議記錄（參與者離開時更新參與者數量）
+      saveMeetingToHistory();
     };
     
     hostManager.onParticipantUpdate = (participants) => {
       updateParticipantsList();
       updateControlButtons();
+      // 更新會議記錄（參與者更新時更新參與者數量）
+      saveMeetingToHistory();
     };
     
     hostManager.onCardSelect = (participant) => {
@@ -1309,21 +1506,25 @@ async function createMeeting(name) {
     // 建立會議室
     const meetingId = await hostManager.createMeeting();
     
+    // 如果沒有輸入會議名稱，預設使用會議 ID
+    if (!meetingName || meetingName.trim() === '') {
+      meetingName = meetingId;
+    }
+    
     // 更新 UI
     document.getElementById('creating-phase').classList.add('hidden');
     document.getElementById('meeting-phase').classList.remove('hidden');
     document.getElementById('meeting-id').textContent = meetingId;
     
-    // 顯示會議名稱（如果有）
+    // 建立會議記錄（在建立會議時就儲存）
+    saveMeetingToHistory();
+    
+    // 顯示會議名稱（始終顯示，預設為會議 ID）
     const meetingNameDisplay = document.getElementById('meeting-name-display');
     const meetingNameValue = document.getElementById('meeting-name');
     if (meetingNameDisplay && meetingNameValue) {
-      if (meetingName) {
-        meetingNameValue.textContent = meetingName;
-        meetingNameDisplay.classList.remove('hidden');
-      } else {
-        meetingNameDisplay.classList.add('hidden');
-      }
+      meetingNameValue.textContent = meetingName;
+      meetingNameDisplay.classList.remove('hidden');
     }
     
     // 生成 QR Code
@@ -1343,6 +1544,9 @@ async function createMeeting(name) {
       resultsSection.classList.add('hidden');
     }
     
+    // 更新頁面標題
+    updatePageTitle();
+    
     toastSuccess(i18n.t('host.created'));
     
   } catch (err) {
@@ -1356,6 +1560,126 @@ async function createMeeting(name) {
         <button class="btn btn-primary" onclick="location.reload()">重試</button>
       </div>
     `;
+  }
+}
+
+/**
+ * 從歷史記錄恢復會議
+ * @param {Object} restoreData - 恢復資料 { meetingId, meetingName, issues: [] }
+ */
+async function restoreMeeting(restoreData) {
+  try {
+    hostName = 'Host'; // 預設名稱，可以從設定中讀取
+    
+    // 更新 HostManager 的 hostName
+    hostManager.hostName = hostName;
+    
+    // 讀取 Host 是否參與估點（預設為 true）
+    hostParticipates = true;
+    
+    // 恢復會議名稱（如果沒有則使用會議 ID）
+    const restoredMeetingId = restoreData.meetingId;
+    meetingName = restoreData.meetingName || restoredMeetingId || '';
+    
+    // 恢復 Issue 列表
+    issues = restoreData.issues || [];
+    currentIssue = null;
+    currentRound = 1;
+    finalDecision = null;
+    hostSelectedCard = null;
+    currentResults = null;
+    
+    // 設定回調
+    hostManager.onStateChange = (state) => {
+      console.log('Host state changed:', state);
+    };
+    
+    hostManager.onParticipantJoin = (participant) => {
+      console.log('Participant joined:', participant);
+      toastSuccess(`${participant.name} ${i18n.t('join.connected')}`);
+      updateParticipantsList();
+      updateControlButtons();
+      saveMeetingToHistory();
+    };
+    
+    hostManager.onParticipantLeave = (participant) => {
+      console.log('Participant left:', participant);
+      toastWarning(`${participant.name} ${i18n.t('join.disconnected')}`);
+      updateParticipantsList();
+      updateControlButtons();
+      saveMeetingToHistory();
+    };
+    
+    hostManager.onParticipantUpdate = (participants) => {
+      updateParticipantsList();
+      updateControlButtons();
+      saveMeetingToHistory();
+    };
+    
+    hostManager.onCardSelect = (participant) => {
+      updateParticipantsList();
+      updateControlButtons();
+    };
+    
+    hostManager.onError = (err) => {
+      console.error('Host error:', err);
+      toastError(i18n.t('host.errors.connectionError'));
+    };
+    
+    // 建立新會議（會生成新的 meetingId）
+    const newMeetingId = await hostManager.createMeeting();
+    
+    // 更新 UI
+    document.getElementById('setup-phase').classList.add('hidden');
+    document.getElementById('creating-phase').classList.add('hidden');
+    document.getElementById('meeting-phase').classList.remove('hidden');
+    document.getElementById('meeting-id').textContent = newMeetingId;
+    
+    // 建立會議記錄（使用恢復的會議名稱）
+    saveMeetingToHistory();
+    
+    // 顯示會議名稱（始終顯示，如果沒有則使用會議 ID）
+    const meetingNameDisplay = document.getElementById('meeting-name-display');
+    const meetingNameValue = document.getElementById('meeting-name');
+    if (meetingNameDisplay && meetingNameValue) {
+      // 如果沒有會議名稱，使用會議 ID 作為預設值
+      if (!meetingName || meetingName.trim() === '') {
+        meetingName = newMeetingId;
+      }
+      meetingNameValue.textContent = meetingName;
+      meetingNameDisplay.classList.remove('hidden');
+    }
+    
+    // 生成 QR Code
+    const qrContainer = document.getElementById('qr-container');
+    await generateMeetingQRCode(qrContainer, newMeetingId);
+    
+    // 更新 Issue 列表
+    updateIssuesList();
+    updateIssueDisplay();
+    
+    // 初始化控制按鈕狀態
+    updateControlButtons();
+    
+    // 隱藏結果區域
+    const resultsSection = document.getElementById('results-section');
+    if (resultsSection) {
+      resultsSection.classList.add('hidden');
+    }
+    
+    // 更新頁面標題
+    updatePageTitle();
+    
+    toastSuccess(i18n.t('host.meetingRestored'));
+    
+  } catch (err) {
+    console.error('Failed to restore meeting:', err);
+    toastError(i18n.t('host.errors.restoreFailed'));
+    
+    // 如果恢復失敗，顯示設定表單
+    document.getElementById('setup-phase').classList.remove('hidden');
+    document.getElementById('creating-phase').classList.add('hidden');
+    document.getElementById('meeting-phase').classList.add('hidden');
   }
 }
 
@@ -1414,9 +1738,16 @@ function updateParticipantsList() {
   
   // 綁定踢除按鈕事件
   participantsList.querySelectorAll('.kick-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       const peerId = e.target.dataset.peerId;
-      if (confirm(i18n.t('host.kickConfirm'))) {
+      const confirmed = await showConfirmModal({
+        title: i18n.t('common.confirm'),
+        message: i18n.t('host.kickConfirm'),
+        type: 'warning',
+        confirmText: 'common.confirm',
+        cancelText: 'common.cancel'
+      });
+      if (confirmed) {
         hostManager.kickParticipant(peerId, false);
       }
     });
@@ -1560,6 +1891,10 @@ function startEstimation() {
   
   updateParticipantsList();
   updateControlButtons();
+  
+  // 更新會議記錄（開始估點時更新 issue 資訊）
+  saveMeetingToHistory();
+  
   toastSuccess(i18n.t('host.startEstimation'));
 }
 
@@ -1627,10 +1962,234 @@ function performFlipCards() {
   
   updateParticipantsList();
   updateControlButtons();
-  displayResults(currentResults);
   
-  // 儲存到歷史
-  saveToHistory(currentResults);
+  // 檢查是否只有 host 一個人參與
+  const participants = hostManager.getParticipants();
+  const isSoloMode = participants.length === 0 && hostParticipates && hostSelectedCard !== null;
+  
+  if (isSoloMode) {
+    // 單人模式：顯示卡片翻牌動畫
+    displaySoloReveal(currentResults);
+  } else {
+    // 多人模式：顯示統計結果
+    displayResults(currentResults);
+  }
+  
+  // 更新會議記錄（翻牌時更新輪次結果）
+  saveMeetingToHistory();
+}
+
+/**
+ * 顯示重新命名會議的 Modal
+ */
+function showRenameMeetingModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3 data-i18n="host.renameMeeting">重新命名會議</h3>
+        <button class="btn btn-ghost btn-icon" id="close-rename-meeting-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="rename-meeting-input" data-i18n="host.meetingName">會議名稱</label>
+          <input 
+            type="text" 
+            id="rename-meeting-input" 
+            class="form-input" 
+            placeholder="輸入會議名稱（選填）"
+            data-i18n-placeholder="host.meetingNamePlaceholder"
+            maxlength="50"
+            value="${escapeHtml(meetingName || '')}"
+            autocomplete="off"
+          >
+          <p class="form-hint" data-i18n="host.meetingNameHint">留空將使用會議 ID 作為預設名稱，後續仍可修改</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-rename-meeting-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-rename-meeting-btn" data-i18n="common.confirm">確認</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  i18n.applyTranslations();
+  
+  // 關閉按鈕
+  const closeBtn = modal.querySelector('#close-rename-meeting-modal');
+  const cancelBtn = modal.querySelector('#cancel-rename-meeting-btn');
+  const confirmBtn = modal.querySelector('#confirm-rename-meeting-btn');
+  const input = modal.querySelector('#rename-meeting-input');
+  
+  const closeModal = () => {
+    modal.classList.remove('active');
+    setTimeout(() => {
+      document.body.removeChild(modal);
+    }, 300);
+  };
+  
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  confirmBtn.addEventListener('click', () => {
+    const newName = input.value.trim();
+    renameMeeting(newName);
+    closeModal();
+  });
+  
+  // 聚焦輸入框
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 100);
+  
+  // 按 Enter 鍵確認
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmBtn.click();
+    }
+  });
+  
+  // 按 ESC 鍵取消
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
+}
+
+/**
+ * 重新命名會議
+ * @param {string} newName - 新的會議名稱
+ */
+function renameMeeting(newName) {
+  // 如果新名稱為空，使用會議 ID 作為預設值
+  if (!newName || newName.trim() === '') {
+    const meetingIdElement = document.getElementById('meeting-id');
+    meetingName = meetingIdElement ? meetingIdElement.textContent : '';
+  } else {
+    meetingName = newName;
+  }
+  
+  // 更新 UI（始終顯示）
+  const meetingNameDisplay = document.getElementById('meeting-name-display');
+  const meetingNameValue = document.getElementById('meeting-name');
+  if (meetingNameDisplay && meetingNameValue) {
+    meetingNameValue.textContent = meetingName;
+    meetingNameDisplay.classList.remove('hidden');
+  }
+  
+  // 更新會議記錄
+  saveMeetingToHistory();
+  
+  // 更新頁面標題
+  updatePageTitle();
+  
+  toastSuccess(i18n.t('host.meetingRenamed'));
+}
+
+/**
+ * 顯示確認 Modal
+ * @param {Object} options - 選項
+ * @param {string} options.title - 標題（或翻譯 key）
+ * @param {string} options.message - 訊息（或翻譯 key）
+ * @param {Function} options.onConfirm - 確認後的回調函數
+ * @param {string} options.type - 類型：'warning' | 'danger' | 'info'（預設 'warning'）
+ * @param {string} options.confirmText - 確認按鈕文字（或翻譯 key，預設 'common.confirm'）
+ * @param {string} options.cancelText - 取消按鈕文字（或翻譯 key，預設 'common.cancel'）
+ * @returns {Promise<boolean>} 返回 Promise，true 表示確認，false 表示取消
+ */
+function showConfirmModal({ title, message, onConfirm, type = 'warning', confirmText = 'common.confirm', cancelText = 'common.cancel' }) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop active';
+    
+    // 根據類型設定樣式
+    const typeClass = `confirm-modal-${type}`;
+    const confirmBtnClass = type === 'danger' ? 'btn-danger' : type === 'warning' ? 'btn-warning' : 'btn-primary';
+    
+    // 處理翻譯鍵
+    const titleText = typeof title === 'string' && (title.includes('.') && !title.includes(' ')) 
+      ? i18n.t(title) 
+      : escapeHtml(title);
+    const messageText = typeof message === 'string' && (message.includes('.') && !message.includes(' ')) 
+      ? i18n.t(message) 
+      : escapeHtml(message);
+    
+    modal.innerHTML = `
+      <div class="modal ${typeClass}">
+        <div class="modal-header">
+          <h3>${titleText}</h3>
+          <button class="btn btn-ghost btn-icon" id="close-confirm-modal">×</button>
+        </div>
+        <div class="modal-body">
+          <p>${messageText}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancel-confirm-btn">${i18n.t(cancelText)}</button>
+          <button class="btn ${confirmBtnClass}" id="confirm-confirm-btn">${i18n.t(confirmText)}</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 關閉按鈕
+    const closeBtn = modal.querySelector('#close-confirm-modal');
+    const cancelBtn = modal.querySelector('#cancel-confirm-btn');
+    const confirmBtn = modal.querySelector('#confirm-confirm-btn');
+    
+    const closeModal = () => {
+      modal.classList.remove('active');
+      setTimeout(() => {
+        document.body.removeChild(modal);
+      }, 300);
+    };
+    
+    const handleCancel = () => {
+      closeModal();
+      resolve(false);
+    };
+    
+    const handleConfirm = () => {
+      closeModal();
+      if (onConfirm) onConfirm();
+      resolve(true);
+    };
+    
+    closeBtn.addEventListener('click', handleCancel);
+    cancelBtn.addEventListener('click', handleCancel);
+    confirmBtn.addEventListener('click', handleConfirm);
+    
+    // 點擊背景關閉
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    });
+    
+    // 按 ESC 鍵取消
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        handleCancel();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+    
+    // 聚焦確認按鈕（危險操作聚焦取消按鈕）
+    setTimeout(() => {
+      if (type === 'danger') {
+        cancelBtn.focus();
+      } else {
+        confirmBtn.focus();
+      }
+    }, 100);
+  });
 }
 
 /**
@@ -1689,6 +2248,15 @@ function showUnselectedWarningModal(unselectedNames, onConfirm) {
       closeModal();
     }
   });
+  
+  // 按 ESC 鍵取消
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
 }
 
 /**
@@ -1728,16 +2296,41 @@ function newRound() {
   updateControlButtons();
   updateIssueDisplay();
   
+  // 更新會議記錄（新的一輪時更新輪次）
+  saveMeetingToHistory();
+  
   toastSuccess(i18n.t('host.newRound'));
 }
 
 /**
  * 結束會議
  */
-function closeMeeting() {
-  if (confirm(i18n.t('host.closeMeetingConfirm'))) {
-    // 保存所有 issue 到歷史記錄（包括未完成的）
-    saveAllIssuesToHistory();
+async function closeMeeting() {
+  const confirmed = await showConfirmModal({
+    title: i18n.t('common.confirm'),
+    message: i18n.t('host.closeMeetingConfirm'),
+    type: 'danger',
+    confirmText: 'common.confirm',
+    cancelText: 'common.cancel'
+  });
+  
+  if (confirmed) {
+    // 更新會議記錄（標記為已完成）
+    const meetingIdElement = document.getElementById('meeting-id');
+    if (meetingIdElement) {
+      const meetingId = meetingIdElement.textContent;
+      if (meetingId && meetingId !== '------') {
+        const history = getHistory();
+        const meetingRecord = history.find(r => r.meetingId === meetingId && r.mode === 'host' && r.issues);
+        if (meetingRecord) {
+          meetingRecord.completedAt = new Date().toISOString();
+          storage.set('history', history);
+        }
+      }
+    }
+    
+    // 最後一次更新會議記錄（確保所有資料都是最新的）
+    saveMeetingToHistory();
     
     hostManager.closeMeeting();
     window.location.hash = '#/';
@@ -1748,6 +2341,15 @@ function closeMeeting() {
  * 顯示結果
  */
 function displayResults(results) {
+  const resultsSection = document.getElementById('results-section');
+  const soloRevealContainer = document.getElementById('solo-reveal-container');
+  const multiResultsContainer = document.getElementById('multi-results-container');
+  
+  // 隱藏單人模式容器，顯示多人模式容器
+  if (soloRevealContainer) soloRevealContainer.classList.add('hidden');
+  if (multiResultsContainer) multiResultsContainer.classList.remove('hidden');
+  if (resultsSection) resultsSection.classList.remove('hidden');
+  
   const resultsStats = document.getElementById('results-stats');
   const resultsCards = document.getElementById('results-cards');
   const extremeValuesSection = document.getElementById('extreme-values-section');
@@ -1844,6 +2446,68 @@ function displayResults(results) {
     finalDecisionSection.classList.remove('hidden');
     displayFinalDecisionOptions(results, finalDecisionSection, average, numericResults);
   }
+  
+  i18n.applyTranslations();
+}
+
+/**
+ * 顯示單人模式的卡片翻牌動畫（類似簡易模式）
+ * @param {Array} results - 結果陣列（應該只有 host 自己的結果）
+ */
+function displaySoloReveal(results) {
+  const resultsSection = document.getElementById('results-section');
+  const soloRevealContainer = document.getElementById('solo-reveal-container');
+  const multiResultsContainer = document.getElementById('multi-results-container');
+  const revealCardWrapper = document.getElementById('host-reveal-card-wrapper');
+  
+  if (!resultsSection || !soloRevealContainer || !multiResultsContainer || !revealCardWrapper) return;
+  
+  // 隱藏多人模式容器，顯示單人模式容器
+  multiResultsContainer.classList.add('hidden');
+  soloRevealContainer.classList.remove('hidden');
+  resultsSection.classList.remove('hidden');
+  
+  // 找到 host 的結果
+  const hostResult = results.find(r => r.name === hostName);
+  if (!hostResult || !hostResult.card) {
+    // 如果沒有選擇卡片，顯示提示
+    revealCardWrapper.innerHTML = `
+      <div class="solo-no-card">
+        <p data-i18n="solo.noCardSelected">未選擇卡片</p>
+      </div>
+    `;
+    i18n.applyTranslations();
+    return;
+  }
+  
+  // 找到對應的卡片
+  const card = CARD_SET.find(c => c.value === hostResult.card);
+  if (!card) return;
+  
+  // 渲染卡片（背面朝上）
+  revealCardWrapper.innerHTML = `
+    <div class="reveal-card" id="host-reveal-card">
+      <div class="card-face card-front">
+        <div class="card-holo"></div>
+        <div class="card-content">
+          <span class="card-value">${card.label}</span>
+        </div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-content">
+          <span class="card-value">?</span>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // 觸發翻牌動畫
+  setTimeout(() => {
+    const revealCard = document.getElementById('host-reveal-card');
+    if (revealCard) {
+      revealCard.classList.add('flipped');
+    }
+  }, 300);
   
   i18n.applyTranslations();
 }
@@ -2141,26 +2805,6 @@ function setFinalDecision(value) {
 /**
  * 儲存到歷史
  */
-function saveToHistory(results) {
-  if (!currentIssue) return; // 沒有 issue 時不保存
-  
-  const meetingId = document.getElementById('meeting-id').textContent;
-  
-  addHistory({
-    mode: 'host',
-    meetingId,
-    meetingName: meetingName || null,
-    issueId: currentIssue.id,
-    issueTitle: currentIssue.title,
-    issueDescription: currentIssue.description,
-    roundNumber: currentRound,
-    results: results.map(r => ({
-      name: r.name,
-      card: r.card
-    })),
-    participants: results.length
-  });
-}
 
 /**
  * HTML 跳脫
@@ -2334,7 +2978,7 @@ function showCreateIssueModal() {
     modal.remove();
   });
   
-  document.getElementById('confirm-issue-btn')?.addEventListener('click', () => {
+  const confirmIssue = () => {
     const title = document.getElementById('issue-title-input').value.trim();
     if (!title) {
       toastError(i18n.t('host.messages.enterIssueTitle'));
@@ -2344,12 +2988,42 @@ function showCreateIssueModal() {
     const description = document.getElementById('issue-description-input').value.trim();
     createIssue(title, description);
     modal.remove();
-  });
+  };
+  
+  document.getElementById('confirm-issue-btn')?.addEventListener('click', confirmIssue);
   
   // 聚焦到標題輸入框
+  const titleInput = document.getElementById('issue-title-input');
+  const descriptionInput = document.getElementById('issue-description-input');
+  
   setTimeout(() => {
-    document.getElementById('issue-title-input')?.focus();
+    titleInput?.focus();
   }, 100);
+  
+  // 按 Enter 鍵確認（在標題輸入框時）
+  titleInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmIssue();
+    }
+  });
+  
+  // 在描述 textarea 中，Shift+Enter 換行，Enter 確認
+  descriptionInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      confirmIssue();
+    }
+  });
+  
+  // 按 ESC 鍵取消
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
 }
 
 /**
@@ -2379,6 +3053,9 @@ function createIssue(title, description = '', autoSelect = true) {
   
   issues.push(newIssue);
   storage.set('issues', issues);
+  
+  // 更新會議記錄（新增 issue）
+  saveMeetingToHistory();
   
   // 如果自動選擇，選擇新建立的 Issue
   if (autoSelect) {
@@ -2416,7 +3093,7 @@ function createIssue(title, description = '', autoSelect = true) {
 /**
  * 選擇 Issue
  */
-function selectIssue(issueId) {
+async function selectIssue(issueId) {
   const issue = issues.find(i => i.id === issueId);
   if (!issue) return;
   
@@ -2427,7 +3104,14 @@ function selectIssue(issueId) {
   
   // 如果當前有正在進行的估點，先完成或重置
   if (currentIssue && currentIssue.status === 'inProgress') {
-    if (!confirm(i18n.t('host.messages.switchIssueConfirm'))) {
+    const confirmed = await showConfirmModal({
+      title: i18n.t('common.confirm'),
+      message: i18n.t('host.messages.switchIssueConfirm'),
+      type: 'warning',
+      confirmText: 'common.confirm',
+      cancelText: 'common.cancel'
+    });
+    if (!confirmed) {
       return;
     }
     // 重置當前估點狀態
@@ -2510,7 +3194,9 @@ function updateIssuesList() {
       <div class="issue-item ${isSelected ? 'selected' : ''}" data-issue-id="${issue.id}">
         <div class="issue-item-header">
           <div class="issue-title-wrapper">
-            <h4 class="issue-item-title">${escapeHtml(issue.title)}</h4>
+            <h4 class="issue-item-title">
+              ${escapeHtml(issue.title)}
+            </h4>
             <button class="btn btn-ghost btn-icon btn-sm rename-issue-btn" data-issue-id="${issue.id}" title="${i18n.t('host.renameIssue')}">
               ✏️
             </button>
@@ -2518,6 +3204,11 @@ function updateIssuesList() {
           <span class="issue-status-badge ${statusClass}">${statusText}</span>
         </div>
         ${issue.description ? `<p class="issue-item-description">${escapeHtml(issue.description)}</p>` : ''}
+        ${isSelected && currentRound ? `
+          <p class="issue-round-info" style="margin-top: var(--spacing-xs); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+            <span data-i18n="host.roundNumber">輪次</span>: <span>${currentRound}</span>
+          </p>
+        ` : ''}
         ${lastRoundResult ? `
           <div class="issue-item-result">
             <div class="result-stats-mini">
@@ -2664,7 +3355,7 @@ function showRenameIssueModal(issueId) {
     modal.remove();
   });
   
-  document.getElementById('confirm-rename-btn')?.addEventListener('click', () => {
+  const confirmRename = () => {
     const newTitle = document.getElementById('rename-issue-title-input').value.trim();
     if (!newTitle) {
       toastError(i18n.t('host.messages.enterIssueTitle'));
@@ -2674,24 +3365,45 @@ function showRenameIssueModal(issueId) {
     const newDescription = document.getElementById('rename-issue-description-input').value.trim();
     renameIssue(issueId, newTitle, newDescription);
     modal.remove();
-  });
+  };
+  
+  document.getElementById('confirm-rename-btn')?.addEventListener('click', confirmRename);
   
   // 聚焦到標題輸入框並選取所有文字
+  const titleInput = document.getElementById('rename-issue-title-input');
+  const descriptionInput = document.getElementById('rename-issue-description-input');
+  
   setTimeout(() => {
-    const input = document.getElementById('rename-issue-title-input');
-    if (input) {
-      input.focus();
-      input.select();
+    if (titleInput) {
+      titleInput.focus();
+      titleInput.select();
     }
   }, 100);
   
-  // 按 Enter 鍵確認（只在標題輸入框時）
-  document.getElementById('rename-issue-title-input')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  // 按 Enter 鍵確認（在標題輸入框時）
+  titleInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      document.getElementById('confirm-rename-btn')?.click();
+      confirmRename();
     }
   });
+  
+  // 在描述 textarea 中，Shift+Enter 換行，Enter 確認
+  descriptionInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      confirmRename();
+    }
+  });
+  
+  // 按 ESC 鍵取消
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
 }
 
 /**
@@ -2761,102 +3473,49 @@ function getLastRoundResult(issue) {
 }
 
 /**
+ * 更新頁面標題
+ */
+function updatePageTitle() {
+  const pageTitle = document.getElementById('page-title');
+  if (!pageTitle) return;
+  
+  const meetingPhase = document.getElementById('meeting-phase');
+  if (meetingPhase && !meetingPhase.classList.contains('hidden')) {
+    // 會議已建立，顯示「會議室」作為標題
+    pageTitle.setAttribute('data-i18n', 'host.meetingRoom');
+    pageTitle.textContent = i18n.t('host.meetingRoom');
+  } else {
+    // 尚未建立會議，顯示預設標題
+    pageTitle.setAttribute('data-i18n', 'host.title');
+    pageTitle.textContent = i18n.t('host.title');
+  }
+}
+
+/**
  * 更新 Issue 顯示
+ * 現在只更新 issues 列表中的 selected 狀態
  */
 function updateIssueDisplay() {
-  const currentIssueInfo = document.getElementById('current-issue-info');
-  const issueTitleDisplay = document.getElementById('current-issue-title');
-  const issueStatusBadge = document.getElementById('current-issue-status');
-  const issueDescription = document.getElementById('issue-description');
-  const currentRoundNumber = document.getElementById('current-round-number');
-  
-  if (currentIssue) {
-    if (currentIssueInfo) {
-      currentIssueInfo.classList.remove('hidden');
-    }
-    if (issueTitleDisplay) {
-      issueTitleDisplay.textContent = currentIssue.title;
-    }
-    if (issueStatusBadge) {
-      const statusClass = currentIssue.status === 'completed' ? 'completed' : 
-                         currentIssue.status === 'inProgress' ? 'in-progress' : 'not-started';
-      issueStatusBadge.textContent = i18n.t(`host.issueStatus.${currentIssue.status}`);
-      issueStatusBadge.className = `issue-status-badge ${statusClass}`;
-    }
-    if (issueDescription) {
-      issueDescription.textContent = currentIssue.description || '-';
-    }
-    if (currentRoundNumber) {
-      currentRoundNumber.textContent = currentRound;
-    }
-  } else {
-    if (currentIssueInfo) {
-      currentIssueInfo.classList.add('hidden');
-    }
-  }
+  // 更新 issues 列表，確保 selected 狀態正確
+  updateIssuesList();
 }
 
 /**
- * 儲存 Issue 到歷史（完成時）
+ * 儲存或更新會議記錄到歷史
+ * 在會議建立和任何資料變更時調用
  */
-function saveIssueToHistory() {
-  if (!currentIssue) return;
+function saveMeetingToHistory() {
+  const meetingIdElement = document.getElementById('meeting-id');
+  if (!meetingIdElement) return;
   
-  const meetingId = document.getElementById('meeting-id').textContent;
-  
-  addHistory({
-    mode: 'host',
-    meetingId,
-    meetingName: meetingName || null,
-    issueId: currentIssue.id,
-    issueTitle: currentIssue.title,
-    issueDescription: currentIssue.description,
-    rounds: currentIssue.rounds,
-    finalDecision,
-    completedAt: new Date().toISOString(),
-    participants: hostManager.getParticipants().length
-  });
-}
-
-/**
- * 儲存所有 Issue 到歷史（會議結束時）
- */
-function saveAllIssuesToHistory() {
-  if (issues.length === 0) return;
-  
-  const meetingId = document.getElementById('meeting-id').textContent;
+  const meetingId = meetingIdElement.textContent;
   if (!meetingId || meetingId === '------') return;
   
-  const participants = hostManager.getParticipants().length;
+  const participants = hostManager ? hostManager.getParticipants().length : 0;
   const now = new Date().toISOString();
   
-  // 獲取或建立會議記錄
-  const history = getHistory();
-  let meetingRecord = history.find(r => r.meetingId === meetingId && r.mode === 'host' && r.issues);
-  
-  if (!meetingRecord) {
-    // 如果沒有會議記錄，建立一個
-    meetingRecord = {
-      id: Date.now().toString(),
-      timestamp: now,
-      mode: 'host',
-      meetingId: meetingId,
-      meetingName: meetingName || null,
-      participants: participants,
-      startedAt: now,
-      completedAt: now,
-      issues: []
-    };
-    history.unshift(meetingRecord);
-  } else {
-    // 更新會議名稱（如果之前沒有）
-    if (!meetingRecord.meetingName && meetingName) {
-      meetingRecord.meetingName = meetingName;
-    }
-  }
-  
-  // 更新所有 issue（包括未完成的）
-  issues.forEach(issue => {
+  // 準備所有 issue 的資料
+  const issuesData = issues.map(issue => {
     // 如果當前 issue 有未保存的輪次結果，先保存
     let issueRounds = [...issue.rounds];
     if (issue.id === currentIssue?.id && currentResults) {
@@ -2875,9 +3534,7 @@ function saveAllIssuesToHistory() {
       }
     }
     
-    // 更新或新增 issue
-    const existingIssueIndex = meetingRecord.issues.findIndex(i => i.issueId === issue.id);
-    const issueData = {
+    return {
       issueId: issue.id,
       issueTitle: issue.title,
       issueDescription: issue.description || null,
@@ -2885,26 +3542,38 @@ function saveAllIssuesToHistory() {
       finalDecision: issue.finalDecision || null,
       completedAt: issue.status === 'completed' ? (issue.completedAt || now) : null
     };
-    
-    if (existingIssueIndex >= 0) {
-      // 更新現有 issue
-      meetingRecord.issues[existingIssueIndex] = issueData;
-    } else {
-      // 新增 issue
-      meetingRecord.issues.push(issueData);
-    }
   });
   
-  // 更新會議完成時間和參與者數量
-  meetingRecord.completedAt = now;
-  meetingRecord.participants = participants;
+  // 使用 addHistory 來更新會議記錄
+  // 如果會議記錄不存在，會自動建立
+  addHistory({
+    mode: 'host',
+    meetingId,
+    meetingName: meetingName || null,
+    participants: participants,
+    // 傳遞所有 issue 資料（通過一個特殊的標記來表示這是完整更新）
+    issues: issuesData,
+    // 如果會議還在進行中，completedAt 為 null
+    completedAt: null
+  });
+}
+
+/**
+ * 儲存 Issue 到歷史（完成時）
+ */
+function saveIssueToHistory() {
+  if (!currentIssue) return;
   
-  // 限制最大數量
-  if (history.length > 100) {
-    history.splice(100);
+  // 更新當前 issue 的完成狀態
+  if (currentIssue.status !== 'completed') {
+    currentIssue.status = 'completed';
+    currentIssue.completedAt = new Date().toISOString();
+    currentIssue.finalDecision = finalDecision;
+    updateIssuesList();
   }
   
-  // 保存到 storage
-  storage.set('history', history);
+  // 更新會議記錄
+  saveMeetingToHistory();
 }
+
 

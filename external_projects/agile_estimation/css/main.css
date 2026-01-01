@@ -228,6 +228,30 @@ a:hover {
   pointer-events: none;
 }
 
+.btn-warning {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: var(--color-warning);
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-error);
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
 .btn-icon {
   width: 44px;
   height: 44px;

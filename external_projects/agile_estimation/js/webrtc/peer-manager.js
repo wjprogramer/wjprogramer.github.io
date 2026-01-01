@@ -419,29 +419,30 @@ export class HostManager {
       participant.estimationState = EstimationState.REVEALED;
     }
     
-    // 收集結果
-    const results = this._getParticipantsArray().map(p => ({
+    // 收集結果（包含所有參與者，包括未選取的）
+    const allResults = this._getParticipantsArray().map(p => ({
       name: p.name,
       card: p.selectedCard  // 可能是 null（未選取）
     }));
     
     // 如果 Host 參與估點，添加 Host 的結果（包括未選取的情況）
     if (hostResult && hostResult.name) {
-      results.push({
+      allResults.push({
         name: hostResult.name,
         card: hostResult.card  // 可能是 null（未選取）
       });
     }
     
-    // 廣播翻牌訊息（包含 Host 的結果）
+    // 廣播翻牌訊息（包含所有參與者，包括未選取的，用於記錄）
     this._broadcast({
       type: MessageType.FLIP_CARDS,
-      results
+      results: allResults
     });
     
     this._broadcastParticipantUpdate();
     
-    return results;
+    // 返回時只包含已選取的參與者（過濾掉 card 為 null 的）
+    return allResults.filter(r => r.card !== null);
   }
   
   /**

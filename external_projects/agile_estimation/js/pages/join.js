@@ -37,7 +37,7 @@ export function renderJoin(params = {}) {
         <a href="#/" class="btn btn-ghost" id="back-btn">
           ← <span data-i18n="common.back">返回</span>
         </a>
-        <div class="logo" data-i18n="join.title">加入房間</div>
+        <div class="logo" id="page-title" data-i18n="join.title">加入房間</div>
         <div class="header-actions">
           <div class="lang-dropdown-container">
             <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
@@ -163,10 +163,23 @@ export function renderJoin(params = {}) {
             <div class="waiting-message">
               <div class="waiting-icon">🎴</div>
               <p data-i18n="join.waitingForFlip">等待主持人翻牌...</p>
-              <div class="your-selection" id="your-selection">
-                <span data-i18n="join.selectedCard">你選擇了</span>: 
-                <span class="selected-value" id="your-selected-card">-</span>
+            </div>
+            <div class="card-flip-container">
+              <div class="flip-card-wrapper" id="client-card-wrapper">
+                <!-- 背面卡牌會在這裡顯示 -->
               </div>
+            </div>
+          </div>
+          
+          <!-- 卡牌翻開階段 -->
+          <div id="cards-revealed-phase" class="meeting-content hidden">
+            <div class="revealed-cards-container" id="revealed-cards-container">
+              <!-- 所有參與者的卡牌會在這裡顯示 -->
+            </div>
+            <div class="reveal-actions">
+              <button class="btn btn-primary btn-lg" id="show-full-results-btn">
+                <span data-i18n="join.showFullResults">顯示完整結果</span>
+              </button>
             </div>
           </div>
           
@@ -214,7 +227,7 @@ export function renderJoin(params = {}) {
           
           <!-- 離開按鈕 -->
           <div class="leave-section" id="leave-section">
-            <button class="btn btn-ghost btn-danger" id="leave-btn">
+            <button class="btn btn-danger" id="leave-btn">
               <span data-i18n="join.leaveMeeting">離開會議</span>
             </button>
           </div>
@@ -624,6 +637,148 @@ export function renderJoin(params = {}) {
         color: var(--color-text-primary);
       }
       
+      /* 卡牌翻開相關樣式 */
+      .card-flip-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: var(--spacing-xl);
+        min-height: 300px;
+      }
+      
+      .flip-card-wrapper {
+        width: 180px;
+        height: 252px;
+        perspective: 1000px;
+      }
+      
+      .flip-card {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: default;
+      }
+      
+      .flip-card.flipped {
+        transform: rotateY(180deg);
+      }
+      
+      .flip-card .card-face {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-bg);
+        border: 2px solid var(--color-primary);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      }
+      
+      .flip-card .card-back-face {
+        transform: rotateY(0deg);
+        background: 
+          repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(99, 102, 241, 0.1) 10px,
+            rgba(99, 102, 241, 0.1) 20px
+          ),
+          var(--card-bg);
+      }
+      
+      .flip-card .card-front-face {
+        transform: rotateY(180deg);
+      }
+      
+      .flip-card .card-content {
+        font-family: var(--font-display);
+        font-size: 3.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .card-back-pattern {
+        width: 100%;
+        height: 100%;
+        opacity: 0.3;
+        background-image: 
+          radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%);
+      }
+      
+      /* 翻開的卡牌容器 */
+      .revealed-cards-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-lg);
+        justify-content: center;
+        align-items: center;
+        padding: var(--spacing-xl);
+        min-height: 400px;
+      }
+      
+      .revealed-card-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-md);
+        animation: fadeInUp 0.5s ease-out forwards;
+        opacity: 0;
+      }
+      
+      /* 單張卡片時居中顯示 */
+      .revealed-cards-container:has(.revealed-card-item:only-child) {
+        justify-content: center;
+      }
+      
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .revealed-card-wrapper {
+        width: 150px;
+        height: 210px;
+        perspective: 1000px;
+      }
+      
+      .revealed-card-item .flip-card {
+        width: 100%;
+        height: 100%;
+        border: none;
+        box-shadow: none;
+      }
+      
+      .revealed-card-item.is-you .flip-card .card-face {
+        border: var(--card-border);
+      }
+      
+      .revealed-card-name {
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        color: var(--color-text-primary);
+        text-align: center;
+      }
+      
+      .reveal-actions {
+        text-align: center;
+        padding: var(--spacing-xl) 0;
+      }
+      
       /* 離開 */
       .leave-section {
         text-align: center;
@@ -633,12 +788,15 @@ export function renderJoin(params = {}) {
       }
       
       .btn-danger {
-        color: var(--color-error);
+        background: var(--color-error);
+        border-color: var(--color-error);
+        color: white;
       }
       
-      .btn-danger:hover {
+      .btn-danger:hover:not(:disabled) {
         background: var(--color-error);
         color: white;
+        opacity: 0.9;
       }
       
       /* 會議結束畫面 */
@@ -884,18 +1042,32 @@ function setupEventListeners() {
   });
   
   // 離開會議
-  document.getElementById('leave-btn')?.addEventListener('click', () => {
-    if (confirm(i18n.t('join.leaveConfirm'))) {
+  document.getElementById('leave-btn')?.addEventListener('click', async () => {
+    const confirmed = await showConfirmModal({
+      title: i18n.t('common.confirm'),
+      message: i18n.t('join.leaveConfirm'),
+      type: 'warning',
+      confirmText: 'common.confirm',
+      cancelText: 'common.cancel'
+    });
+    if (confirmed) {
       clientManager.leaveMeeting();
       window.location.hash = '#/';
     }
   });
   
   // 返回按鈕
-  document.getElementById('back-btn')?.addEventListener('click', (e) => {
+  document.getElementById('back-btn')?.addEventListener('click', async (e) => {
     if (clientManager && clientManager.state === ConnectionState.CONNECTED) {
       e.preventDefault();
-      if (confirm(i18n.t('join.leaveConfirm'))) {
+      const confirmed = await showConfirmModal({
+        title: i18n.t('common.confirm'),
+        message: i18n.t('join.leaveConfirm'),
+        type: 'warning',
+        confirmText: 'common.confirm',
+        cancelText: 'common.cancel'
+      });
+      if (confirmed) {
         clientManager.leaveMeeting();
         window.location.hash = '#/';
       }
@@ -947,6 +1119,9 @@ async function joinMeeting() {
     // 切換到會議階段
     document.getElementById('join-form-phase').classList.add('hidden');
     document.getElementById('meeting-phase').classList.remove('hidden');
+    
+    // 更新頁面標題
+    updatePageTitle();
     
     toastSuccess(i18n.t('join.connected'));
     
@@ -1006,8 +1181,8 @@ function setupClientCallbacks() {
   
   clientManager.onFlipCards = (results) => {
     console.log('Cards flipped:', results);
-    displayResults(results);
-    updateMeetingPhase();
+    // 先顯示卡牌翻開動畫，不立即顯示統計結果
+    revealAllCards(results);
     
     // 儲存到歷史
     saveToHistory(results);
@@ -1051,6 +1226,25 @@ function setupClientCallbacks() {
       toastError(i18n.t('join.errors.connectionFailed'));
     }
   };
+}
+
+/**
+ * 更新頁面標題
+ */
+function updatePageTitle() {
+  const pageTitle = document.getElementById('page-title');
+  if (!pageTitle) return;
+  
+  const meetingPhase = document.getElementById('meeting-phase');
+  if (meetingPhase && !meetingPhase.classList.contains('hidden')) {
+    // 已加入會議，顯示「會議室」
+    pageTitle.setAttribute('data-i18n', 'host.meetingRoom');
+    pageTitle.textContent = i18n.t('host.meetingRoom');
+  } else {
+    // 尚未加入會議，顯示預設標題
+    pageTitle.setAttribute('data-i18n', 'join.title');
+    pageTitle.textContent = i18n.t('join.title');
+  }
 }
 
 /**
@@ -1136,11 +1330,8 @@ function setupCardSelectionHandler(container) {
         i18n.applyTranslations();
       }
       
-      // 更新等待翻牌階段的顯示
-      const yourSelectedCard = document.getElementById('your-selected-card');
-      if (yourSelectedCard) {
-        yourSelectedCard.textContent = card.label;
-      }
+      // 顯示背面卡牌
+      showClientCardBack(card);
       
       // 隱藏確定按鈕
       const confirmSelection = document.getElementById('confirm-selection');
@@ -1212,6 +1403,7 @@ function updateMeetingPhase() {
   const waitingPhase = document.getElementById('waiting-phase');
   const selectingPhase = document.getElementById('selecting-phase');
   const waitingFlipPhase = document.getElementById('waiting-flip-phase');
+  const cardsRevealedPhase = document.getElementById('cards-revealed-phase');
   const resultsPhase = document.getElementById('results-phase');
   const meetingEndedPhase = document.getElementById('meeting-ended-phase');
   const leaveSection = document.getElementById('leave-section');
@@ -1220,6 +1412,7 @@ function updateMeetingPhase() {
   waitingPhase?.classList.add('hidden');
   selectingPhase?.classList.add('hidden');
   waitingFlipPhase?.classList.add('hidden');
+  cardsRevealedPhase?.classList.add('hidden');
   resultsPhase?.classList.add('hidden');
   meetingEndedPhase?.classList.add('hidden');
   
@@ -1371,6 +1564,144 @@ function updateParticipantsPreview() {
       `).join('')}
     </div>
   `;
+}
+
+/**
+ * 顯示 client 的背面卡牌
+ * @param {Object} card - 選擇的卡片
+ */
+function showClientCardBack(card) {
+  const cardWrapper = document.getElementById('client-card-wrapper');
+  if (!cardWrapper) return;
+  
+  // 創建背面卡牌（未翻開狀態）
+  const cardHTML = `
+    <div class="flip-card" data-value="${card.value}">
+      <div class="card-face card-back-face">
+        <div class="card-back-pattern"></div>
+      </div>
+      <div class="card-face card-front-face">
+        <div class="card-holo"></div>
+        <div class="card-content">
+          <span class="card-value">${card.label}</span>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  cardWrapper.innerHTML = cardHTML;
+}
+
+/**
+ * 翻開 client 自己的卡牌並顯示動畫
+ * @param {Array} results - 所有參與者的結果
+ */
+function revealAllCards(results) {
+  // 隱藏等待翻牌階段
+  const waitingFlipPhase = document.getElementById('waiting-flip-phase');
+  if (waitingFlipPhase) {
+    waitingFlipPhase.classList.add('hidden');
+  }
+  
+  // 顯示卡牌翻開階段
+  const cardsRevealedPhase = document.getElementById('cards-revealed-phase');
+  if (cardsRevealedPhase) {
+    cardsRevealedPhase.classList.remove('hidden');
+  }
+  
+  // 只顯示 client 自己的卡牌
+  const revealedContainer = document.getElementById('revealed-cards-container');
+  if (!revealedContainer) return;
+  
+  const clientName = clientManager.name;
+  
+  // 找到 client 自己的結果
+  const clientResult = results.find(r => r.name === clientName);
+  if (!clientResult) {
+    // 如果找不到自己的結果，顯示提示
+    revealedContainer.innerHTML = `
+      <div class="revealed-card-item is-you">
+        <div class="revealed-card-wrapper">
+          <div class="flip-card" data-value="">
+            <div class="card-face card-back-face">
+              <div class="card-back-pattern"></div>
+            </div>
+            <div class="card-face card-front-face">
+              <div class="card-content">
+                <span class="card-value">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="revealed-card-name">${escapeHtml(clientName)} (${i18n.t('join.you')})</div>
+      </div>
+    `;
+    i18n.applyTranslations();
+    return;
+  }
+  
+  // 找到對應的卡片
+  const card = CARD_SET.find(c => c.value === clientResult.card);
+  const cardLabel = card ? card.label : '-';
+  
+  // 只顯示 client 自己的卡片（背面朝上，等待翻牌）
+  revealedContainer.innerHTML = `
+    <div class="revealed-card-item is-you">
+      <div class="revealed-card-wrapper">
+        <div class="flip-card" data-value="${clientResult.card || ''}">
+          <div class="card-face card-back-face">
+            <div class="card-back-pattern"></div>
+          </div>
+          <div class="card-face card-front-face">
+            <div class="card-holo"></div>
+            <div class="card-content">
+              <span class="card-value">${cardLabel}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="revealed-card-name">${escapeHtml(clientName)} (${i18n.t('join.you')})</div>
+    </div>
+  `;
+  
+  i18n.applyTranslations();
+  
+  // 觸發翻牌動畫（只翻開自己的卡片）
+  setTimeout(() => {
+    const flipCard = revealedContainer.querySelector('.flip-card');
+    if (flipCard) {
+      flipCard.classList.add('flipped');
+    }
+  }, 300);
+  
+  // 綁定「顯示完整結果」按鈕
+  const showFullResultsBtn = document.getElementById('show-full-results-btn');
+  if (showFullResultsBtn) {
+    // 移除舊的事件監聽器
+    const newBtn = showFullResultsBtn.cloneNode(true);
+    showFullResultsBtn.parentNode.replaceChild(newBtn, showFullResultsBtn);
+    
+    newBtn.onclick = () => {
+      // 顯示完整結果
+      showFullResults(results);
+    };
+  }
+}
+
+/**
+ * 顯示完整結果（統計資訊）
+ * @param {Array} results - 所有參與者的結果
+ */
+function showFullResults(results) {
+  // 隱藏卡牌翻開階段
+  const cardsRevealedPhase = document.getElementById('cards-revealed-phase');
+  if (cardsRevealedPhase) {
+    cardsRevealedPhase.classList.add('hidden');
+  }
+  
+  // 顯示結果階段
+  displayResults(results);
+  updateMeetingPhase();
 }
 
 /**
@@ -1597,6 +1928,106 @@ function saveToHistory(results) {
 /**
  * HTML 跳脫
  */
+/**
+ * 顯示確認 Modal
+ * @param {Object} options - 選項
+ * @param {string} options.title - 標題（或翻譯 key）
+ * @param {string} options.message - 訊息（或翻譯 key）
+ * @param {Function} options.onConfirm - 確認後的回調函數
+ * @param {string} options.type - 類型：'warning' | 'danger' | 'info'（預設 'warning'）
+ * @param {string} options.confirmText - 確認按鈕文字（或翻譯 key，預設 'common.confirm'）
+ * @param {string} options.cancelText - 取消按鈕文字（或翻譯 key，預設 'common.cancel'）
+ * @returns {Promise<boolean>} 返回 Promise，true 表示確認，false 表示取消
+ */
+function showConfirmModal({ title, message, onConfirm, type = 'warning', confirmText = 'common.confirm', cancelText = 'common.cancel' }) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop active';
+    
+    // 根據類型設定樣式
+    const typeClass = `confirm-modal-${type}`;
+    const confirmBtnClass = type === 'danger' ? 'btn-danger' : type === 'warning' ? 'btn-warning' : 'btn-primary';
+    
+    // 處理翻譯鍵
+    const titleText = typeof title === 'string' && (title.includes('.') && !title.includes(' ')) 
+      ? i18n.t(title) 
+      : escapeHtml(title);
+    const messageText = typeof message === 'string' && (message.includes('.') && !message.includes(' ')) 
+      ? i18n.t(message) 
+      : escapeHtml(message);
+    
+    modal.innerHTML = `
+      <div class="modal ${typeClass}">
+        <div class="modal-header">
+          <h3>${titleText}</h3>
+          <button class="btn btn-ghost btn-icon" id="close-confirm-modal">×</button>
+        </div>
+        <div class="modal-body">
+          <p>${messageText}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancel-confirm-btn">${i18n.t(cancelText)}</button>
+          <button class="btn ${confirmBtnClass}" id="confirm-confirm-btn">${i18n.t(confirmText)}</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 關閉按鈕
+    const closeBtn = modal.querySelector('#close-confirm-modal');
+    const cancelBtn = modal.querySelector('#cancel-confirm-btn');
+    const confirmBtn = modal.querySelector('#confirm-confirm-btn');
+    
+    const closeModal = () => {
+      modal.classList.remove('active');
+      setTimeout(() => {
+        document.body.removeChild(modal);
+      }, 300);
+    };
+    
+    const handleCancel = () => {
+      closeModal();
+      resolve(false);
+    };
+    
+    const handleConfirm = () => {
+      closeModal();
+      if (onConfirm) onConfirm();
+      resolve(true);
+    };
+    
+    closeBtn.addEventListener('click', handleCancel);
+    cancelBtn.addEventListener('click', handleCancel);
+    confirmBtn.addEventListener('click', handleConfirm);
+    
+    // 點擊背景關閉
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    });
+    
+    // 按 ESC 鍵取消
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        handleCancel();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+    
+    // 聚焦確認按鈕（危險操作聚焦取消按鈕）
+    setTimeout(() => {
+      if (type === 'danger') {
+        cancelBtn.focus();
+      } else {
+        confirmBtn.focus();
+      }
+    }, 100);
+  });
+}
+
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;

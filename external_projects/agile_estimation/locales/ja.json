@@ -65,8 +65,11 @@
   "history": {
     "title": "履歴",
     "empty": "履歴がありません",
+    "limitHint": "最大10件の記録を保存できます。スター付きの記録は自動的に削除されません",
     "clearAll": "すべてクリア",
     "clearConfirm": "すべての履歴をクリアしてもよろしいですか？",
+    "deleteConfirm": "この履歴記録を削除してもよろしいですか？この操作は元に戻せません。",
+    "deleted": "履歴記録が削除されました",
     "mode": "モード",
     "solo": "ソロモード",
     "host": "ホストモード",
@@ -89,7 +92,9 @@
     "unstar": "スター解除",
     "starred": "スター済み",
     "unstarred": "スター解除済み",
-    "maxStarredReached": "最大スター数に達しました（{{max}} 件）"
+    "maxStarredReached": "最大スター数に達しました（{{max}} 件）",
+    "reopenMeeting": "会議を再開",
+    "reopenMeetingHint": "会議状態を復元し、Issue の見積もりを続行または再開できます"
   },
   "settings": {
     "title": "設定",
@@ -119,8 +124,10 @@
   },
   "host": {
     "title": "ルーム作成",
+    "meetingRoom": "会議室",
     "creating": "会議室を作成中...",
     "created": "会議室が作成されました",
+    "meetingRestored": "会議が復元されました",
     "meetingId": "会議 ID",
     "copyLink": "リンクをコピー",
     "copyId": "ID をコピー",
@@ -133,7 +140,9 @@
     "hostNamePlaceholder": "ホスト名を入力",
     "meetingName": "会議名",
     "meetingNamePlaceholder": "会議名を入力（任意）",
-    "meetingNameHint": "空欄の場合は会議 ID を名前として使用",
+    "meetingNameHint": "空欄の場合は会議 ID をデフォルト名として使用、後で変更可能",
+    "renameMeeting": "会議名を変更",
+    "meetingRenamed": "会議名が更新されました",
     "participateInEstimation": "見積もりに参加",
     "participateInEstimationDesc": "ホストが見積もりに参加するか（カードを選択）",
     "createMeeting": "会議室を作成",
@@ -185,6 +194,7 @@
     "errors": {
       "createFailed": "会議室の作成に失敗しました",
       "connectionError": "接続エラー",
+      "restoreFailed": "会議の復元に失敗しました",
       "nameRequired": "ホスト名を入力してください"
     },
     "messages": {
@@ -247,6 +257,7 @@
     "myAverage": "私の平均",
     "estimationHistory": "見積もり履歴",
     "noEstimationHistory": "この会議には見積もり記録がありません",
+    "showFullResults": "完全な結果を表示",
     "errors": {
       "invalidMeetingId": "有効な会議 ID を入力してください",
       "invalidName": "あなたの名前を入力してください",

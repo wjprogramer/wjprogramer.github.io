@@ -65,8 +65,11 @@
   "history": {
     "title": "历史记录",
     "empty": "尚无历史记录",
+    "limitHint": "最多可保存 10 笔记录，已标记的记录不会被自动删除",
     "clearAll": "清除全部",
     "clearConfirm": "确定要清除所有历史记录吗？",
+    "deleteConfirm": "确定要删除此笔历史记录吗？此操作无法复原。",
+    "deleted": "历史记录已删除",
     "mode": "模式",
     "solo": "简易模式",
     "host": "主机模式",
@@ -89,7 +92,9 @@
     "unstar": "取消标记",
     "starred": "已标记",
     "unstarred": "已取消标记",
-    "maxStarredReached": "已达到最大标记数量（{{max}} 笔）"
+    "maxStarredReached": "已达到最大标记数量（{{max}} 笔）",
+    "reopenMeeting": "重新开启会议",
+    "reopenMeetingHint": "将恢复会议状态，可以继续或重新估点 Issue"
   },
   "settings": {
     "title": "设置",
@@ -119,8 +124,10 @@
   },
   "host": {
     "title": "创建房间",
+    "meetingRoom": "会议室",
     "creating": "创建会议室中...",
     "created": "会议室已创建",
+    "meetingRestored": "会议已恢复",
     "meetingId": "会议 ID",
     "copyLink": "复制链接",
     "copyId": "复制 ID",
@@ -133,7 +140,9 @@
     "hostNamePlaceholder": "输入主持人名称",
     "meetingName": "会议名称",
     "meetingNamePlaceholder": "输入会议名称（选填）",
-    "meetingNameHint": "留空将使用会议 ID 作为名称",
+    "meetingNameHint": "留空将使用会议 ID 作为默认名称，后续仍可修改",
+    "renameMeeting": "重命名会议",
+    "meetingRenamed": "会议名称已更新",
     "participateInEstimation": "参与估点",
     "participateInEstimationDesc": "主持人是否参与估点（选择牌）",
     "createMeeting": "创建会议室",
@@ -185,6 +194,7 @@
     "errors": {
       "createFailed": "创建会议室失败",
       "connectionError": "连接错误",
+      "restoreFailed": "恢复会议失败",
       "nameRequired": "请输入主持人名称"
     },
     "messages": {
@@ -247,6 +257,7 @@
     "myAverage": "我的平均",
     "estimationHistory": "估点历史",
     "noEstimationHistory": "本次会议没有估点记录",
+    "showFullResults": "显示完整结果",
     "errors": {
       "invalidMeetingId": "请输入有效的会议 ID",
       "invalidName": "请输入你的名称",

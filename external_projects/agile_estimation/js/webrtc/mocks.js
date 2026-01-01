@@ -11,6 +11,7 @@ import { ConnectionState, EstimationState, MessageType } from './peer-manager.js
 export class MockPeerFactory {
   constructor() {
     this.peers = new Map(); // id -> MockPeer
+    this.nextClientId = 1; // 用於生成唯一的 Client peer ID
     // 設置全局引用以便 MockPeer 和 MockDataConnection 訪問
     if (typeof window !== 'undefined') {
       window.__mockPeerFactory__ = this;
@@ -18,6 +19,10 @@ export class MockPeerFactory {
   }
   
   createPeer(id, options = {}) {
+    // 如果 id 是 undefined，生成一個唯一的 ID（用於 Client）
+    if (id === undefined || id === null) {
+      id = `mock-client-${this.nextClientId++}`;
+    }
     const peer = new MockPeer(id, options, this);
     this.peers.set(id, peer);
     return peer;
@@ -44,6 +49,14 @@ class MockPeer {
     this.isOpen = false;
     this.isDestroyed = false;
     this.factory = factory;
+    
+    // 自動觸發 open 事件（模擬非同步開啟）
+    // 使用 setTimeout 確保事件監聽器已經註冊
+    setTimeout(() => {
+      if (!this.isDestroyed) {
+        this.simulateOpen();
+      }
+    }, 10);
   }
   
   on(event, callback) {
@@ -79,13 +92,21 @@ class MockPeer {
     const conn = new MockDataConnection(this.id, peerId, options, factory);
     this.connections.set(peerId, conn);
     
+    // 先創建對端的連接（在觸發 open 事件之前）
+    let targetConn = null;
+    if (targetPeer.eventHandlers.has('connection')) {
+      targetConn = new MockDataConnection(peerId, this.id, options, factory);
+      targetPeer.connections.set(this.id, targetConn);
+      targetPeer.emit('connection', targetConn);
+    }
+    
     // 模擬非同步連線
     setTimeout(() => {
+      // 觸發 conn 的 open 事件（這會設置 conn.isOpen = true）
       conn.emit('open');
-      if (targetPeer.eventHandlers.has('connection')) {
-        const targetConn = new MockDataConnection(peerId, this.id, options, factory);
-        targetPeer.connections.set(this.id, targetConn);
-        targetPeer.emit('connection', targetConn);
+      
+      // 觸發 targetConn 的 open 事件（這會設置 targetConn.isOpen = true）
+      if (targetConn) {
         setTimeout(() => {
           targetConn.emit('open');
         }, 10);
@@ -146,6 +167,11 @@ class MockDataConnection {
   }
   
   emit(event, ...args) {
+    // 當 open 事件被觸發時，設置 isOpen 為 true
+    if (event === 'open') {
+      this.isOpen = true;
+    }
+    
     if (this.eventHandlers.has(event)) {
       this.eventHandlers.get(event).forEach(callback => {
         try {
@@ -158,8 +184,10 @@ class MockDataConnection {
   }
   
   send(data) {
+    // 如果連接已關閉，靜默失敗（不拋出錯誤）
+    // 這在清理資源時很有用，因為連接可能已經被關閉
     if (this.isClosed) {
-      throw new Error('Connection is closed');
+      return;
     }
     
     this.sentMessages.push({
@@ -173,12 +201,39 @@ class MockDataConnection {
     if (factory) {
       const targetPeer = factory.getPeer(this.toPeerId);
       if (targetPeer) {
+        // 查找對端的連接：從 targetPeer 的 connections 中查找，key 是 this.fromPeerId
         const targetConn = targetPeer.connections.get(this.fromPeerId);
-        if (targetConn && targetConn.isOpen) {
+        if (targetConn && !targetConn.isClosed) {
+          // 如果 targetConn 還沒有 isOpen，先觸發 open 事件
+          if (!targetConn.isOpen) {
+            targetConn.emit('open');
+          }
+          // 延遲發送消息，確保事件處理器已經註冊
           setTimeout(() => {
             targetConn.emit('data', data);
           }, 10);
+        } else {
+          // 調試：如果找不到連接，嘗試通過所有連接查找
+          console.warn(`[MockDataConnection] 找不到對端連接: fromPeerId=${this.fromPeerId}, toPeerId=${this.toPeerId}, targetPeer.id=${targetPeer.id}`);
+          console.warn(`[MockDataConnection] targetPeer.connections keys:`, Array.from(targetPeer.connections.keys()));
+          // 嘗試通過 toPeerId 查找（反向查找）
+          for (const [key, conn] of targetPeer.connections.entries()) {
+            if (conn.toPeerId === this.fromPeerId) {
+              console.log(`[MockDataConnection] 找到反向連接: key=${key}`);
+              if (!conn.isClosed) {
+                if (!conn.isOpen) {
+                  conn.emit('open');
+                }
+                setTimeout(() => {
+                  conn.emit('data', data);
+                }, 10);
+                return;
+              }
+            }
+          }
         }
+      } else {
+        console.warn(`[MockDataConnection] 找不到目標 Peer: toPeerId=${this.toPeerId}`);
       }
     }
   }

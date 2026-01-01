@@ -285,8 +285,15 @@ function setupEventListeners() {
   // 清除歷史記錄
   const clearHistoryBtn = document.getElementById('clear-history-btn');
   if (clearHistoryBtn) {
-    clearHistoryBtn.addEventListener('click', () => {
-      if (confirm(i18n.t('history.clearConfirm'))) {
+    clearHistoryBtn.addEventListener('click', async () => {
+      const confirmed = await showConfirmModal({
+        title: i18n.t('common.confirm'),
+        message: i18n.t('history.clearConfirm'),
+        type: 'danger',
+        confirmText: 'common.confirm',
+        cancelText: 'common.cancel'
+      });
+      if (confirmed) {
         clearHistory();
         toastSuccess(i18n.t('history.clearAll'));
       }
@@ -296,8 +303,15 @@ function setupEventListeners() {
   // 清除全部資料
   const clearAllDataBtn = document.getElementById('clear-all-data-btn');
   if (clearAllDataBtn) {
-    clearAllDataBtn.addEventListener('click', () => {
-      if (confirm(i18n.t('settings.clearAllDataConfirm'))) {
+    clearAllDataBtn.addEventListener('click', async () => {
+      const confirmed = await showConfirmModal({
+        title: i18n.t('common.confirm'),
+        message: i18n.t('settings.clearAllDataConfirm'),
+        type: 'danger',
+        confirmText: 'common.confirm',
+        cancelText: 'common.cancel'
+      });
+      if (confirmed) {
         // 清除所有資料
         storage.clear();
         
@@ -320,5 +334,111 @@ function setupEventListeners() {
       }
     });
   }
+}
+
+/**
+ * 顯示確認 Modal
+ * @param {Object} options - 選項
+ * @param {string} options.title - 標題（或翻譯 key）
+ * @param {string} options.message - 訊息（或翻譯 key）
+ * @param {Function} options.onConfirm - 確認後的回調函數
+ * @param {string} options.type - 類型：'warning' | 'danger' | 'info'（預設 'warning'）
+ * @param {string} options.confirmText - 確認按鈕文字（或翻譯 key，預設 'common.confirm'）
+ * @param {string} options.cancelText - 取消按鈕文字（或翻譯 key，預設 'common.cancel'）
+ * @returns {Promise<boolean>} 返回 Promise，true 表示確認，false 表示取消
+ */
+function showConfirmModal({ title, message, onConfirm, type = 'warning', confirmText = 'common.confirm', cancelText = 'common.cancel' }) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop active';
+    
+    // 根據類型設定樣式
+    const typeClass = `confirm-modal-${type}`;
+    const confirmBtnClass = type === 'danger' ? 'btn-danger' : type === 'warning' ? 'btn-warning' : 'btn-primary';
+    
+    // 處理翻譯鍵
+    const titleText = typeof title === 'string' && (title.includes('.') && !title.includes(' ')) 
+      ? i18n.t(title) 
+      : escapeHtml(title);
+    const messageText = typeof message === 'string' && (message.includes('.') && !message.includes(' ')) 
+      ? i18n.t(message) 
+      : escapeHtml(message);
+    
+    modal.innerHTML = `
+      <div class="modal ${typeClass}">
+        <div class="modal-header">
+          <h3>${titleText}</h3>
+          <button class="btn btn-ghost btn-icon" id="close-confirm-modal">×</button>
+        </div>
+        <div class="modal-body">
+          <p>${messageText}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancel-confirm-btn">${i18n.t(cancelText)}</button>
+          <button class="btn ${confirmBtnClass}" id="confirm-confirm-btn">${i18n.t(confirmText)}</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 關閉按鈕
+    const closeBtn = modal.querySelector('#close-confirm-modal');
+    const cancelBtn = modal.querySelector('#cancel-confirm-btn');
+    const confirmBtn = modal.querySelector('#confirm-confirm-btn');
+    
+    const closeModal = () => {
+      modal.classList.remove('active');
+      setTimeout(() => {
+        document.body.removeChild(modal);
+      }, 300);
+    };
+    
+    const handleCancel = () => {
+      closeModal();
+      resolve(false);
+    };
+    
+    const handleConfirm = () => {
+      closeModal();
+      if (onConfirm) onConfirm();
+      resolve(true);
+    };
+    
+    closeBtn.addEventListener('click', handleCancel);
+    cancelBtn.addEventListener('click', handleCancel);
+    confirmBtn.addEventListener('click', handleConfirm);
+    
+    // 點擊背景關閉
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleCancel();
+      }
+    });
+    
+    // 按 ESC 鍵取消
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        handleCancel();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+    
+    // 聚焦確認按鈕（危險操作聚焦取消按鈕）
+    setTimeout(() => {
+      if (type === 'danger') {
+        cancelBtn.focus();
+      } else {
+        confirmBtn.focus();
+      }
+    }, 100);
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 

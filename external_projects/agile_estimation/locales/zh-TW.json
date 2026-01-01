@@ -65,8 +65,11 @@
   "history": {
     "title": "歷史記錄",
     "empty": "尚無歷史記錄",
+    "limitHint": "最多可保存 10 筆記錄，已標記的記錄不會被自動刪除",
     "clearAll": "清除全部",
     "clearConfirm": "確定要清除所有歷史記錄嗎？",
+    "deleteConfirm": "確定要刪除此筆歷史記錄嗎？此操作無法復原。",
+    "deleted": "歷史記錄已刪除",
     "mode": "模式",
     "solo": "簡易模式",
     "host": "主持人",
@@ -89,7 +92,9 @@
     "unstar": "取消標記",
     "starred": "已標記",
     "unstarred": "已取消標記",
-    "maxStarredReached": "已達到最大標記數量（{{max}} 筆）"
+    "maxStarredReached": "已達到最大標記數量（{{max}} 筆）",
+    "reopenMeeting": "重新開啟會議",
+    "reopenMeetingHint": "將恢復會議狀態，可以繼續或重新估點 Issue"
   },
   "settings": {
     "title": "設定",
@@ -119,6 +124,7 @@
   },
   "host": {
     "title": "建立房間",
+    "meetingRoom": "會議室",
     "creating": "建立會議室中...",
     "created": "會議室已建立",
     "meetingId": "會議 ID",
@@ -133,7 +139,9 @@
     "hostNamePlaceholder": "輸入主持人名稱",
     "meetingName": "會議名稱",
     "meetingNamePlaceholder": "輸入會議名稱（選填）",
-    "meetingNameHint": "留空將使用會議 ID 作為名稱",
+    "meetingNameHint": "留空將使用會議 ID 作為預設名稱，後續仍可修改",
+    "renameMeeting": "重新命名會議",
+    "meetingRenamed": "會議名稱已更新",
     "participateInEstimation": "參與估點",
     "participateInEstimationDesc": "主持人是否參與估點（選擇牌）",
     "createMeeting": "建立會議室",
@@ -191,6 +199,7 @@
     "errors": {
       "createFailed": "建立會議室失敗",
       "connectionError": "連線錯誤",
+      "restoreFailed": "恢復會議失敗",
       "nameRequired": "請輸入主持人名稱"
     },
     "messages": {
@@ -253,6 +262,7 @@
     "myAverage": "我的平均",
     "estimationHistory": "估點歷史",
     "noEstimationHistory": "本次會議沒有估點記錄",
+    "showFullResults": "顯示完整結果",
     "errors": {
       "invalidMeetingId": "請輸入有效的會議 ID",
       "invalidName": "請輸入你的名稱",

@@ -5,9 +5,13 @@
 
 import { i18n } from '../utils/i18n.js';
 import { theme } from '../utils/theme.js';
-import { getHistory } from '../data/history.js';
+import { getHistory, addHistory } from '../data/history.js';
 import { CARD_SET } from '../components/card.js';
 import { router } from '../router.js';
+import { showToast, toastSuccess } from '../components/toast.js';
+
+// 當前顯示的記錄（用於事件監聽器）
+let currentRecord = null;
 
 /**
  * 渲染歷史記錄詳細資料頁面
@@ -22,6 +26,9 @@ export function renderHistoryDetail(params = {}) {
     router.navigate('/history');
     return;
   }
+  
+  // 設置當前記錄（供事件監聽器使用）
+  currentRecord = record;
   
   const app = document.getElementById('app');
   
@@ -186,6 +193,18 @@ export function renderHistoryDetail(params = {}) {
         color: var(--color-primary-light);
       }
       
+      .reopen-meeting-section {
+        text-align: center;
+      }
+      
+      .reopen-meeting-hint {
+        margin-top: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        text-align: center;
+        line-height: 1.5;
+      }
+      
       @media (max-width: 767px) {
         .details-grid {
           grid-template-columns: 1fr;
@@ -226,10 +245,17 @@ function generateDetailsHTML(record) {
           <div class="details-label" data-i18n="history.time">時間</div>
           <div class="details-value">${new Date(record.timestamp).toLocaleString('zh-TW')}</div>
         </div>
-        ${record.meetingName ? `
+        ${record.meetingId ? `
           <div class="details-item" style="grid-column: 1 / -1;">
-            <div class="details-label">會議名稱</div>
-            <div class="details-value">${escapeHtml(record.meetingName)}</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-sm);">
+              <div style="flex: 1;">
+                <div class="details-label">會議名稱</div>
+                <div class="details-value" id="history-meeting-name">${escapeHtml(record.meetingName || record.meetingId || '-')}</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="rename-history-meeting-btn" title="重新命名會議">
+                ✏️
+              </button>
+            </div>
           </div>
         ` : ''}
         ${record.meetingId ? `
@@ -257,6 +283,12 @@ function generateDetailsHTML(record) {
           </div>
         ` : ''}
       </div>
+      ${record.mode === 'host' && record.meetingId ? `
+        <div class="reopen-meeting-section" style="margin-top: var(--spacing-lg); padding-top: var(--spacing-lg); border-top: 1px solid var(--color-border);">
+          <button class="btn btn-primary btn-lg btn-block" id="reopen-meeting-btn" data-i18n="history.reopenMeeting"></button>
+          <p class="reopen-meeting-hint" data-i18n="history.reopenMeetingHint"></p>
+        </div>
+      ` : ''}
     </div>
   `;
   
@@ -456,6 +488,22 @@ function getModeText(mode) {
  * 設定事件監聽
  */
 function setupEventListeners() {
+  // 重新命名會議按鈕（僅限 host 模式的記錄）
+  const renameBtn = document.getElementById('rename-history-meeting-btn');
+  if (renameBtn && currentRecord && currentRecord.mode === 'host' && currentRecord.meetingId) {
+    renameBtn.addEventListener('click', () => {
+      showRenameHistoryMeetingModal();
+    });
+  }
+  
+  // 重新開啟會議按鈕（僅限 host 模式的記錄）
+  const reopenBtn = document.getElementById('reopen-meeting-btn');
+  if (reopenBtn && currentRecord && currentRecord.mode === 'host' && currentRecord.meetingId) {
+    reopenBtn.addEventListener('click', () => {
+      reopenMeetingFromHistory();
+    });
+  }
+  
   // 主題切換
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
@@ -510,6 +558,165 @@ function setupEventListeners() {
       });
     }
   }
+}
+
+/**
+ * 顯示重新命名歷史記錄會議名稱的 Modal
+ */
+function showRenameHistoryMeetingModal() {
+  if (!currentRecord || currentRecord.mode !== 'host' || !currentRecord.meetingId) {
+    return;
+  }
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3 data-i18n="host.renameMeeting">重新命名會議</h3>
+        <button class="btn btn-ghost btn-icon" id="close-rename-history-meeting-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="rename-history-meeting-input" data-i18n="host.meetingName">會議名稱</label>
+          <input 
+            type="text" 
+            id="rename-history-meeting-input" 
+            class="form-input" 
+            placeholder="輸入會議名稱（選填）"
+            data-i18n-placeholder="host.meetingNamePlaceholder"
+            maxlength="50"
+            value="${escapeHtml(currentRecord.meetingName || '')}"
+            autocomplete="off"
+          >
+          <p class="form-hint" data-i18n="host.meetingNameHint">留空將使用會議 ID 作為名稱</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-rename-history-meeting-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-rename-history-meeting-btn" data-i18n="common.confirm">確認</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  i18n.applyTranslations();
+  
+  // 關閉按鈕
+  const closeBtn = modal.querySelector('#close-rename-history-meeting-modal');
+  const cancelBtn = modal.querySelector('#cancel-rename-history-meeting-btn');
+  const confirmBtn = modal.querySelector('#confirm-rename-history-meeting-btn');
+  const input = modal.querySelector('#rename-history-meeting-input');
+  
+  const closeModal = () => {
+    modal.classList.remove('active');
+    setTimeout(() => {
+      document.body.removeChild(modal);
+    }, 300);
+  };
+  
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  confirmBtn.addEventListener('click', () => {
+    const newName = input.value.trim();
+    renameHistoryMeeting(newName);
+    closeModal();
+  });
+  
+  // 聚焦輸入框
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 100);
+  
+  // 按 Enter 鍵確認
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmBtn.click();
+    }
+  });
+  
+  // 按 ESC 鍵取消
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
+}
+
+/**
+ * 從歷史記錄重新開啟會議
+ */
+function reopenMeetingFromHistory() {
+  if (!currentRecord || currentRecord.mode !== 'host' || !currentRecord.meetingId) {
+    return;
+  }
+  
+  // 準備恢復資料
+  const restoreData = {
+    meetingId: currentRecord.meetingId,
+    meetingName: currentRecord.meetingName || null,
+    issues: currentRecord.issues ? currentRecord.issues.map(issue => {
+      // 保留所有 issue 的內容和歷史估點記錄
+      // 將狀態重置為「未開始」，但保留所有輪次資料，可以繼續或重新估點
+      return {
+        id: issue.issueId,
+        title: issue.issueTitle,
+        description: issue.issueDescription || '',
+        status: 'notStarted', // 重置為未開始，允許重新估點
+        rounds: issue.rounds ? issue.rounds.map(round => ({
+          roundNumber: round.roundNumber,
+          results: round.results ? round.results.map(r => ({
+            name: r.name,
+            card: r.card
+          })) : [],
+          completedAt: round.completedAt || null
+        })) : [], // 保留所有歷史輪次
+        finalDecision: issue.finalDecision || null, // 保留最終決定（作為參考）
+        completedAt: null // 清除完成時間，允許重新估點
+      };
+    }) : []
+  };
+  
+  // 使用 sessionStorage 傳遞恢復資料（避免 URL 過長）
+  sessionStorage.setItem('restoreMeetingData', JSON.stringify(restoreData));
+  
+  // 導航到 host 頁面
+  router.navigate('/host?restore=true');
+}
+
+/**
+ * 重新命名歷史記錄中的會議名稱
+ * @param {string} newName - 新的會議名稱
+ */
+function renameHistoryMeeting(newName) {
+  if (!currentRecord || currentRecord.mode !== 'host' || !currentRecord.meetingId) {
+    return;
+  }
+  
+  // 更新記錄
+  addHistory({
+    mode: 'host',
+    meetingId: currentRecord.meetingId,
+    meetingName: newName || null,
+    participants: currentRecord.participants,
+    issues: currentRecord.issues || [],
+    completedAt: currentRecord.completedAt
+  });
+  
+  // 更新當前記錄
+  currentRecord.meetingName = newName || null;
+  
+  // 更新 UI
+  const meetingNameElement = document.getElementById('history-meeting-name');
+  if (meetingNameElement) {
+    meetingNameElement.textContent = newName || currentRecord.meetingId || '-';
+  }
+  
+  toastSuccess(i18n.t('host.meetingRenamed'));
 }
 
 

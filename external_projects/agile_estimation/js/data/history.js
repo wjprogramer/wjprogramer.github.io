@@ -2,11 +2,29 @@
  * History Data Management
  */
 
-import { storage } from '../utils/storage/index.js';
+import { storage as defaultStorage } from '../utils/storage/index.js';
 
 const HISTORY_KEY = 'history';
 const MAX_HISTORY_ITEMS = 10;
 const MAX_STARRED_ITEMS = 9;
+
+// 內部 storage 實例，默認使用實際的 storage，測試時可以替換
+let storage = defaultStorage;
+
+/**
+ * 設置 storage 實例（主要用於測試）
+ * @param {Object} storageInstance - Storage 實例
+ */
+export function setStorage(storageInstance) {
+  storage = storageInstance;
+}
+
+/**
+ * 重置 storage 為默認實例（主要用於測試後恢復）
+ */
+export function resetStorage() {
+  storage = defaultStorage;
+}
 
 /**
  * 取得歷史記錄
@@ -78,6 +96,21 @@ function addOrUpdateMeetingHistory(record) {
     // 更新會議名稱（如果有提供）
     if (record.meetingName !== undefined) {
       meetingRecord.meetingName = record.meetingName || null;
+    }
+    
+    // 如果提供了完整的 issues 陣列，完全替換所有 issues（完整更新）
+    if (record.issues && Array.isArray(record.issues)) {
+      meetingRecord.issues = record.issues;
+      // 更新參與者數量（如果有提供）
+      if (record.participants !== undefined) {
+        meetingRecord.participants = record.participants;
+      }
+      // 更新完成時間（如果提供）
+      if (record.completedAt !== undefined) {
+        meetingRecord.completedAt = record.completedAt;
+      }
+      storage.set(HISTORY_KEY, history);
+      return meetingRecord;
     }
     
     // 更新現有記錄

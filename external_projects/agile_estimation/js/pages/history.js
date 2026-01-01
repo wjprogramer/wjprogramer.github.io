@@ -47,7 +47,10 @@ export function renderHistory() {
       <div class="container">
         ${history.length > 0 ? `
           <div class="history-header">
-            <p class="text-muted">共 ${history.length} 筆記錄${getStarredCount() > 0 ? `，${getStarredCount()} 筆已標記` : ''}</p>
+            <div>
+              <p class="text-muted">共 ${history.length} 筆記錄${getStarredCount() > 0 ? `，${getStarredCount()} 筆已標記` : ''}</p>
+              <p class="history-hint" data-i18n="history.limitHint">最多可保存 10 筆記錄，已標記的記錄不會被自動刪除</p>
+            </div>
             <button class="btn btn-secondary" id="clear-all-btn">
               <span data-i18n="history.clearAll">清除全部</span>
             </button>
@@ -68,21 +71,42 @@ export function renderHistory() {
       </div>
     </main>
     
-    <!-- 確認 Modal -->
+    <!-- 確認 Modal (清除全部) -->
     <div class="modal-backdrop" id="confirm-modal">
-      <div class="modal">
+      <div class="modal confirm-modal-danger">
         <div class="modal-header">
-          <h3 class="modal-title" data-i18n="common.confirm">確認</h3>
-          <button class="modal-close" id="confirm-modal-close">✕</button>
+          <h3 data-i18n="common.confirm">確認</h3>
+          <button class="btn btn-ghost btn-icon" id="confirm-modal-close">×</button>
         </div>
         <div class="modal-body">
           <p data-i18n="history.clearConfirm">確定要清除所有歷史記錄嗎？</p>
         </div>
-        <div class="modal-actions">
+        <div class="modal-footer">
           <button class="btn btn-secondary" id="confirm-cancel">
             <span data-i18n="common.cancel">取消</span>
           </button>
-          <button class="btn btn-primary" id="confirm-ok" style="background: var(--color-error);">
+          <button class="btn btn-danger" id="confirm-ok">
+            <span data-i18n="common.confirm">確認</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 確認 Modal (單筆刪除) -->
+    <div class="modal-backdrop" id="delete-confirm-modal">
+      <div class="modal confirm-modal-danger">
+        <div class="modal-header">
+          <h3 data-i18n="common.confirm">確認</h3>
+          <button class="btn btn-ghost btn-icon" id="delete-confirm-modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <p data-i18n="history.deleteConfirm">確定要刪除此筆歷史記錄嗎？此操作無法復原。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="delete-confirm-cancel">
+            <span data-i18n="common.cancel">取消</span>
+          </button>
+          <button class="btn btn-danger" id="delete-confirm-ok">
             <span data-i18n="common.confirm">確認</span>
           </button>
         </div>
@@ -101,6 +125,14 @@ export function renderHistory() {
         padding: var(--spacing-md) 0;
         border-bottom: 1px solid var(--color-border);
         margin-bottom: var(--spacing-lg);
+        gap: var(--spacing-md);
+      }
+      
+      .history-hint {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin-top: var(--spacing-xs);
+        line-height: 1.4;
       }
       
       .history-list {
@@ -289,13 +321,55 @@ export function renderHistory() {
       }
       
       .modal-body {
-        padding: var(--spacing-lg) 0;
+        padding: var(--spacing-lg);
       }
       
-      .modal-actions {
+      .modal-body p {
+        margin: 0;
+        color: var(--color-text-primary);
+        line-height: 1.6;
+      }
+      
+      .modal-footer {
         display: flex;
         gap: var(--spacing-md);
         justify-content: flex-end;
+        padding: var(--spacing-lg);
+        border-top: 1px solid var(--color-border);
+      }
+      
+      .modal-footer .btn {
+        min-width: 80px;
+      }
+      
+      .confirm-modal-danger .modal-footer .btn-danger {
+        background: var(--color-error);
+        border-color: var(--color-error);
+        color: white;
+      }
+      
+      .confirm-modal-danger .modal-footer .btn-danger:hover:not(:disabled) {
+        background: var(--color-error);
+        color: white;
+        opacity: 0.9;
+      }
+      
+      .modal-header h3 {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        color: var(--color-text-primary);
+      }
+      
+      .modal-header .btn-ghost.btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-xl);
+        line-height: 1;
       }
       
       @media (max-width: 767px) {
@@ -507,28 +581,84 @@ function setupEventListeners() {
   })
   
   // 單筆刪除
+  const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+  const deleteConfirmCancel = document.getElementById('delete-confirm-cancel');
+  const deleteConfirmOk = document.getElementById('delete-confirm-ok');
+  const deleteConfirmModalClose = document.getElementById('delete-confirm-modal-close');
+  let deleteTargetId = null;
+  
   document.querySelectorAll('.history-delete').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = btn.dataset.id;
-      removeHistory(id);
-      
-      // 移除 DOM 元素
-      const item = document.querySelector(`.history-item[data-id="${id}"]`);
-      if (item) {
-        item.style.animation = 'fadeOut 0.3s ease forwards';
-        setTimeout(() => {
-          item.remove();
-          
-          // 檢查是否還有記錄
-          const remaining = document.querySelectorAll('.history-item');
-          if (remaining.length === 0) {
-            renderHistory(); // 重新渲染顯示空狀態
-          }
-        }, 300);
+      deleteTargetId = id;
+      if (deleteConfirmModal) {
+        deleteConfirmModal.classList.add('active');
       }
     });
   });
+  
+  // 定義關閉函數
+  const closeDeleteConfirmModal = () => {
+    if (deleteConfirmModal) {
+      deleteConfirmModal.classList.remove('active');
+    }
+    deleteTargetId = null;
+  };
+  
+  if (deleteConfirmCancel) {
+    deleteConfirmCancel.addEventListener('click', closeDeleteConfirmModal);
+  }
+  
+  if (deleteConfirmModalClose) {
+    deleteConfirmModalClose.addEventListener('click', closeDeleteConfirmModal);
+  }
+  
+  if (deleteConfirmOk) {
+    deleteConfirmOk.addEventListener('click', () => {
+      if (deleteTargetId) {
+        removeHistory(deleteTargetId);
+        
+        // 移除 DOM 元素
+        const item = document.querySelector(`.history-item[data-id="${deleteTargetId}"]`);
+        if (item) {
+          item.style.animation = 'fadeOut 0.3s ease forwards';
+          setTimeout(() => {
+            item.remove();
+            
+            // 檢查是否還有記錄
+            const remaining = document.querySelectorAll('.history-item');
+            if (remaining.length === 0) {
+              renderHistory(); // 重新渲染顯示空狀態
+            }
+          }, 300);
+        }
+        
+        toastSuccess(i18n.t('history.deleted'));
+        deleteTargetId = null;
+      }
+      if (deleteConfirmModal) {
+        deleteConfirmModal.classList.remove('active');
+      }
+    });
+  }
+  
+  // 刪除確認 Modal 背景點擊關閉
+  if (deleteConfirmModal) {
+    deleteConfirmModal.addEventListener('click', (e) => {
+      if (e.target === deleteConfirmModal) {
+        closeDeleteConfirmModal();
+      }
+    });
+  }
+  
+  // 按 ESC 鍵取消刪除確認
+  const handleEsc = (e) => {
+    if (e.key === 'Escape' && deleteConfirmModal && deleteConfirmModal.classList.contains('active')) {
+      closeDeleteConfirmModal();
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
   
   // Modal 背景點擊關閉
   if (confirmModal) {
