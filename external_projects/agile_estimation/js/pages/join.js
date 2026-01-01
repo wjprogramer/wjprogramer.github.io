@@ -5,6 +5,7 @@
 
 import { i18n } from '../utils/i18n.js';
 import { theme } from '../utils/theme.js';
+import { storage } from '../utils/storage.js';
 import { ClientManager, ConnectionState, EstimationState } from '../webrtc/peer-manager.js';
 import { 
   CARD_SET, 
@@ -451,6 +452,9 @@ export function renderJoin(params = {}) {
   i18n.applyTranslations();
   
   // 設定事件監聯
+  // 載入上次使用的 Client 名稱
+  loadClientName();
+  
   setupEventListeners();
   
   // 如果有 URL 參數中的會議 ID，聚焦到名稱輸入框
@@ -468,6 +472,18 @@ export function renderJoin(params = {}) {
     }
     meetingIdFromUrl = null;
   };
+}
+
+/**
+ * 載入上次使用的 Client 名稱
+ */
+function loadClientName() {
+  const settings = storage.get('settings', {});
+  const lastClientName = settings.lastClientName || '';
+  const nameInput = document.getElementById('name-input');
+  if (nameInput && lastClientName) {
+    nameInput.value = lastClientName;
+  }
 }
 
 /**
@@ -566,6 +582,11 @@ async function joinMeeting() {
     
     // 加入會議
     await clientManager.joinMeeting(meetingId, name);
+    
+    // 儲存 Client 名稱
+    const settings = storage.get('settings', {});
+    settings.lastClientName = name;
+    storage.set('settings', settings);
     
     // 切換到會議階段
     document.getElementById('join-form-phase').classList.add('hidden');

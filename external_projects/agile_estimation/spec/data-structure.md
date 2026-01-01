@@ -31,7 +31,9 @@
     port: 443,                              // 信號伺服器 Port
     path: '/',                              // 信號伺服器 Path
     secure: true                            // 是否使用 HTTPS/WSS
-  }
+  },
+  lastHostName: null | string,             // 上次 Host 使用的名稱
+  lastClientName: null | string            // 上次 Client 使用的名稱
 }
 ```
 
@@ -50,7 +52,9 @@
     port: 443,
     path: '/',
     secure: true
-  }
+  },
+  lastHostName: null,
+  lastClientName: null
 }
 ```
 
@@ -950,9 +954,29 @@ function validateMessage(message) {
 
 提供「清除所有資料」功能，清除所有 localStorage 資料：
 
+**清除的資料項目**：
+- 設定資料（`agile_estimation_settings`）：包含主題、語言、信號伺服器設定、使用者名稱等
+- 歷史記錄（`agile_estimation_history`）：所有估點歷史記錄
+- 黑名單（`agile_estimation_blacklist`）：Host 模式的黑名單
+
+**實作方式**：
 ```javascript
 function clearAllData() {
-  storage.clear();  // 清除所有 agile_estimation_ 前綴的資料
+  // 清除所有 agile_estimation_ 前綴的資料
+  const keys = Object.keys(localStorage);
+  keys.forEach(key => {
+    if (key.startsWith('agile_estimation_')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // 或使用 storage.clear()（如果實作了清除所有前綴資料的功能）
+  // storage.clear();
 }
 ```
+
+**注意事項**：
+- 此操作不可復原，請謹慎使用
+- 清除後會重置為預設設定
+- 需要確認對話框避免誤操作
 

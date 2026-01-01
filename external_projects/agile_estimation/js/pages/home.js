@@ -70,6 +70,15 @@ export function renderHome() {
             </div>
             <span class="menu-card-arrow">→</span>
           </a>
+          
+          <a href="#/settings" class="menu-card">
+            <div class="menu-card-icon">⚙️</div>
+            <div class="menu-card-content">
+              <h3 class="menu-card-title" data-i18n="settings.title">設定</h3>
+              <p class="menu-card-desc text-muted">管理應用程式設定和資料</p>
+            </div>
+            <span class="menu-card-arrow">→</span>
+          </a>
         </div>
       </div>
     </main>

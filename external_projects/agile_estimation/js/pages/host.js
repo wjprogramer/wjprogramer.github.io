@@ -5,15 +5,25 @@
 
 import { i18n } from '../utils/i18n.js';
 import { theme } from '../utils/theme.js';
+import { storage } from '../utils/storage.js';
 import { HostManager, ConnectionState, EstimationState } from '../webrtc/peer-manager.js';
 import { copyJoinUrl, copyMeetingId, generateJoinUrl } from '../utils/clipboard.js';
 import { generateMeetingQRCode } from '../utils/qrcode.js';
 import { showToast, toastSuccess, toastError, toastWarning } from '../components/toast.js';
 import { addHistory } from '../data/history.js';
+import { 
+  CARD_SET, 
+  createSelectableCardHTML, 
+  initCardTiltEffect,
+  setupCardSelection 
+} from '../components/card.js';
 
 // 模組狀態
 let hostManager = null;
 let currentResults = null;
+let hostName = 'Host';
+let hostParticipates = true; // Host 是否參與估點
+let hostSelectedCard = null; // Host 選擇的卡片
 
 /**
  * 渲染 Host 模式頁面
@@ -44,8 +54,44 @@ export function renderHost() {
     
     <main class="page host-page">
       <div class="container">
+        <!-- 設定表單階段 -->
+        <div id="setup-phase" class="phase-container">
+          <div class="setup-card">
+            <h2 data-i18n="host.title">建立房間</h2>
+            
+            <div class="form-group">
+              <label for="host-name-input" data-i18n="host.hostName">主持人名稱</label>
+              <input 
+                type="text" 
+                id="host-name-input" 
+                class="form-input" 
+                placeholder="輸入主持人名稱"
+                data-i18n-placeholder="host.hostNamePlaceholder"
+                maxlength="20"
+                autocomplete="off"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  id="participate-checkbox"
+                  checked
+                >
+                <span data-i18n="host.participateInEstimation">參與估點</span>
+              </label>
+              <p class="form-hint" data-i18n="host.participateInEstimationDesc">主持人是否參與估點（選擇牌）</p>
+            </div>
+            
+            <button class="btn btn-primary btn-lg btn-block" id="create-meeting-btn">
+              <span data-i18n="host.createMeeting">建立會議室</span>
+            </button>
+          </div>
+        </div>
+        
         <!-- 建立中狀態 -->
-        <div id="creating-phase" class="phase-container">
+        <div id="creating-phase" class="phase-container hidden">
           <div class="loading-container">
             <div class="loading-spinner large"></div>
             <p class="text-secondary" data-i18n="host.creating">建立會議室中...</p>
@@ -98,6 +144,16 @@ export function renderHost() {
           
           <!-- 控制面板 -->
           <div class="control-section">
+            <!-- Host 選擇卡片區域（如果 Host 參與估點） -->
+            <div id="host-card-selection" class="host-card-selection hidden">
+              <div class="host-selection-header">
+                <h4>${hostName} <span data-i18n="join.selectCard">請選擇一張牌</span></h4>
+              </div>
+              <div class="host-cards-container" id="host-cards-container">
+                <!-- Host 選擇卡片會在這裡動態生成 -->
+              </div>
+            </div>
+            
             <div class="control-buttons" id="control-buttons">
               <button class="btn btn-primary btn-lg" id="start-btn" disabled>
                 <span data-i18n="host.startEstimation">開始估點</span>
@@ -161,6 +217,87 @@ export function renderHost() {
         height: 60px;
       }
       
+      /* 設定表單 */
+      .setup-card {
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        max-width: 500px;
+        margin: 0 auto;
+      }
+      
+      .setup-card h2 {
+        margin-bottom: var(--spacing-lg);
+        text-align: center;
+      }
+      
+      .form-group {
+        margin-bottom: var(--spacing-lg);
+      }
+      
+      .form-group label {
+        display: block;
+        margin-bottom: var(--spacing-xs);
+        font-weight: 500;
+        color: var(--color-text-primary);
+      }
+      
+      .form-input {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-base);
+      }
+      
+      .form-input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+      }
+      
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        cursor: pointer;
+      }
+      
+      .checkbox-label input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      
+      .form-hint {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin-top: var(--spacing-xs);
+      }
+      
+      /* Host 選擇卡片區域 */
+      .host-card-selection {
+        margin-bottom: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-lg);
+      }
+      
+      .host-selection-header {
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .host-selection-header h4 {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--color-text-primary);
+      }
+      
+      .host-cards-container {
+        margin-top: var(--spacing-md);
+      }
+      
       /* 會議資訊區 */
       .meeting-info-section {
         margin-bottom: var(--spacing-xl);
@@ -215,6 +352,16 @@ export function renderHost() {
         justify-content: center;
         min-height: 200px;
         align-items: center;
+        padding: var(--spacing-md);
+        background: white;
+        border-radius: var(--radius-md);
+        width: fit-content;
+        margin: 0 auto;
+      }
+      
+      /* Dark mode 下確保白色背景可見 */
+      [data-theme="dark"] .qr-container {
+        background: white;
       }
       
       /* 參與者區 */
@@ -427,11 +574,11 @@ export function renderHost() {
   // 套用翻譯
   i18n.applyTranslations();
   
+  // 載入上次使用的 Host 名稱
+  loadHostName();
+  
   // 設定事件監聽
   setupEventListeners();
-  
-  // 開始建立會議室
-  createMeeting();
   
   // 返回清理函數
   return () => {
@@ -444,9 +591,39 @@ export function renderHost() {
 }
 
 /**
+ * 載入上次使用的 Host 名稱
+ */
+function loadHostName() {
+  const settings = storage.get('settings', {});
+  const lastHostName = settings.lastHostName || '';
+  const hostNameInput = document.getElementById('host-name-input');
+  if (hostNameInput && lastHostName) {
+    hostNameInput.value = lastHostName;
+  }
+}
+
+/**
  * 設定事件監聽
  */
 function setupEventListeners() {
+  // 建立會議室按鈕
+  document.getElementById('create-meeting-btn')?.addEventListener('click', () => {
+    const hostNameInput = document.getElementById('host-name-input');
+    const hostName = hostNameInput?.value.trim() || 'Host';
+    
+    // 儲存 Host 名稱
+    const settings = storage.get('settings', {});
+    settings.lastHostName = hostName;
+    storage.set('settings', settings);
+    
+    // 隱藏設定表單，顯示建立中狀態
+    document.getElementById('setup-phase').classList.add('hidden');
+    document.getElementById('creating-phase').classList.remove('hidden');
+    
+    // 開始建立會議室
+    createMeeting(hostName);
+  });
+  
   // 主題切換
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
@@ -523,9 +700,17 @@ function setupEventListeners() {
 
 /**
  * 建立會議室
+ * @param {string} name - Host 名稱
  */
-async function createMeeting() {
+async function createMeeting(name) {
   try {
+    hostName = name || 'Host';
+    
+    // 讀取 Host 是否參與估點
+    const participateCheckbox = document.getElementById('participate-checkbox');
+    hostParticipates = participateCheckbox ? participateCheckbox.checked : true;
+    hostSelectedCard = null;
+    
     // 設定回調
     hostManager.onStateChange = (state) => {
       console.log('Host state changed:', state);
@@ -663,12 +848,19 @@ function updateControlButtons() {
   const flipBtn = document.getElementById('flip-btn');
   const newRoundBtn = document.getElementById('new-round-btn');
   const resultsSection = document.getElementById('results-section');
+  const hostCardSelection = document.getElementById('host-card-selection');
   
   // 防護：確保元素存在
   if (!startBtn || !flipBtn || !newRoundBtn || !resultsSection) return;
   
   const participants = hostManager.getParticipants();
   const hasParticipants = participants.length > 0;
+  const allClientsSelected = participants.every(p => p.estimationState === EstimationState.SELECTED);
+  
+  // 檢查是否所有人都已選擇（包括 Host，如果 Host 參與）
+  const allSelected = hostParticipates 
+    ? (allClientsSelected && hostSelectedCard !== null)
+    : allClientsSelected;
   
   switch (hostManager.estimationState) {
     case EstimationState.WAITING:
@@ -677,14 +869,23 @@ function updateControlButtons() {
       flipBtn.classList.add('hidden');
       newRoundBtn.classList.add('hidden');
       resultsSection.classList.add('hidden');
+      if (hostCardSelection) hostCardSelection.classList.add('hidden');
       break;
       
     case EstimationState.SELECTING:
       startBtn.classList.add('hidden');
       flipBtn.classList.remove('hidden');
-      flipBtn.disabled = !hasParticipants;
+      flipBtn.disabled = !allSelected; // 只有所有人都選擇了才能翻牌
       newRoundBtn.classList.add('hidden');
       resultsSection.classList.add('hidden');
+      // 如果 Host 參與估點，顯示 Host 選擇卡片區域
+      if (hostCardSelection) {
+        if (hostParticipates) {
+          hostCardSelection.classList.remove('hidden');
+        } else {
+          hostCardSelection.classList.add('hidden');
+        }
+      }
       break;
       
     case EstimationState.REVEALED:
@@ -692,6 +893,7 @@ function updateControlButtons() {
       flipBtn.classList.add('hidden');
       newRoundBtn.classList.remove('hidden');
       resultsSection.classList.remove('hidden');
+      if (hostCardSelection) hostCardSelection.classList.add('hidden');
       break;
   }
 }
@@ -701,16 +903,62 @@ function updateControlButtons() {
  */
 function startEstimation() {
   hostManager.startEstimation();
+  hostSelectedCard = null; // 重置 Host 選擇
+  
+  // 如果 Host 參與估點，初始化 Host 選擇卡片 UI
+  if (hostParticipates) {
+    initHostCardSelection();
+  }
+  
   updateParticipantsList();
   updateControlButtons();
   toastSuccess(i18n.t('host.startEstimation'));
 }
 
 /**
+ * 初始化 Host 選擇卡片 UI
+ */
+function initHostCardSelection() {
+  const hostCardsContainer = document.getElementById('host-cards-container');
+  if (!hostCardsContainer) return;
+  
+  hostCardsContainer.innerHTML = '';
+  
+  // 生成卡片 HTML
+  const cardsHTML = CARD_SET.map(card => createSelectableCardHTML(card)).join('');
+  hostCardsContainer.innerHTML = `<div class="cards-grid">${cardsHTML}</div>`;
+  
+  // 初始化卡片傾斜效果
+  initCardTiltEffect(hostCardsContainer);
+  
+  // 設定卡片選擇事件
+  setupCardSelection(hostCardsContainer, (card) => {
+    hostSelectedCard = card;
+    updateControlButtons();
+  });
+}
+
+/**
  * 翻牌
  */
 function flipCards() {
+  // 如果 Host 參與估點，將 Host 的選擇加入結果
+  if (hostParticipates && hostSelectedCard !== null) {
+    // 在翻牌前，將 Host 的選擇加入到參與者結果中
+    // 注意：這需要在 HostManager 中處理，或者我們在這裡手動添加
+  }
+  
   currentResults = hostManager.flipCards();
+  
+  // 如果 Host 參與估點，添加 Host 的結果
+  if (hostParticipates && hostSelectedCard !== null) {
+    currentResults.push({
+      id: 'host',
+      name: hostName,
+      card: hostSelectedCard
+    });
+  }
+  
   updateParticipantsList();
   updateControlButtons();
   displayResults(currentResults);
@@ -725,6 +973,7 @@ function flipCards() {
 function newRound() {
   hostManager.resetRound();
   currentResults = null;
+  hostSelectedCard = null; // 重置 Host 選擇
   updateParticipantsList();
   updateControlButtons();
 }
