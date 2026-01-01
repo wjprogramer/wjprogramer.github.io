@@ -195,7 +195,7 @@ function addOrUpdateMeetingHistory(record) {
     }
     
     // 更新參與者數量（如果有提供）
-    if (record.participants) {
+    if (record.participants !== undefined) {
       meetingRecord.participants = record.participants;
     }
     
@@ -209,10 +209,10 @@ function addOrUpdateMeetingHistory(record) {
       mode: 'host',
       meetingId: meetingId,
       meetingName: record.meetingName || null,
-      participants: record.participants || null,
+      participants: record.participants !== undefined ? record.participants : null,
       startedAt: now,
-      completedAt: null,
-      issues: [],
+      completedAt: record.completedAt || null,
+      issues: record.issues || [],
       starred: false
     };
     
