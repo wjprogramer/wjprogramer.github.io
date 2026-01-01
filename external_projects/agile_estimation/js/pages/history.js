@@ -5,9 +5,10 @@
 
 import { i18n } from '../utils/i18n.js';
 import { theme } from '../utils/theme.js';
-import { getHistory, clearHistory, removeHistory, formatTime } from '../data/history.js';
-import { toastSuccess, showToast } from '../components/toast.js';
+import { getHistory, clearHistory, removeHistory, formatTime, toggleStar, getStarredCount } from '../data/history.js';
+import { toastSuccess, showToast, toastError } from '../components/toast.js';
 import { CARD_SET } from '../components/card.js';
+import { router } from '../router.js';
 
 /**
  * 渲染歷史記錄頁面
@@ -24,9 +25,17 @@ export function renderHistory() {
         </a>
         <div class="logo" data-i18n="history.title">歷史記錄</div>
         <div class="header-actions">
-          <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
-            🌐
-          </button>
+          <div class="lang-dropdown-container">
+            <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
+              🌐
+            </button>
+            <div class="lang-dropdown hidden" id="lang-dropdown">
+              <button class="lang-option" data-lang="zh-TW">繁體中文</button>
+              <button class="lang-option" data-lang="zh-CN">简体中文</button>
+              <button class="lang-option" data-lang="en">English</button>
+              <button class="lang-option" data-lang="ja">日本語</button>
+            </div>
+          </div>
           <button class="btn btn-ghost btn-icon" id="theme-toggle" title="切換主題">
             ${theme.isDark() ? '☀️' : '🌙'}
           </button>
@@ -38,7 +47,7 @@ export function renderHistory() {
       <div class="container">
         ${history.length > 0 ? `
           <div class="history-header">
-            <p class="text-muted">共 ${history.length} 筆記錄</p>
+            <p class="text-muted">共 ${history.length} 筆記錄${getStarredCount() > 0 ? `，${getStarredCount()} 筆已標記` : ''}</p>
             <button class="btn btn-secondary" id="clear-all-btn">
               <span data-i18n="history.clearAll">清除全部</span>
             </button>
@@ -111,8 +120,90 @@ export function renderHistory() {
         transition: all var(--transition-fast);
       }
       
+      .history-item.has-details {
+        cursor: pointer;
+      }
+      
       .history-item:hover {
         border-color: var(--color-primary);
+      }
+      
+      .history-value {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
+      
+      .history-issue-title {
+        font-weight: 600;
+        color: var(--color-primary);
+        font-size: var(--font-size-sm);
+      }
+      
+      .history-card-label {
+        font-size: var(--font-size-lg);
+      }
+      
+      .history-participants {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+      }
+      
+      .history-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+      }
+      
+      .history-view-details {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--color-text-muted);
+        cursor: pointer;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        flex-shrink: 0;
+      }
+      
+      .history-view-details:hover {
+        background: var(--color-primary);
+        color: white;
+      }
+      
+      .history-star {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--color-text-muted);
+        cursor: pointer;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        flex-shrink: 0;
+        font-size: 20px;
+      }
+      
+      .history-star:hover {
+        background: var(--color-bg-tertiary);
+        transform: scale(1.1);
+      }
+      
+      .history-star.starred {
+        color: #ffd700;
+      }
+      
+      .history-star.starred:hover {
+        background: var(--color-bg-tertiary);
+        color: #ffed4e;
       }
       
       .history-card {
@@ -227,27 +318,95 @@ export function renderHistory() {
  * 渲染單筆歷史記錄
  */
 function renderHistoryItem(record) {
-  const card = CARD_SET.find(c => c.value === record.value) || { label: record.value };
+  // 判斷顯示的卡片值
+  let displayValue = record.value;
+  let displayLabel = record.value;
+  
+  // 會議記錄包含多個 issue
+  if (record.issues && Array.isArray(record.issues) && record.issues.length > 0) {
+    // 顯示最後一個完成的 issue 的最終決定，或第一個 issue 的第一輪結果
+    const completedIssues = record.issues.filter(i => i.finalDecision);
+    if (completedIssues.length > 0) {
+      const lastIssue = completedIssues[completedIssues.length - 1];
+      displayValue = lastIssue.finalDecision;
+      displayLabel = lastIssue.finalDecision;
+    } else if (record.issues[0].rounds && record.issues[0].rounds.length > 0) {
+      // 顯示第一個 issue 的第一輪結果的平均值（簡化顯示）
+      displayValue = '-';
+      displayLabel = '進行中';
+    } else {
+      displayValue = '-';
+      displayLabel = '-';
+    }
+  } else if (record.value) {
+    const card = CARD_SET.find(c => c.value === record.value);
+    if (card) {
+      displayLabel = card.label;
+    }
+  } else {
+    displayValue = '-';
+    displayLabel = '-';
+  }
+  
+  const card = CARD_SET.find(c => c.value === displayValue) || { label: displayLabel };
   const modeText = getModeText(record.mode);
   const timeText = formatTime(record.timestamp);
   
+  // 判斷是否有詳細資料
+  const hasDetails = record.meetingId || (record.issues && record.issues.length > 0) || record.value;
+  
+  // 顯示會議資訊
+  let issueInfo = '';
+  if (record.issues && Array.isArray(record.issues)) {
+    const issueCount = record.issues.length;
+    const completedCount = record.issues.filter(i => i.finalDecision).length;
+    if (issueCount > 0) {
+      const displayName = record.meetingName || record.meetingId || '-';
+      issueInfo = `<span class="history-issue-title">${escapeHtml(displayName)} (${completedCount}/${issueCount} Issues)</span>`;
+    }
+  }
+  
   return `
-    <div class="history-item" data-id="${record.id}">
+    <div class="history-item ${hasDetails ? 'has-details' : ''}" data-id="${record.id}">
       <div class="history-card">
         <span class="history-card-value">${card.label}</span>
       </div>
       <div class="history-info">
-        <div class="history-value">${card.label}</div>
+        <div class="history-value">
+          ${issueInfo}
+          <span class="history-card-label">${card.label}</span>
+        </div>
         <div class="history-meta">
           <span class="history-mode">${modeText}</span>
           <span class="history-time">${timeText}</span>
+          ${record.participants ? `<span class="history-participants">👥 ${record.participants}</span>` : ''}
         </div>
       </div>
-      <button class="history-delete" data-id="${record.id}" title="刪除">
-        🗑️
-      </button>
+      <div class="history-actions">
+        <button class="history-star ${record.starred === true ? 'starred' : ''}" data-id="${record.id}" title="${record.starred === true ? i18n.t('history.unstar') : i18n.t('history.star')}">
+          ${record.starred === true ? '⭐' : '☆'}
+        </button>
+        ${hasDetails ? `
+          <button class="history-view-details" data-id="${record.id}" title="查看詳細資料">
+            👁️
+          </button>
+        ` : ''}
+        <button class="history-delete" data-id="${record.id}" title="刪除">
+          🗑️
+        </button>
+      </div>
     </div>
   `;
+}
+
+/**
+ * HTML 跳脫
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 /**
@@ -300,6 +459,53 @@ function setupEventListeners() {
     });
   }
   
+  // Star/Unstar 按鈕
+  document.querySelectorAll('.history-star').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const newStarred = toggleStar(id);
+      
+      if (newStarred === false && !btn.classList.contains('starred')) {
+        // 達到上限
+        toastError(i18n.t('history.maxStarredReached', { max: 9 }));
+        return;
+      }
+      
+      // 更新 UI
+      if (newStarred) {
+        btn.classList.add('starred');
+        btn.innerHTML = '⭐';
+        btn.title = i18n.t('history.unstar');
+        toastSuccess(i18n.t('history.starred'));
+      } else {
+        btn.classList.remove('starred');
+        btn.innerHTML = '☆';
+        btn.title = i18n.t('history.star');
+        toastSuccess(i18n.t('history.unstarred'));
+      }
+    });
+  });
+  
+  // 查看詳細資料 - 導航到詳細頁面
+  document.querySelectorAll('.history-view-details').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      router.navigate(`/history/${id}`);
+    });
+  });
+  
+  // 點擊 history item 也可以查看詳細資料（如果有）
+  document.querySelectorAll('.history-item.has-details').forEach(item => {
+    item.addEventListener('click', (e) => {
+      // 如果點擊的是按鈕，不觸發
+      if (e.target.closest('button')) return;
+      const id = item.dataset.id;
+      router.navigate(`/history/${id}`);
+    });
+  })
+  
   // 單筆刪除
   document.querySelectorAll('.history-delete').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -342,15 +548,46 @@ function setupEventListeners() {
     });
   }
   
-  // 語言切換
+  // 語言切換 Dropdown
   const langToggle = document.getElementById('lang-toggle');
-  if (langToggle) {
-    langToggle.addEventListener('click', async () => {
-      const currentLang = i18n.getLanguage();
-      const newLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
-      await i18n.setLanguage(newLang);
-      renderHistory(); // 重新渲染以更新語言
+  const langDropdown = document.getElementById('lang-dropdown');
+  
+  if (langToggle && langDropdown) {
+    langToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langDropdown.classList.toggle('hidden');
+      updateLangDropdownSelection();
+    });
+    
+    langDropdown.querySelectorAll('.lang-option').forEach(option => {
+      option.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const lang = option.dataset.lang;
+        await i18n.setLanguage(lang);
+        langDropdown.classList.add('hidden');
+        renderHistory(); // 重新渲染以更新語言
+      });
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!langToggle.contains(e.target) && !langDropdown.contains(e.target)) {
+        langDropdown.classList.add('hidden');
+      }
     });
   }
+  
+  function updateLangDropdownSelection() {
+    const currentLang = i18n.getLanguage();
+    if (langDropdown) {
+      langDropdown.querySelectorAll('.lang-option').forEach(option => {
+        if (option.dataset.lang === currentLang) {
+          option.classList.add('active');
+        } else {
+          option.classList.remove('active');
+        }
+      });
+    }
+  }
 }
+
 

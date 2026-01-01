@@ -3,11 +3,11 @@
  * 管理多國語系
  */
 
-import { storage } from './storage.js';
+import { storage } from './storage/index.js';
 
 const LANG_KEY = 'language';
 const DEFAULT_LANG = 'zh-TW';
-const SUPPORTED_LANGS = ['zh-TW', 'en'];
+const SUPPORTED_LANGS = ['zh-TW', 'zh-CN', 'en', 'ja'];
 
 class I18nManager {
   constructor() {
@@ -47,8 +47,15 @@ class I18nManager {
     
     // 語言碼匹配（例如 zh -> zh-TW, en-US -> en）
     const langCode = browserLang.split('-')[0];
-    if (langCode === 'zh') return 'zh-TW';
+    if (langCode === 'zh') {
+      // 檢查是否為簡體中文
+      if (browserLang.toLowerCase().includes('cn') || browserLang.toLowerCase().includes('hans')) {
+        return 'zh-CN';
+      }
+      return 'zh-TW';
+    }
     if (langCode === 'en') return 'en';
+    if (langCode === 'ja') return 'ja';
     
     return null;
   }

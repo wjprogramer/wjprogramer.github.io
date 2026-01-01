@@ -5,12 +5,12 @@
 
 import { i18n } from '../utils/i18n.js';
 import { theme } from '../utils/theme.js';
-import { storage } from '../utils/storage.js';
+import { storage } from '../utils/storage/index.js';
 import { HostManager, ConnectionState, EstimationState } from '../webrtc/peer-manager.js';
 import { copyJoinUrl, copyMeetingId, generateJoinUrl } from '../utils/clipboard.js';
 import { generateMeetingQRCode } from '../utils/qrcode.js';
 import { showToast, toastSuccess, toastError, toastWarning } from '../components/toast.js';
-import { addHistory } from '../data/history.js';
+import { addHistory, getHistory } from '../data/history.js';
 import { 
   CARD_SET, 
   createSelectableCardHTML, 
@@ -22,8 +22,13 @@ import {
 let hostManager = null;
 let currentResults = null;
 let hostName = 'Host';
+let meetingName = ''; // 會議名稱
 let hostParticipates = true; // Host 是否參與估點
 let hostSelectedCard = null; // Host 選擇的卡片
+let issues = []; // 所有 Issue 列表 [{ id, title, description, status, rounds: [] }]
+let currentIssue = null; // 當前選中的 Issue { id, title, description, status, rounds: [] }
+let currentRound = 1; // 當前輪次
+let finalDecision = null; // Host 的最終決定
 
 /**
  * 渲染 Host 模式頁面
@@ -41,14 +46,22 @@ export function renderHost() {
           ← <span data-i18n="common.back">返回</span>
         </a>
         <div class="logo" data-i18n="host.title">建立房間</div>
-        <div class="header-actions">
-          <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
-            🌐
-          </button>
-          <button class="btn btn-ghost btn-icon" id="theme-toggle" title="切換主題">
-            ${theme.isDark() ? '☀️' : '🌙'}
-          </button>
-        </div>
+              <div class="header-actions">
+                <div class="lang-dropdown-container">
+                  <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
+                    🌐
+                  </button>
+                  <div class="lang-dropdown hidden" id="lang-dropdown">
+                    <button class="lang-option" data-lang="zh-TW">繁體中文</button>
+                    <button class="lang-option" data-lang="zh-CN">简体中文</button>
+                    <button class="lang-option" data-lang="en">English</button>
+                    <button class="lang-option" data-lang="ja">日本語</button>
+                  </div>
+                </div>
+                <button class="btn btn-ghost btn-icon" id="theme-toggle" title="切換主題">
+                  ${theme.isDark() ? '☀️' : '🌙'}
+                </button>
+              </div>
       </div>
     </header>
     
@@ -67,9 +80,23 @@ export function renderHost() {
                 class="form-input" 
                 placeholder="輸入主持人名稱"
                 data-i18n-placeholder="host.hostNamePlaceholder"
-                maxlength="20"
+                maxlength="30"
                 autocomplete="off"
               >
+            </div>
+            
+            <div class="form-group">
+              <label for="meeting-name-input" data-i18n="host.meetingName">會議名稱</label>
+              <input 
+                type="text" 
+                id="meeting-name-input" 
+                class="form-input" 
+                placeholder="輸入會議名稱（選填）"
+                data-i18n-placeholder="host.meetingNamePlaceholder"
+                maxlength="50"
+                autocomplete="off"
+              >
+              <p class="form-hint" data-i18n="host.meetingNameHint">留空將使用會議 ID 作為名稱</p>
             </div>
             
             <div class="form-group">
@@ -103,6 +130,9 @@ export function renderHost() {
           <!-- 會議資訊區 -->
           <div class="meeting-info-section">
             <div class="meeting-info-card">
+              <div id="meeting-name-display" class="meeting-name-display hidden">
+                <span class="meeting-name-value" id="meeting-name">-</span>
+              </div>
               <div class="meeting-id-display">
                 <span class="meeting-id-label" data-i18n="host.meetingId">會議 ID</span>
                 <span class="meeting-id-value" id="meeting-id">------</span>
@@ -126,12 +156,46 @@ export function renderHost() {
             </div>
           </div>
           
+          <!-- Issue 管理區 -->
+          <div class="issue-section">
+            <div class="section-header">
+              <h3>
+                <span data-i18n="host.issues">Issue 管理</span>
+              </h3>
+              <button class="btn btn-secondary btn-sm" id="create-issue-btn">
+                <span data-i18n="host.createIssue">建立 Issue</span>
+              </button>
+            </div>
+            
+            <!-- Issue 列表 -->
+            <div id="issues-list" class="issues-list">
+              <div class="empty-state" id="no-issues">
+                <p data-i18n="host.noIssues">尚未建立任何 Issue</p>
+              </div>
+            </div>
+            
+            <!-- 當前選中的 Issue 資訊 -->
+            <div id="current-issue-info" class="current-issue-info hidden">
+              <div class="current-issue-header">
+                <h4>
+                  <span data-i18n="host.currentIssue">當前 Issue</span>: 
+                  <span id="current-issue-title" class="issue-title-display">-</span>
+                </h4>
+                <span id="current-issue-status" class="issue-status-badge"></span>
+              </div>
+              <p class="issue-description" id="issue-description"></p>
+              <p class="issue-round-info">
+                <span data-i18n="host.roundNumber">輪次</span>: <span id="current-round-number">1</span>
+              </p>
+            </div>
+          </div>
+          
           <!-- 參與者區 -->
           <div class="participants-section">
             <div class="section-header">
               <h3>
                 <span data-i18n="host.participants">參與者</span>
-                (<span id="participant-count">0</span><span data-i18n="host.participantCount">人</span>)
+                (<span id="participant-count">0</span>/15<span data-i18n="host.participantCount">人</span>)
               </h3>
             </div>
             
@@ -179,6 +243,23 @@ export function renderHost() {
             
             <div class="results-cards" id="results-cards">
               <!-- 結果卡片會在這裡顯示 -->
+            </div>
+            
+            <!-- 統計圖表 -->
+            <div id="chart-container" class="chart-container hidden">
+              <canvas id="results-chart"></canvas>
+            </div>
+            
+            <!-- 極端值分析 -->
+            <div id="extreme-values-section" class="extreme-values-section hidden">
+              <h4 data-i18n="host.extremeValues">極端值</h4>
+              <div id="extreme-values-display"></div>
+            </div>
+            
+            <!-- Host 最終決定 -->
+            <div id="final-decision-section" class="final-decision-section hidden">
+              <h4 data-i18n="host.finalDecision">最終決定</h4>
+              <div id="final-decision-options"></div>
             </div>
           </div>
           
@@ -310,6 +391,19 @@ export function renderHost() {
         text-align: center;
       }
       
+      .meeting-name-display {
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-md);
+        border-bottom: 1px solid var(--color-border);
+      }
+      
+      .meeting-name-value {
+        display: block;
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        color: var(--color-text-primary);
+      }
+      
       .meeting-id-display {
         margin-bottom: var(--spacing-lg);
       }
@@ -362,6 +456,234 @@ export function renderHost() {
       /* Dark mode 下確保白色背景可見 */
       [data-theme="dark"] .qr-container {
         background: white;
+      }
+      
+      /* Issue 管理區 */
+      .issue-section {
+        margin-bottom: var(--spacing-xl);
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+      }
+      
+      .issue-section .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .issue-title-display {
+        color: var(--color-primary);
+        font-weight: 600;
+        margin-left: var(--spacing-sm);
+      }
+      
+      .issue-info {
+        padding-top: var(--spacing-md);
+        border-top: 1px solid var(--color-border);
+      }
+      
+      .issue-description {
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-sm);
+      }
+      
+      .issue-round-info {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-muted);
+      }
+      
+      /* Issue 列表 */
+      .issues-list {
+        margin-bottom: var(--spacing-lg);
+      }
+      
+      .issue-item {
+        background: var(--color-bg-primary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        cursor: pointer;
+        transition: all var(--transition-base);
+      }
+      
+      .issue-item:not(.selected):hover {
+        border-color: var(--color-primary);
+        background: var(--color-bg-secondary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+      }
+      
+      .issue-item.selected {
+        border-color: var(--color-primary);
+        background: var(--color-bg-secondary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        cursor: default;
+      }
+      
+      .issue-item.selected:hover {
+        transform: none;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+      
+      .issue-item.selected .select-issue-btn {
+        opacity: 0.6;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+      
+      .issue-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-xs);
+      }
+      
+      .issue-title-wrapper {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        flex: 1;
+      }
+      
+      .issue-item-title {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0;
+      }
+      
+      .rename-issue-btn {
+        opacity: 0;
+        transition: opacity var(--transition-base);
+        padding: var(--spacing-xs);
+        min-width: auto;
+        width: auto;
+        height: auto;
+      }
+      
+      .issue-item:hover .rename-issue-btn {
+        opacity: 1;
+      }
+      
+      .issue-item.selected .rename-issue-btn {
+        opacity: 0.6;
+      }
+      
+      .issue-status-badge {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+      }
+      
+      .issue-status-badge.not-started {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-secondary);
+      }
+      
+      .issue-status-badge.in-progress {
+        background: var(--color-warning);
+        color: white;
+      }
+      
+      .issue-status-badge.completed {
+        background: var(--color-success);
+        color: white;
+      }
+      
+      .issue-item-description {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        margin: var(--spacing-xs) 0;
+      }
+      
+      .issue-item-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: var(--spacing-sm);
+      }
+      
+      .issue-item-rounds {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-muted);
+      }
+      
+      .issue-item-result {
+        margin-top: var(--spacing-sm);
+        padding-top: var(--spacing-sm);
+        border-top: 1px solid var(--color-border);
+      }
+      
+      .result-stats-mini {
+        display: flex;
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+        margin-bottom: var(--spacing-xs);
+      }
+      
+      .stat-mini {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-sm);
+      }
+      
+      .stat-label-mini {
+        color: var(--color-text-secondary);
+        font-weight: 500;
+      }
+      
+      .stat-value-mini {
+        color: var(--color-primary);
+        font-weight: 600;
+        font-family: var(--font-display);
+      }
+      
+      .final-decision-mini {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        margin-top: var(--spacing-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: var(--color-primary-light);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+      }
+      
+      .final-decision-label {
+        color: var(--color-text-secondary);
+        font-weight: 500;
+      }
+      
+      .final-decision-value {
+        color: var(--color-primary);
+        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--font-size-base);
+      }
+      
+      .current-issue-info {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-md);
+        background: var(--color-bg-primary);
+        border-radius: var(--radius-md);
+        border: 2px solid var(--color-primary);
+      }
+      
+      .current-issue-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-sm);
+      }
+      
+      .current-issue-header h4 {
+        margin: 0;
+        color: var(--color-text-primary);
       }
       
       /* 參與者區 */
@@ -531,6 +853,195 @@ export function renderHost() {
         color: var(--color-text-muted);
       }
       
+      .btn.warning {
+        background: var(--color-warning);
+        border-color: var(--color-warning);
+      }
+      
+      .btn.warning:hover:not(:disabled) {
+        background: var(--color-warning);
+        opacity: 0.9;
+      }
+      
+      .result-card-item.extreme-highest {
+        border: 2px solid var(--color-error);
+        background: rgba(239, 68, 68, 0.1);
+      }
+      
+      .result-card-item.extreme-lowest {
+        border: 2px solid var(--color-primary);
+        background: rgba(99, 102, 241, 0.1);
+      }
+      
+      /* 極端值分析 */
+      .extreme-values-section {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+      }
+      
+      .extreme-values-section h4 {
+        margin-bottom: var(--spacing-md);
+        color: var(--color-text-primary);
+      }
+      
+      .extreme-group {
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .extreme-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: var(--spacing-xs);
+        color: var(--color-text-primary);
+      }
+      
+      .extreme-participants {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+      }
+      
+      .extreme-participant {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+      }
+      
+      /* Host 最終決定 */
+      .final-decision-section {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+      }
+      
+      .final-decision-section h4 {
+        margin-bottom: var(--spacing-sm);
+        color: var(--color-text-primary);
+      }
+      
+      .final-decision-desc {
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-md);
+        font-size: var(--font-size-sm);
+      }
+      
+      .final-decision-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .final-value-btn {
+        min-width: 60px;
+      }
+      
+      .custom-value-input-container {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
+      }
+      
+      .custom-value-input-container .form-input {
+        flex: 1;
+      }
+      
+      .final-decision-display {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-md);
+        background: var(--color-bg-primary);
+        border-radius: var(--radius-md);
+        color: var(--color-text-primary);
+      }
+      
+      .final-decision-display strong {
+        color: var(--color-primary);
+      }
+      
+      #final-decision-value {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--color-primary);
+      }
+      
+      /* Modal 樣式 */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-md);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-base);
+      }
+      
+      .modal-backdrop.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      
+      .modal {
+        background: var(--color-bg-card);
+        border-radius: var(--radius-lg);
+        max-width: 500px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--color-border);
+      }
+      
+      .modal-header h3 {
+        margin: 0;
+        color: var(--color-text-primary);
+      }
+      
+      .modal-body {
+        padding: var(--spacing-lg);
+      }
+      
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-lg);
+        border-top: 1px solid var(--color-border);
+      }
+      
+      textarea.form-input {
+        resize: vertical;
+        min-height: 80px;
+      }
+      
+      /* 統計圖表 */
+      .chart-container {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        height: 300px;
+      }
+      
+      #results-chart {
+        max-height: 300px;
+      }
+      
       /* 結束會議 */
       .close-meeting-section {
         text-align: center;
@@ -576,6 +1087,9 @@ export function renderHost() {
   
   // 載入上次使用的 Host 名稱
   loadHostName();
+  
+  // 初始化 Issue 列表
+  updateIssuesList();
   
   // 設定事件監聽
   setupEventListeners();
@@ -640,13 +1154,41 @@ function setupEventListeners() {
     });
   }
   
-  // 語言切換
+  // 語言切換 Dropdown
   const langToggle = document.getElementById('lang-toggle');
-  if (langToggle) {
-    langToggle.addEventListener('click', async () => {
-      const currentLang = i18n.getLanguage();
-      const newLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
-      await i18n.setLanguage(newLang);
+  const langDropdown = document.getElementById('lang-dropdown');
+  
+  if (langToggle && langDropdown) {
+    langToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langDropdown.classList.toggle('hidden');
+      updateLangDropdownSelection();
+    });
+    
+    langDropdown.querySelectorAll('.lang-option').forEach(option => {
+      option.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const lang = option.dataset.lang;
+        await i18n.setLanguage(lang);
+        langDropdown.classList.add('hidden');
+      });
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!langToggle.contains(e.target) && !langDropdown.contains(e.target)) {
+        langDropdown.classList.add('hidden');
+      }
+    });
+  }
+  
+  function updateLangDropdownSelection() {
+    const currentLang = i18n.getLanguage();
+    langDropdown.querySelectorAll('.lang-option').forEach(option => {
+      if (option.dataset.lang === currentLang) {
+        option.classList.add('active');
+      } else {
+        option.classList.remove('active');
+      }
     });
   }
   
@@ -681,6 +1223,11 @@ function setupEventListeners() {
     newRound();
   });
   
+  // 建立 Issue
+  document.getElementById('create-issue-btn')?.addEventListener('click', () => {
+    showCreateIssueModal();
+  });
+  
   // 結束會議
   document.getElementById('close-meeting-btn')?.addEventListener('click', () => {
     closeMeeting();
@@ -706,10 +1253,24 @@ async function createMeeting(name) {
   try {
     hostName = name || 'Host';
     
+    // 讀取會議名稱
+    const meetingNameInput = document.getElementById('meeting-name-input');
+    meetingName = meetingNameInput ? meetingNameInput.value.trim() : '';
+    
+    // 更新 HostManager 的 hostName（用於檢查名稱重複）
+    hostManager.hostName = hostName;
+    
     // 讀取 Host 是否參與估點
     const participateCheckbox = document.getElementById('participate-checkbox');
     hostParticipates = participateCheckbox ? participateCheckbox.checked : true;
+    
+    // 重置所有狀態（清除上一次會議的資料）
     hostSelectedCard = null;
+    currentResults = null;
+    issues = [];
+    currentIssue = null;
+    currentRound = 1;
+    finalDecision = null;
     
     // 設定回調
     hostManager.onStateChange = (state) => {
@@ -753,12 +1314,34 @@ async function createMeeting(name) {
     document.getElementById('meeting-phase').classList.remove('hidden');
     document.getElementById('meeting-id').textContent = meetingId;
     
+    // 顯示會議名稱（如果有）
+    const meetingNameDisplay = document.getElementById('meeting-name-display');
+    const meetingNameValue = document.getElementById('meeting-name');
+    if (meetingNameDisplay && meetingNameValue) {
+      if (meetingName) {
+        meetingNameValue.textContent = meetingName;
+        meetingNameDisplay.classList.remove('hidden');
+      } else {
+        meetingNameDisplay.classList.add('hidden');
+      }
+    }
+    
     // 生成 QR Code
     const qrContainer = document.getElementById('qr-container');
     await generateMeetingQRCode(qrContainer, meetingId);
     
     // 初始化控制按鈕狀態
     updateControlButtons();
+    
+    // 更新 Issue 列表和顯示（確保不顯示舊資料）
+    updateIssuesList();
+    updateIssueDisplay();
+    
+    // 隱藏結果區域（確保不顯示舊的結果）
+    const resultsSection = document.getElementById('results-section');
+    if (resultsSection) {
+      resultsSection.classList.add('hidden');
+    }
     
     toastSuccess(i18n.t('host.created'));
     
@@ -786,7 +1369,7 @@ function updateParticipantsList() {
   if (!participantsList || !participantCount) return;
   
   const participants = hostManager.getParticipants();
-  participantCount.textContent = participants.length;
+  participantCount.textContent = `${participants.length}/15`;
   
   if (participants.length === 0) {
     participantsList.innerHTML = `
@@ -862,6 +1445,22 @@ function updateControlButtons() {
     ? (allClientsSelected && hostSelectedCard !== null)
     : allClientsSelected;
   
+  // 檢查是否至少有一個人已選擇（包括 Host，如果 Host 參與）
+  const hasAnySelection = hostParticipates
+    ? (participants.some(p => p.estimationState === EstimationState.SELECTED) || hostSelectedCard !== null)
+    : participants.some(p => p.estimationState === EstimationState.SELECTED);
+  
+  // 找出未選取的人
+  const unselectedParticipants = [];
+  participants.forEach(p => {
+    if (p.estimationState !== EstimationState.SELECTED) {
+      unselectedParticipants.push(p.name);
+    }
+  });
+  if (hostParticipates && hostSelectedCard === null) {
+    unselectedParticipants.push(hostName);
+  }
+  
   switch (hostManager.estimationState) {
     case EstimationState.WAITING:
       startBtn.classList.remove('hidden');
@@ -875,7 +1474,16 @@ function updateControlButtons() {
     case EstimationState.SELECTING:
       startBtn.classList.add('hidden');
       flipBtn.classList.remove('hidden');
-      flipBtn.disabled = !allSelected; // 只有所有人都選擇了才能翻牌
+      // 只要至少有一個人選擇就可以翻牌
+      flipBtn.disabled = !hasAnySelection;
+      // 如果有人未選取，添加警告樣式
+      if (!allSelected && hasAnySelection) {
+        flipBtn.classList.add('warning');
+        flipBtn.title = i18n.t('host.flipCardsWithUnselected', { count: unselectedParticipants.length });
+      } else {
+        flipBtn.classList.remove('warning');
+        flipBtn.title = '';
+      }
       newRoundBtn.classList.add('hidden');
       resultsSection.classList.add('hidden');
       // 如果 Host 參與估點，顯示 Host 選擇卡片區域
@@ -892,6 +1500,8 @@ function updateControlButtons() {
       startBtn.classList.add('hidden');
       flipBtn.classList.add('hidden');
       newRoundBtn.classList.remove('hidden');
+      // 檢查輪次限制（最多 5 輪）
+      newRoundBtn.disabled = currentRound >= 5;
       resultsSection.classList.remove('hidden');
       if (hostCardSelection) hostCardSelection.classList.add('hidden');
       break;
@@ -902,7 +1512,45 @@ function updateControlButtons() {
  * 開始估點
  */
 function startEstimation() {
-  hostManager.startEstimation();
+  // 檢查是否有參與者
+  const participants = hostManager.getParticipants();
+  if (participants.length === 0) {
+    toastError(i18n.t('host.messages.noParticipants'));
+    return;
+  }
+  
+  // 如果沒有 Issue，自動建立一個未命名的 Issue
+  if (!currentIssue) {
+    if (issues.length === 0) {
+      // 建立未命名的 Issue
+      const untitledName = i18n.t('host.untitledIssue');
+      createIssue(untitledName, '');
+      // createIssue 會自動選擇新建立的 Issue
+      if (!currentIssue) {
+        // 如果還是沒有選擇，手動選擇第一個 Issue
+        currentIssue = issues[0];
+        updateIssuesList();
+        updateIssueDisplay();
+      }
+    } else {
+      // 有 Issue 但沒有選擇，提示選擇
+      toastError(i18n.t('host.messages.selectIssueFirst'));
+      return;
+    }
+  }
+  
+  // 更新 Issue 狀態為進行中
+  if (currentIssue.status === 'notStarted') {
+    currentIssue.status = 'inProgress';
+    updateIssuesList();
+  }
+  
+  // 傳遞 Issue 資訊給 HostManager
+  const issueInfo = {
+    title: currentIssue.title,
+    description: currentIssue.description || ''
+  };
+  hostManager.startEstimation(issueInfo);
   hostSelectedCard = null; // 重置 Host 選擇
   
   // 如果 Host 參與估點，初始化 Host 選擇卡片 UI
@@ -942,22 +1590,40 @@ function initHostCardSelection() {
  * 翻牌
  */
 function flipCards() {
-  // 如果 Host 參與估點，將 Host 的選擇加入結果
-  if (hostParticipates && hostSelectedCard !== null) {
-    // 在翻牌前，將 Host 的選擇加入到參與者結果中
-    // 注意：這需要在 HostManager 中處理，或者我們在這裡手動添加
+  // 檢查未選取的人
+  const participants = hostManager.getParticipants();
+  const unselectedParticipants = [];
+  
+  participants.forEach(p => {
+    if (p.estimationState !== EstimationState.SELECTED) {
+      unselectedParticipants.push(p.name);
+    }
+  });
+  if (hostParticipates && hostSelectedCard === null) {
+    unselectedParticipants.push(hostName);
   }
   
-  currentResults = hostManager.flipCards();
-  
-  // 如果 Host 參與估點，添加 Host 的結果
-  if (hostParticipates && hostSelectedCard !== null) {
-    currentResults.push({
-      id: 'host',
-      name: hostName,
-      card: hostSelectedCard
+  // 如果有未選取的人，顯示提示訊息
+  if (unselectedParticipants.length > 0) {
+    showUnselectedWarningModal(unselectedParticipants, () => {
+      performFlipCards();
     });
+  } else {
+    performFlipCards();
   }
+}
+
+/**
+ * 執行翻牌操作
+ */
+function performFlipCards() {
+  // 準備 Host 的結果（如果參與估點，包括未選取的情況）
+  const hostResult = hostParticipates
+    ? { name: hostName, card: hostSelectedCard }  // card 可能是 null（未選取）
+    : null;
+  
+  // 翻牌並廣播（包含 Host 的結果）
+  currentResults = hostManager.flipCards(hostResult);
   
   updateParticipantsList();
   updateControlButtons();
@@ -968,14 +1634,101 @@ function flipCards() {
 }
 
 /**
+ * 顯示未選取參與者的警告 Modal
+ * @param {Array<string>} unselectedNames - 未選取的參與者名稱列表
+ * @param {Function} onConfirm - 確認後的回調函數
+ */
+function showUnselectedWarningModal(unselectedNames, onConfirm) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3 data-i18n="host.unselectedWarning.title">有參與者尚未選取</h3>
+        <button class="btn btn-ghost btn-icon" id="close-unselected-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p data-i18n="host.unselectedWarning.message">以下參與者尚未選取卡片：</p>
+        <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg);">
+          ${unselectedNames.map(name => `<li>${escapeHtml(name)}</li>`).join('')}
+        </ul>
+        <p style="margin-top: var(--spacing-md); color: var(--color-text-muted);" data-i18n="host.unselectedWarning.note">未選取的參與者將不會計入統計計算，但仍會記錄為未選取狀態。</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-unselected-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-unselected-btn" data-i18n="host.unselectedWarning.confirmFlip">仍要翻牌</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  i18n.applyTranslations();
+  
+  // 關閉按鈕
+  const closeBtn = modal.querySelector('#close-unselected-modal');
+  const cancelBtn = modal.querySelector('#cancel-unselected-btn');
+  const confirmBtn = modal.querySelector('#confirm-unselected-btn');
+  
+  const closeModal = () => {
+    modal.classList.remove('active');
+    setTimeout(() => {
+      document.body.removeChild(modal);
+    }, 300);
+  };
+  
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  confirmBtn.addEventListener('click', () => {
+    closeModal();
+    if (onConfirm) onConfirm();
+  });
+  
+  // 點擊背景關閉
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+}
+
+/**
  * 新的一輪
  */
 function newRound() {
-  hostManager.resetRound();
+  if (!currentIssue) {
+    toastError('請先建立 Issue');
+    return;
+  }
+  
+  // 檢查輪次限制（最多 5 輪）
+  if (currentRound >= 5) {
+    toastError(i18n.t('host.messages.maxRoundsReached', { max: 5 }));
+    return;
+  }
+  
+  // 記錄當前輪次的結果
+  if (currentResults) {
+    const roundData = {
+      roundNumber: currentRound,
+      results: [...currentResults],
+      completedAt: new Date().toISOString()
+    };
+    currentIssue.rounds.push(roundData);
+  }
+  
+  // 增加輪次
+  currentRound++;
   currentResults = null;
-  hostSelectedCard = null; // 重置 Host 選擇
+  hostSelectedCard = null;
+  finalDecision = null;
+  
+  // 重置估點狀態
+  hostManager.resetRound();
   updateParticipantsList();
   updateControlButtons();
+  updateIssueDisplay();
+  
+  toastSuccess(i18n.t('host.newRound'));
 }
 
 /**
@@ -983,6 +1736,9 @@ function newRound() {
  */
 function closeMeeting() {
   if (confirm(i18n.t('host.closeMeetingConfirm'))) {
+    // 保存所有 issue 到歷史記錄（包括未完成的）
+    saveAllIssuesToHistory();
+    
     hostManager.closeMeeting();
     window.location.hash = '#/';
   }
@@ -994,6 +1750,8 @@ function closeMeeting() {
 function displayResults(results) {
   const resultsStats = document.getElementById('results-stats');
   const resultsCards = document.getElementById('results-cards');
+  const extremeValuesSection = document.getElementById('extreme-values-section');
+  const finalDecisionSection = document.getElementById('final-decision-section');
   
   // 計算統計
   const numericResults = results
@@ -1026,26 +1784,376 @@ function displayResults(results) {
     </div>
   `;
   
-  // 顯示個別結果
-  resultsCards.innerHTML = results.map(r => `
-    <div class="result-card-item">
-      <div class="result-card-name">${escapeHtml(r.name)}</div>
-      <div class="result-card-value ${r.card ? '' : 'no-select'}">${r.card || '-'}</div>
-    </div>
-  `).join('');
+  // 識別極端值
+  const extremeValues = identifyExtremeValues(results, numericResults, highest, lowest);
+  
+  // 顯示個別結果（高亮極端值）
+  resultsCards.innerHTML = results.map(r => {
+    const isHighest = extremeValues.highest.some(ev => ev.name === r.name);
+    const isLowest = extremeValues.lowest.some(ev => ev.name === r.name);
+    const extremeClass = isHighest ? 'extreme-highest' : isLowest ? 'extreme-lowest' : '';
+    
+    return `
+      <div class="result-card-item ${extremeClass}" data-participant-name="${escapeHtml(r.name)}" data-card-value="${r.card || ''}">
+        <div class="result-card-name">${escapeHtml(r.name)}</div>
+        <div class="result-card-value ${r.card ? '' : 'no-select'}">${r.card || '-'}</div>
+      </div>
+    `;
+  }).join('');
+  
+  // 顯示統計圖表
+  displayChart(results, numericResults);
+  
+  // 顯示極端值分析
+  if (extremeValues.highest.length > 0 || extremeValues.lowest.length > 0) {
+    if (extremeValuesSection) {
+      extremeValuesSection.classList.remove('hidden');
+      extremeValuesSection.innerHTML = `
+        <h4 data-i18n="host.extremeValues">極端值</h4>
+        ${extremeValues.highest.length > 0 ? `
+          <div class="extreme-group">
+            <span class="extreme-label" data-i18n="host.highestValue">最高值</span>
+            <div class="extreme-participants">
+              ${extremeValues.highest.map(ev => `
+                <span class="extreme-participant">${escapeHtml(ev.name)}: ${ev.card}</span>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        ${extremeValues.lowest.length > 0 ? `
+          <div class="extreme-group">
+            <span class="extreme-label" data-i18n="host.lowestValue">最低值</span>
+            <div class="extreme-participants">
+              ${extremeValues.lowest.map(ev => `
+                <span class="extreme-participant">${escapeHtml(ev.name)}: ${ev.card}</span>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      `;
+      i18n.applyTranslations();
+    }
+  } else {
+    if (extremeValuesSection) {
+      extremeValuesSection.classList.add('hidden');
+    }
+  }
+  
+  // 顯示 Host 最終決定權
+  if (finalDecisionSection) {
+    finalDecisionSection.classList.remove('hidden');
+    displayFinalDecisionOptions(results, finalDecisionSection, average, numericResults);
+  }
   
   i18n.applyTranslations();
+}
+
+/**
+ * 識別極端值
+ */
+function identifyExtremeValues(results, numericResults, highest, lowest) {
+  const extremeValues = {
+    highest: [],
+    lowest: []
+  };
+  
+  if (numericResults.length === 0) return extremeValues;
+  
+  // 找出最高值
+  results.forEach(r => {
+    if (r.card && parseFloat(r.card) === highest) {
+      extremeValues.highest.push({ name: r.name, card: r.card });
+    }
+  });
+  
+  // 找出最低值
+  results.forEach(r => {
+    if (r.card && parseFloat(r.card) === lowest) {
+      extremeValues.lowest.push({ name: r.name, card: r.card });
+    }
+  });
+  
+  return extremeValues;
+}
+
+/**
+ * 找出最接近平均值的牌組內的值
+ * @param {number} average - 平均值
+ * @returns {string|null} 最接近的牌組值，如果沒有數字值則返回 null
+ */
+function findClosestCardValue(average) {
+  if (average === '-' || isNaN(parseFloat(average))) {
+    return null;
+  }
+  
+  const avgNum = parseFloat(average);
+  
+  // 只考慮數字值的牌組
+  const numericCards = CARD_SET.filter(card => {
+    const value = card.value;
+    // 排除特殊符號，只考慮可以轉換為數字的
+    if (value === '1/2') return true; // 特殊處理 1/2
+    return !isNaN(parseFloat(value));
+  });
+  
+  if (numericCards.length === 0) {
+    return null;
+  }
+  
+  let closestCard = null;
+  let minDistance = Infinity;
+  
+  numericCards.forEach(card => {
+    let cardValue;
+    if (card.value === '1/2') {
+      cardValue = 0.5;
+    } else {
+      cardValue = parseFloat(card.value);
+    }
+    
+    const distance = Math.abs(cardValue - avgNum);
+    // 如果距離更小，或者距離相同但值更大（選擇較大的值），則更新
+    const currentClosestValue = closestCard ? (closestCard.value === '1/2' ? 0.5 : parseFloat(closestCard.value)) : -Infinity;
+    if (distance < minDistance || (distance === minDistance && cardValue > currentClosestValue)) {
+      minDistance = distance;
+      closestCard = card;
+    }
+  });
+  
+  return closestCard ? closestCard.value : null;
+}
+
+/**
+ * 顯示 Host 最終決定選項
+ * @param {Array} results - 估點結果
+ * @param {HTMLElement} container - 容器元素
+ * @param {string|number} average - 平均值
+ * @param {Array} numericResults - 數字結果陣列
+ */
+function displayFinalDecisionOptions(results, container, average, numericResults) {
+  // 收集所有唯一的估點值
+  const uniqueValues = [...new Set(results.map(r => r.card).filter(c => c))];
+  
+  // 計算平均值和最接近的牌組值
+  const averageValue = average !== '-' && !isNaN(parseFloat(average)) ? parseFloat(average).toFixed(1) : null;
+  const closestCardValue = findClosestCardValue(average);
+  
+  // 找出最接近的牌組值的標籤
+  const closestCardLabel = closestCardValue ? CARD_SET.find(c => c.value === closestCardValue)?.label || closestCardValue : null;
+  
+  // 建立選項列表，按照優先順序：平均 > 最接近平均 > 使用者選項
+  // 使用 Set 來追蹤已顯示的值，避免重複
+  const displayedValues = new Set();
+  const options = [];
+  
+  // 建立值到選擇者的映射（用於 tooltip）
+  const valueToParticipants = new Map();
+  results.forEach(r => {
+    if (r.card) {
+      if (!valueToParticipants.has(r.card)) {
+        valueToParticipants.set(r.card, []);
+      }
+      valueToParticipants.get(r.card).push(r.name);
+    }
+  });
+  
+  // 取得選擇者的 tooltip 文字
+  const getParticipantsTooltip = (value) => {
+    const participants = valueToParticipants.get(value);
+    if (!participants || participants.length === 0) {
+      return '';
+    }
+    return participants.join(', ');
+  };
+  
+  // 1. 優先顯示平均值（如果存在且有效）
+  if (averageValue) {
+    displayedValues.add(averageValue);
+    const avgTooltip = i18n.t('host.averageValue');
+    options.push(`
+      <button class="btn btn-primary final-value-btn" data-value="${averageValue}" title="${avgTooltip}">
+        <span data-i18n="host.stats.average">平均</span>: ${averageValue}
+      </button>
+    `);
+  }
+  
+  // 2. 顯示最接近平均的牌組值（如果存在且與平均值不同）
+  if (closestCardValue && closestCardLabel) {
+    // 檢查是否與平均值相同（需要比較數值）
+    const avgNum = averageValue ? parseFloat(averageValue) : null;
+    const closestNum = closestCardValue === '1/2' ? 0.5 : parseFloat(closestCardValue);
+    const isSameAsAverage = avgNum !== null && Math.abs(avgNum - closestNum) < 0.01;
+    
+    if (!isSameAsAverage && !displayedValues.has(closestCardValue)) {
+      displayedValues.add(closestCardValue);
+      
+      // 建立 tooltip：最接近平均 + 選擇者（如果有）
+      const closestTooltip = i18n.t('host.closestCardValueTooltip');
+      const participantsTooltip = getParticipantsTooltip(closestCardValue);
+      const finalTooltip = participantsTooltip 
+        ? `${closestTooltip} (${i18n.t('host.selectedBy')}: ${participantsTooltip})`
+        : closestTooltip;
+      
+      options.push(`
+        <button class="btn btn-primary final-value-btn" data-value="${closestCardValue}" title="${finalTooltip}">
+          ${closestCardLabel}
+        </button>
+      `);
+    }
+  }
+  
+  // 3. 顯示使用者選項（排除已顯示的值）
+  // 需要比較數值，而不只是字符串，因為平均值可能是 "100.0"，而使用者選項是 "100"
+  uniqueValues.forEach(value => {
+    // 檢查是否已顯示（比較字符串和數值）
+    let isDuplicate = false;
+    
+    // 先檢查字符串是否相同
+    if (displayedValues.has(value)) {
+      isDuplicate = true;
+    } else {
+      // 檢查數值是否相同
+      const valueNum = value === '1/2' ? 0.5 : parseFloat(value);
+      if (!isNaN(valueNum)) {
+        for (const displayed of displayedValues) {
+          const displayedNum = displayed === '1/2' ? 0.5 : parseFloat(displayed);
+          if (!isNaN(displayedNum) && Math.abs(valueNum - displayedNum) < 0.01) {
+            isDuplicate = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    if (!isDuplicate) {
+      displayedValues.add(value);
+      const participantsTooltip = getParticipantsTooltip(value);
+      const buttonTitle = participantsTooltip || '';
+      options.push(`
+        <button class="btn btn-secondary final-value-btn" data-value="${value}" ${buttonTitle ? `title="${buttonTitle}"` : ''}>
+          ${value}
+        </button>
+      `);
+    }
+  });
+  
+  container.innerHTML = `
+    <h4 data-i18n="host.finalDecision">最終決定</h4>
+    <p class="final-decision-desc" data-i18n="host.selectFinalValue">選擇最終估點值</p>
+    <div class="final-decision-options">
+      ${options.join('')}
+      <button class="btn btn-ghost final-value-btn custom-value-btn" data-i18n="host.customValue">自訂值</button>
+    </div>
+    <div id="custom-value-input-container" class="custom-value-input-container hidden">
+      <input 
+        type="text" 
+        id="custom-value-input" 
+        class="form-input" 
+        placeholder="輸入自訂估點值"
+        maxlength="20"
+      >
+      <button class="btn btn-primary" id="confirm-custom-value-btn">確認</button>
+    </div>
+    ${finalDecision ? `
+      <div class="final-decision-display">
+        <strong>已選擇：</strong><span id="final-decision-value">${finalDecision}</span>
+      </div>
+    ` : ''}
+  `;
+  
+  i18n.applyTranslations();
+  
+  // 綁定事件
+  container.querySelectorAll('.final-value-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (e.target.classList.contains('custom-value-btn')) {
+        // 顯示自訂值輸入框
+        const customInputContainer = document.getElementById('custom-value-input-container');
+        if (customInputContainer) {
+          customInputContainer.classList.remove('hidden');
+          document.getElementById('custom-value-input')?.focus();
+        }
+      } else {
+        const value = e.target.dataset.value;
+        setFinalDecision(value);
+      }
+    });
+  });
+  
+  // 確認自訂值
+  document.getElementById('confirm-custom-value-btn')?.addEventListener('click', () => {
+    const customValue = document.getElementById('custom-value-input')?.value.trim();
+    if (customValue) {
+      setFinalDecision(customValue);
+      document.getElementById('custom-value-input-container')?.classList.add('hidden');
+    }
+  });
+}
+
+/**
+ * 設定最終決定（並自動完成估點）
+ */
+function setFinalDecision(value) {
+  if (!currentIssue) {
+    toastError(i18n.t('host.messages.createIssueFirst'));
+    return;
+  }
+  
+  if (!currentResults) {
+    toastError(i18n.t('host.messages.startEstimationFirst'));
+    return;
+  }
+  
+  finalDecision = value;
+  
+  // 記錄當前輪次的結果
+  const roundData = {
+    roundNumber: currentRound,
+    results: currentResults,
+    finalDecision: finalDecision,
+    completedAt: new Date().toISOString()
+  };
+  
+  currentIssue.rounds.push(roundData);
+  
+  // 更新 Issue 狀態為已完成
+  currentIssue.status = 'completed';
+  currentIssue.finalDecision = finalDecision;
+  
+  // 儲存到歷史
+  saveIssueToHistory();
+  
+  // 重置估點狀態
+  currentResults = null;
+  currentRound = 1;
+  finalDecision = null;
+  hostSelectedCard = null;
+  
+  hostManager.resetRound();
+  updateParticipantsList();
+  updateControlButtons();
+  updateIssuesList();
+  updateIssueDisplay();
+  
+  toastSuccess(i18n.t('host.messages.issueCompleted', { title: currentIssue.title }));
 }
 
 /**
  * 儲存到歷史
  */
 function saveToHistory(results) {
+  if (!currentIssue) return; // 沒有 issue 時不保存
+  
   const meetingId = document.getElementById('meeting-id').textContent;
   
   addHistory({
     mode: 'host',
     meetingId,
+    meetingName: meetingName || null,
+    issueId: currentIssue.id,
+    issueTitle: currentIssue.title,
+    issueDescription: currentIssue.description,
+    roundNumber: currentRound,
     results: results.map(r => ({
       name: r.name,
       card: r.card
@@ -1061,5 +2169,742 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+/**
+ * 顯示統計圖表
+ */
+let chartInstance = null;
+
+function displayChart(results, numericResults) {
+  const chartContainer = document.getElementById('chart-container');
+  const chartCanvas = document.getElementById('results-chart');
+  
+  if (!chartContainer || !chartCanvas || typeof Chart === 'undefined') {
+    return;
+  }
+  
+  // 如果只有非數字結果，不顯示圖表
+  if (numericResults.length === 0) {
+    chartContainer.classList.add('hidden');
+    return;
+  }
+  
+  chartContainer.classList.remove('hidden');
+  
+  // 銷毀舊的圖表實例
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+  
+  // 計算分佈
+  const distribution = {};
+  results.forEach(r => {
+    if (r.card) {
+      distribution[r.card] = (distribution[r.card] || 0) + 1;
+    }
+  });
+  
+  const labels = Object.keys(distribution).sort((a, b) => {
+    const aNum = parseFloat(a);
+    const bNum = parseFloat(b);
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return aNum - bNum;
+    }
+    return a.localeCompare(b);
+  });
+  
+  const data = labels.map(label => distribution[label]);
+  
+  // 取得主題顏色
+  const isDark = theme.isDark();
+  const backgroundColor = isDark 
+    ? 'rgba(99, 102, 241, 0.5)'
+    : 'rgba(99, 102, 241, 0.3)';
+  const borderColor = isDark
+    ? 'rgba(99, 102, 241, 1)'
+    : 'rgba(99, 102, 241, 0.8)';
+  
+  // 建立圖表
+  chartInstance = new Chart(chartCanvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: i18n.t('host.chart.distribution'),
+        data: data,
+        backgroundColor: backgroundColor,
+        borderColor: borderColor,
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+          titleColor: isDark ? '#fff' : '#000',
+          bodyColor: isDark ? '#fff' : '#000',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+          borderWidth: 1
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+            color: isDark ? '#e2e8f0' : '#1a1a2e'
+          },
+          grid: {
+            color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+        x: {
+          ticks: {
+            color: isDark ? '#e2e8f0' : '#1a1a2e'
+          },
+          grid: {
+            color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+          }
+        }
+      }
+    }
+  });
+}
+
+/**
+ * 顯示建立 Issue 的 Modal
+ */
+function showCreateIssueModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3 data-i18n="host.createIssue">建立 Issue</h3>
+        <button class="btn btn-ghost btn-icon" id="close-issue-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="issue-title-input" data-i18n="host.issueTitle">Issue 標題</label>
+          <input 
+            type="text" 
+            id="issue-title-input" 
+            class="form-input" 
+            placeholder="輸入 Issue 標題"
+            data-i18n-placeholder="host.issueTitlePlaceholder"
+            maxlength="100"
+            required
+          >
+        </div>
+        <div class="form-group">
+          <label for="issue-description-input" data-i18n="host.issueDescription">Issue 描述</label>
+          <textarea 
+            id="issue-description-input" 
+            class="form-input" 
+            placeholder="輸入 Issue 描述（選填）"
+            data-i18n-placeholder="host.issueDescriptionPlaceholder"
+            rows="3"
+            maxlength="500"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-issue-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-issue-btn" data-i18n="host.createIssue">建立 Issue</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  i18n.applyTranslations();
+  
+  // 事件監聽
+  document.getElementById('close-issue-modal')?.addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  document.getElementById('cancel-issue-btn')?.addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  document.getElementById('confirm-issue-btn')?.addEventListener('click', () => {
+    const title = document.getElementById('issue-title-input').value.trim();
+    if (!title) {
+      toastError(i18n.t('host.messages.enterIssueTitle'));
+      return;
+    }
+    
+    const description = document.getElementById('issue-description-input').value.trim();
+    createIssue(title, description);
+    modal.remove();
+  });
+  
+  // 聚焦到標題輸入框
+  setTimeout(() => {
+    document.getElementById('issue-title-input')?.focus();
+  }, 100);
+}
+
+/**
+ * 建立 Issue
+ */
+/**
+ * 建立 Issue
+ * @param {string} title - Issue 標題
+ * @param {string} description - Issue 描述
+ * @param {boolean} autoSelect - 是否自動選擇新建立的 Issue（預設 true）
+ */
+function createIssue(title, description = '', autoSelect = true) {
+  // 檢查 issue 數量限制（最多 10 個）
+  if (issues.length >= 10) {
+    toastError(i18n.t('host.messages.maxIssuesReached', { max: 10 }));
+    return;
+  }
+  
+  const newIssue = {
+    id: `issue-${Date.now()}`,
+    title,
+    description,
+    status: 'notStarted', // notStarted, inProgress, completed
+    rounds: [],
+    createdAt: new Date().toISOString()
+  };
+  
+  issues.push(newIssue);
+  storage.set('issues', issues);
+  
+  // 如果自動選擇，選擇新建立的 Issue
+  if (autoSelect) {
+    // 如果當前有 issue 正在進行估點，不應該切換到新 issue
+    // 但用戶要求可以在估點進行中建立新 issue，所以我們不切換 currentIssue
+    if (currentIssue && hostManager.estimationState !== EstimationState.WAITING) {
+      // 當前 issue 正在進行估點，保持 currentIssue 不變
+      // 新 issue 應該是 notStarted 狀態
+      updateIssueStatus(newIssue.id);
+    } else {
+      // 沒有正在進行的估點，可以選擇新 issue
+      currentIssue = newIssue;
+      currentRound = 1;
+      finalDecision = null;
+      currentResults = null;
+      hostSelectedCard = null;
+      updateIssueStatus(newIssue.id);
+      updateIssueDisplay();
+      updateControlButtons();
+    }
+  } else {
+    // 不自動選擇時，也要更新狀態
+    updateIssueStatus(newIssue.id);
+  }
+  
+  // 更新所有 issue 的狀態（確保狀態正確）
+  issues.forEach(issue => {
+    updateIssueStatus(issue.id);
+  });
+  
+  updateIssuesList();
+  toastSuccess(i18n.t('host.messages.issueCreated', { title }));
+}
+
+/**
+ * 選擇 Issue
+ */
+function selectIssue(issueId) {
+  const issue = issues.find(i => i.id === issueId);
+  if (!issue) return;
+  
+  // 如果已經是當前選中的 Issue，不執行任何操作
+  if (currentIssue && currentIssue.id === issueId) {
+    return;
+  }
+  
+  // 如果當前有正在進行的估點，先完成或重置
+  if (currentIssue && currentIssue.status === 'inProgress') {
+    if (!confirm(i18n.t('host.messages.switchIssueConfirm'))) {
+      return;
+    }
+    // 重置當前估點狀態
+    hostManager.resetRound();
+    currentResults = null;
+    hostSelectedCard = null;
+    finalDecision = null;
+    currentRound = 1;
+  }
+  
+  currentIssue = issue;
+  currentRound = issue.rounds.length > 0 ? issue.rounds.length + 1 : 1;
+  finalDecision = null;
+  currentResults = null;
+  hostSelectedCard = null;
+  
+  // 更新 Issue 狀態
+  updateIssueStatus(issueId);
+  updateIssuesList();
+  updateIssueDisplay();
+  updateControlButtons();
+  
+  toastSuccess(i18n.t('host.messages.issueSelected', { title: issue.title }));
+}
+
+/**
+ * 更新 Issue 狀態
+ */
+function updateIssueStatus(issueId) {
+  const issue = issues.find(i => i.id === issueId);
+  if (!issue) return;
+  
+  // 根據是否有 rounds 和 finalDecision 來判斷狀態
+  if (issue.rounds.length > 0 && issue.finalDecision) {
+    issue.status = 'completed';
+  } else if (currentIssue && currentIssue.id === issueId && hostManager.estimationState !== EstimationState.WAITING) {
+    issue.status = 'inProgress';
+  } else {
+    issue.status = 'notStarted';
+  }
+}
+
+/**
+ * 更新 Issue 列表顯示
+ */
+function updateIssuesList() {
+  const issuesList = document.getElementById('issues-list');
+  const noIssues = document.getElementById('no-issues');
+  const createIssueBtn = document.getElementById('create-issue-btn');
+  
+  if (!issuesList) return;
+  
+  // 更新「建立 Issue」按鈕狀態（最多 10 個）
+  if (createIssueBtn) {
+    createIssueBtn.disabled = issues.length >= 10;
+  }
+  
+  if (issues.length === 0) {
+    if (noIssues) {
+      noIssues.classList.remove('hidden');
+    }
+    issuesList.innerHTML = '';
+    return;
+  }
+  
+  if (noIssues) {
+    noIssues.classList.add('hidden');
+  }
+  
+  issuesList.innerHTML = issues.map(issue => {
+    const statusClass = issue.status === 'completed' ? 'completed' : 
+                       issue.status === 'inProgress' ? 'in-progress' : 'not-started';
+    const statusText = i18n.t(`host.issueStatus.${issue.status}`);
+    const isSelected = currentIssue && currentIssue.id === issue.id;
+    
+    // 計算最後一輪的結果統計
+    const lastRoundResult = getLastRoundResult(issue);
+    
+    return `
+      <div class="issue-item ${isSelected ? 'selected' : ''}" data-issue-id="${issue.id}">
+        <div class="issue-item-header">
+          <div class="issue-title-wrapper">
+            <h4 class="issue-item-title">${escapeHtml(issue.title)}</h4>
+            <button class="btn btn-ghost btn-icon btn-sm rename-issue-btn" data-issue-id="${issue.id}" title="${i18n.t('host.renameIssue')}">
+              ✏️
+            </button>
+          </div>
+          <span class="issue-status-badge ${statusClass}">${statusText}</span>
+        </div>
+        ${issue.description ? `<p class="issue-item-description">${escapeHtml(issue.description)}</p>` : ''}
+        ${lastRoundResult ? `
+          <div class="issue-item-result">
+            <div class="result-stats-mini">
+              ${lastRoundResult.average !== '-' ? `
+                <span class="stat-mini">
+                  <span class="stat-label-mini" data-i18n="host.stats.average">平均</span>
+                  <span class="stat-value-mini">${lastRoundResult.average}</span>
+                </span>
+              ` : ''}
+              ${lastRoundResult.highest !== '-' ? `
+                <span class="stat-mini">
+                  <span class="stat-label-mini" data-i18n="host.stats.highest">最高</span>
+                  <span class="stat-value-mini">${lastRoundResult.highest}</span>
+                </span>
+              ` : ''}
+              ${lastRoundResult.lowest !== '-' ? `
+                <span class="stat-mini">
+                  <span class="stat-label-mini" data-i18n="host.stats.lowest">最低</span>
+                  <span class="stat-value-mini">${lastRoundResult.lowest}</span>
+                </span>
+              ` : ''}
+            </div>
+            ${issue.finalDecision ? `
+              <div class="final-decision-mini">
+                <span class="final-decision-label" data-i18n="host.finalDecision">最終決定</span>
+                <span class="final-decision-value">${escapeHtml(issue.finalDecision)}</span>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+        <div class="issue-item-footer">
+          <span class="issue-item-rounds">${issue.rounds.length} ${i18n.t('host.roundNumber')}</span>
+          <button class="btn btn-primary btn-sm select-issue-btn" data-issue-id="${issue.id}">
+            ${isSelected ? i18n.t('host.currentIssue') : i18n.t('host.selectIssue')}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  i18n.applyTranslations();
+  
+  // 綁定選擇 Issue 按鈕事件
+  // 只為按鈕綁定事件，避免事件冒泡導致重複觸發
+  issuesList.querySelectorAll('.select-issue-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 阻止事件冒泡
+      const issueId = btn.dataset.issueId;
+      if (issueId) {
+        selectIssue(issueId);
+      }
+    });
+  });
+  
+  // 為整個 issue-item 綁定事件（點擊空白區域也可以選擇）
+  issuesList.querySelectorAll('.issue-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      // 如果點擊的是按鈕，不處理（由按鈕的事件處理）
+      if (e.target.closest('.select-issue-btn') || e.target.closest('.rename-issue-btn')) {
+        return;
+      }
+      // 如果已經是選中的 Issue，不處理
+      if (item.classList.contains('selected')) {
+        return;
+      }
+      const issueId = item.dataset.issueId;
+      if (issueId) {
+        selectIssue(issueId);
+      }
+    });
+  });
+  
+  // 綁定重新命名按鈕事件
+  issuesList.querySelectorAll('.rename-issue-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 阻止事件冒泡
+      const issueId = btn.dataset.issueId;
+      if (issueId) {
+        showRenameIssueModal(issueId);
+      }
+    });
+  });
+}
+
+/**
+ * 顯示重新命名 Issue 的 Modal
+ * @param {string} issueId - Issue ID
+ */
+function showRenameIssueModal(issueId) {
+  const issue = issues.find(i => i.id === issueId);
+  if (!issue) return;
+  
+  // 建立 Modal
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3 data-i18n="host.renameIssue">重新命名 Issue</h3>
+        <button class="btn btn-ghost btn-icon" id="close-rename-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="rename-issue-title-input" data-i18n="host.issueTitle">Issue 標題</label>
+          <input 
+            type="text" 
+            id="rename-issue-title-input" 
+            class="form-input" 
+            placeholder="輸入 Issue 標題"
+            data-i18n-placeholder="host.issueTitlePlaceholder"
+            value="${escapeHtml(issue.title)}"
+            maxlength="100"
+            required
+          >
+        </div>
+        <div class="form-group">
+          <label for="rename-issue-description-input" data-i18n="host.issueDescription">Issue 描述</label>
+          <textarea 
+            id="rename-issue-description-input" 
+            class="form-input" 
+            placeholder="輸入 Issue 描述（選填）"
+            data-i18n-placeholder="host.issueDescriptionPlaceholder"
+            rows="3"
+            maxlength="500"
+          >${escapeHtml(issue.description || '')}</textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-rename-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-rename-btn" data-i18n="common.confirm">確認</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  i18n.applyTranslations();
+  
+  // 事件監聽
+  document.getElementById('close-rename-modal')?.addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  document.getElementById('cancel-rename-btn')?.addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  document.getElementById('confirm-rename-btn')?.addEventListener('click', () => {
+    const newTitle = document.getElementById('rename-issue-title-input').value.trim();
+    if (!newTitle) {
+      toastError(i18n.t('host.messages.enterIssueTitle'));
+      return;
+    }
+    
+    const newDescription = document.getElementById('rename-issue-description-input').value.trim();
+    renameIssue(issueId, newTitle, newDescription);
+    modal.remove();
+  });
+  
+  // 聚焦到標題輸入框並選取所有文字
+  setTimeout(() => {
+    const input = document.getElementById('rename-issue-title-input');
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, 100);
+  
+  // 按 Enter 鍵確認（只在標題輸入框時）
+  document.getElementById('rename-issue-title-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('confirm-rename-btn')?.click();
+    }
+  });
+}
+
+/**
+ * 重新命名 Issue
+ * @param {string} issueId - Issue ID
+ * @param {string} newTitle - 新標題
+ * @param {string} newDescription - 新描述（可選）
+ */
+function renameIssue(issueId, newTitle, newDescription = '') {
+  const issue = issues.find(i => i.id === issueId);
+  if (!issue) return;
+  
+  const oldTitle = issue.title;
+  issue.title = newTitle;
+  issue.description = newDescription || '';
+  storage.set('issues', issues);
+  
+  // 如果這是當前選中的 Issue，更新顯示
+  if (currentIssue && currentIssue.id === issueId) {
+    currentIssue.title = newTitle;
+    currentIssue.description = newDescription || '';
+    updateIssueDisplay();
+  }
+  
+  updateIssuesList();
+  toastSuccess(i18n.t('host.messages.issueRenamed', { oldTitle, newTitle }));
+}
+
+/**
+ * 取得 Issue 最後一輪的結果統計
+ * @param {Object} issue - Issue 物件
+ * @returns {Object|null} 統計結果 { average, highest, lowest } 或 null
+ */
+function getLastRoundResult(issue) {
+  if (!issue.rounds || issue.rounds.length === 0) {
+    return null;
+  }
+  
+  // 取得最後一輪
+  const lastRound = issue.rounds[issue.rounds.length - 1];
+  if (!lastRound.results || lastRound.results.length === 0) {
+    return null;
+  }
+  
+  // 計算統計
+  const numericResults = lastRound.results
+    .filter(r => r.card && !isNaN(parseFloat(r.card)))
+    .map(r => parseFloat(r.card));
+  
+  if (numericResults.length === 0) {
+    return {
+      average: '-',
+      highest: '-',
+      lowest: '-'
+    };
+  }
+  
+  const average = (numericResults.reduce((a, b) => a + b, 0) / numericResults.length).toFixed(1);
+  const highest = Math.max(...numericResults);
+  const lowest = Math.min(...numericResults);
+  
+  return {
+    average,
+    highest,
+    lowest
+  };
+}
+
+/**
+ * 更新 Issue 顯示
+ */
+function updateIssueDisplay() {
+  const currentIssueInfo = document.getElementById('current-issue-info');
+  const issueTitleDisplay = document.getElementById('current-issue-title');
+  const issueStatusBadge = document.getElementById('current-issue-status');
+  const issueDescription = document.getElementById('issue-description');
+  const currentRoundNumber = document.getElementById('current-round-number');
+  
+  if (currentIssue) {
+    if (currentIssueInfo) {
+      currentIssueInfo.classList.remove('hidden');
+    }
+    if (issueTitleDisplay) {
+      issueTitleDisplay.textContent = currentIssue.title;
+    }
+    if (issueStatusBadge) {
+      const statusClass = currentIssue.status === 'completed' ? 'completed' : 
+                         currentIssue.status === 'inProgress' ? 'in-progress' : 'not-started';
+      issueStatusBadge.textContent = i18n.t(`host.issueStatus.${currentIssue.status}`);
+      issueStatusBadge.className = `issue-status-badge ${statusClass}`;
+    }
+    if (issueDescription) {
+      issueDescription.textContent = currentIssue.description || '-';
+    }
+    if (currentRoundNumber) {
+      currentRoundNumber.textContent = currentRound;
+    }
+  } else {
+    if (currentIssueInfo) {
+      currentIssueInfo.classList.add('hidden');
+    }
+  }
+}
+
+/**
+ * 儲存 Issue 到歷史（完成時）
+ */
+function saveIssueToHistory() {
+  if (!currentIssue) return;
+  
+  const meetingId = document.getElementById('meeting-id').textContent;
+  
+  addHistory({
+    mode: 'host',
+    meetingId,
+    meetingName: meetingName || null,
+    issueId: currentIssue.id,
+    issueTitle: currentIssue.title,
+    issueDescription: currentIssue.description,
+    rounds: currentIssue.rounds,
+    finalDecision,
+    completedAt: new Date().toISOString(),
+    participants: hostManager.getParticipants().length
+  });
+}
+
+/**
+ * 儲存所有 Issue 到歷史（會議結束時）
+ */
+function saveAllIssuesToHistory() {
+  if (issues.length === 0) return;
+  
+  const meetingId = document.getElementById('meeting-id').textContent;
+  if (!meetingId || meetingId === '------') return;
+  
+  const participants = hostManager.getParticipants().length;
+  const now = new Date().toISOString();
+  
+  // 獲取或建立會議記錄
+  const history = getHistory();
+  let meetingRecord = history.find(r => r.meetingId === meetingId && r.mode === 'host' && r.issues);
+  
+  if (!meetingRecord) {
+    // 如果沒有會議記錄，建立一個
+    meetingRecord = {
+      id: Date.now().toString(),
+      timestamp: now,
+      mode: 'host',
+      meetingId: meetingId,
+      meetingName: meetingName || null,
+      participants: participants,
+      startedAt: now,
+      completedAt: now,
+      issues: []
+    };
+    history.unshift(meetingRecord);
+  } else {
+    // 更新會議名稱（如果之前沒有）
+    if (!meetingRecord.meetingName && meetingName) {
+      meetingRecord.meetingName = meetingName;
+    }
+  }
+  
+  // 更新所有 issue（包括未完成的）
+  issues.forEach(issue => {
+    // 如果當前 issue 有未保存的輪次結果，先保存
+    let issueRounds = [...issue.rounds];
+    if (issue.id === currentIssue?.id && currentResults) {
+      const roundData = {
+        roundNumber: currentRound,
+        results: currentResults.map(r => ({
+          name: r.name,
+          card: r.card
+        })),
+        completedAt: now
+      };
+      // 如果該輪次還沒保存，添加到 rounds
+      const existingRound = issueRounds.find(r => r.roundNumber === currentRound);
+      if (!existingRound) {
+        issueRounds.push(roundData);
+      }
+    }
+    
+    // 更新或新增 issue
+    const existingIssueIndex = meetingRecord.issues.findIndex(i => i.issueId === issue.id);
+    const issueData = {
+      issueId: issue.id,
+      issueTitle: issue.title,
+      issueDescription: issue.description || null,
+      rounds: issueRounds,
+      finalDecision: issue.finalDecision || null,
+      completedAt: issue.status === 'completed' ? (issue.completedAt || now) : null
+    };
+    
+    if (existingIssueIndex >= 0) {
+      // 更新現有 issue
+      meetingRecord.issues[existingIssueIndex] = issueData;
+    } else {
+      // 新增 issue
+      meetingRecord.issues.push(issueData);
+    }
+  });
+  
+  // 更新會議完成時間和參與者數量
+  meetingRecord.completedAt = now;
+  meetingRecord.participants = participants;
+  
+  // 限制最大數量
+  if (history.length > 100) {
+    history.splice(100);
+  }
+  
+  // 保存到 storage
+  storage.set('history', history);
 }
 

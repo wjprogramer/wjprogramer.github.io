@@ -5,7 +5,7 @@
 
 import { i18n } from '../utils/i18n.js';
 import { theme } from '../utils/theme.js';
-import { storage } from '../utils/storage.js';
+import { storage } from '../utils/storage/index.js';
 import { showToast, toastSuccess, toastError } from '../components/toast.js';
 import { clearHistory } from '../data/history.js';
 
@@ -55,7 +55,9 @@ export function renderSettings() {
               <p class="setting-desc" data-i18n="settings.languageDesc">選擇顯示語言</p>
               <select id="language-select" class="form-select">
                 <option value="zh-TW">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
                 <option value="en">English</option>
+                <option value="ja">日本語</option>
               </select>
             </div>
           </div>
@@ -227,12 +229,16 @@ function setupEventListeners() {
     });
   }
   
-  // 語言切換按鈕
+  // 語言切換按鈕（循環切換：zh-TW -> zh-CN -> en -> ja -> zh-TW）
   const langToggle = document.getElementById('lang-toggle');
   if (langToggle) {
     langToggle.addEventListener('click', async () => {
       const currentLang = i18n.getLanguage();
-      const newLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
+      const languages = ['zh-TW', 'zh-CN', 'en', 'ja'];
+      const currentIndex = languages.indexOf(currentLang);
+      const nextIndex = (currentIndex + 1) % languages.length;
+      const newLang = languages[nextIndex];
+      
       await i18n.setLanguage(newLang);
       
       // 更新下拉選單
@@ -295,13 +301,19 @@ function setupEventListeners() {
         // 清除所有資料
         storage.clear();
         
-        // 重置主題和語言為預設值
-        theme.setTheme('auto');
+        // 重置主題為系統預設
+        // 先移除 theme key，然後根據系統偏好設定主題（不儲存）
+        storage.remove('theme'); // 確保 theme key 被清除
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        theme.setTheme(systemPrefersDark ? 'dark' : 'light', false); // 不儲存，讓系統自動判斷
+        
+        // 重置語言為預設值
         i18n.setLanguage('zh-TW');
         
         toastSuccess(i18n.t('settings.clearAllDataSuccess'));
         
         // 重新載入頁面以套用預設設定
+        // 重新載入後，theme.init() 會根據系統偏好自動設定主題
         setTimeout(() => {
           window.location.reload();
         }, 1000);

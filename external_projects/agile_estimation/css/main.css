@@ -172,14 +172,25 @@ a:hover {
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--btn-primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
-.btn-primary:active {
+.btn-primary:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.btn-primary:disabled,
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  box-shadow: none;
+  transform: none;
 }
 
 .btn-secondary {
@@ -188,10 +199,16 @@ a:hover {
   border: 2px solid var(--color-border);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   border-color: var(--color-primary);
   color: var(--color-primary);
   transform: translateY(-2px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .btn-ghost {
@@ -200,9 +217,15 @@ a:hover {
   padding: var(--spacing-sm);
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .btn-icon {
@@ -420,6 +443,53 @@ a:hover {
 /* ===================================
    Responsive
    =================================== */
+
+/* 語言切換 Dropdown */
+.lang-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.lang-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--spacing-xs);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 150px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.lang-option {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-base);
+  font-size: var(--font-size-base);
+}
+
+.lang-option:hover {
+  background: var(--color-bg-secondary);
+}
+
+.lang-option.active {
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+}
+
+.lang-option.active:hover {
+  background: var(--color-primary-dark, #6366f1);
+}
 
 @media (max-width: 767px) {
   html {

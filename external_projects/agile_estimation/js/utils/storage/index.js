@@ -5,7 +5,11 @@
 
 const STORAGE_PREFIX = 'agile_estimation_';
 
-export const storage = {
+/**
+ * 真實的 Storage 實作（使用 localStorage）
+ * @implements {IStorage}
+ */
+export class RealStorage {
   /**
    * 取得資料
    * @param {string} key - 鍵名
@@ -21,7 +25,7 @@ export const storage = {
       console.error(`Error reading from storage: ${key}`, error);
       return defaultValue;
     }
-  },
+  }
 
   /**
    * 儲存資料
@@ -34,7 +38,7 @@ export const storage = {
     } catch (error) {
       console.error(`Error writing to storage: ${key}`, error);
     }
-  },
+  }
 
   /**
    * 刪除資料
@@ -46,7 +50,7 @@ export const storage = {
     } catch (error) {
       console.error(`Error removing from storage: ${key}`, error);
     }
-  },
+  }
 
   /**
    * 清除所有本應用程式的資料
@@ -65,5 +69,14 @@ export const storage = {
       console.error('Error clearing storage', error);
     }
   }
-};
+}
+
+// 創建默認實例以保持向後兼容
+const defaultStorage = new RealStorage();
+
+/**
+ * 默認的 storage 實例（向後兼容）
+ * 生產環境使用此實例
+ */
+export const storage = defaultStorage;
 

@@ -16,14 +16,22 @@ export function renderHome() {
     <header class="header">
       <div class="container header-content">
         <div class="logo" data-i18n="app.name">敏捷估點</div>
-        <div class="header-actions">
-          <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
-            🌐
-          </button>
-          <button class="btn btn-ghost btn-icon" id="theme-toggle" title="切換主題">
-            ${theme.isDark() ? '☀️' : '🌙'}
-          </button>
-        </div>
+              <div class="header-actions">
+                <div class="lang-dropdown-container">
+                  <button class="btn btn-ghost btn-icon" id="lang-toggle" title="切換語言">
+                    🌐
+                  </button>
+                  <div class="lang-dropdown hidden" id="lang-dropdown">
+                    <button class="lang-option" data-lang="zh-TW">繁體中文</button>
+                    <button class="lang-option" data-lang="zh-CN">简体中文</button>
+                    <button class="lang-option" data-lang="en">English</button>
+                    <button class="lang-option" data-lang="ja">日本語</button>
+                  </div>
+                </div>
+                <button class="btn btn-ghost btn-icon" id="theme-toggle" title="切換主題">
+                  ${theme.isDark() ? '☀️' : '🌙'}
+                </button>
+              </div>
       </div>
     </header>
     
@@ -212,13 +220,45 @@ function setupEventListeners() {
     });
   }
   
-  // 語言切換
+  // 語言切換 Dropdown
   const langToggle = document.getElementById('lang-toggle');
-  if (langToggle) {
-    langToggle.addEventListener('click', async () => {
-      const currentLang = i18n.getLanguage();
-      const newLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
-      await i18n.setLanguage(newLang);
+  const langDropdown = document.getElementById('lang-dropdown');
+  
+  if (langToggle && langDropdown) {
+    // 點擊按鈕顯示/隱藏 Dropdown
+    langToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langDropdown.classList.toggle('hidden');
+      updateLangDropdownSelection();
+    });
+    
+    // 點擊選項切換語言
+    langDropdown.querySelectorAll('.lang-option').forEach(option => {
+      option.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const lang = option.dataset.lang;
+        await i18n.setLanguage(lang);
+        langDropdown.classList.add('hidden');
+      });
+    });
+    
+    // 點擊外部關閉 Dropdown
+    document.addEventListener('click', (e) => {
+      if (!langToggle.contains(e.target) && !langDropdown.contains(e.target)) {
+        langDropdown.classList.add('hidden');
+      }
+    });
+  }
+  
+  // 更新 Dropdown 選中狀態
+  function updateLangDropdownSelection() {
+    const currentLang = i18n.getLanguage();
+    langDropdown.querySelectorAll('.lang-option').forEach(option => {
+      if (option.dataset.lang === currentLang) {
+        option.classList.add('active');
+      } else {
+        option.classList.remove('active');
+      }
     });
   }
 }

@@ -22,7 +22,7 @@
   theme: 'dark' | 'light' | 'auto',        // 主題模式
   language: 'zh-TW' | 'zh-CN' | 'en' | 'ja',  // 語言設定
   defaultCardSet: 'ModifiedFibonacci',  // 第一版固定使用 Modified Fibonacci（未來可擴展其他牌組）
-  maxHistoryRecords: 100,                  // 歷史記錄最大數量
+  maxHistoryRecords: 10,                  // 歷史記錄最大數量（已改為固定 10 筆）
   soundEnabled: true,                      // 音效開關（可選）
   animationsEnabled: true,                 // 動畫開關（可選）
   signalingServer: {                       // 信號伺服器設定（可選）
@@ -60,7 +60,7 @@
 
 **存取方式**：
 ```javascript
-import { storage } from './utils/storage.js';
+import { storage } from './utils/storage/index.js';
 
 // 讀取設定
 const settings = storage.get('settings') || defaultSettings;
@@ -83,75 +83,138 @@ storage.set('settings', {
 [
   // 簡易模式記錄
   {
-    id: 'uuid-v4',                    // 唯一識別碼
-    timestamp: 1234567890,             // Unix 時間戳記（秒）
-    card: '13',                       // 選擇的牌值
-    cardSet: 'Fibonacci',             // 使用的估點牌組
+    id: 'timestamp-string',           // 唯一識別碼（時間戳字串）
+    timestamp: '2024-01-01T00:00:00.000Z',  // ISO 時間字串
+    value: '13',                      // 選擇的牌值
     mode: 'solo',                     // 模式：'solo'
-    note: 'Issue #123'           // 備註（可選）
+    issue: null,                      // Issue 名稱（可選，簡易模式通常為 null）
+    round: 1,                         // 輪次（可選，簡易模式通常為 1）
+    starred: false                    // 是否已標記（star），避免被自動刪除
   },
-  // 協作模式 - Host 端記錄
+  // 協作模式 - Host 端單輪記錄
   {
-    id: 'uuid-v4',
-    timestamp: 1234567890,
+    id: 'timestamp-string',
+    timestamp: '2024-01-01T00:00:00.000Z',
+    value: null,                      // Host 單輪記錄通常為 null（使用 results）
+    mode: 'host',
     meetingId: 'A3B7C9',             // 會議 ID
-    roundId: 'round-123',             // 輪次 ID
-    cardSet: 'Fibonacci',
-    mode: 'host',                     // 模式：'host'
-    participants: [                   // 所有參與者的估點結果
+    results: [                        // 單輪的所有參與者結果
+      { name: 'Host', card: '13' },
+      { name: 'John', card: '8' },
+      { name: 'Jane', card: '13' }
+    ],
+    participants: 3,                   // 參與者數量
+    issue: null,                      // Issue 名稱（可選）
+    round: 1,                         // 輪次
+    starred: false                    // 是否已標記（star），避免被自動刪除
+  },
+  // 協作模式 - Host 端 Issue 完成記錄
+  {
+    id: 'timestamp-string',
+    timestamp: '2024-01-01T00:00:00.000Z',
+    value: null,                      // Issue 完成記錄使用 finalDecision
+    mode: 'host',
+    meetingId: 'A3B7C9',
+    issueId: 'issue-123',             // Issue ID
+    issueTitle: '實作登入功能',        // Issue 標題
+    issueDescription: '使用者可以透過帳號密碼登入',  // Issue 描述
+    rounds: [                         // 所有輪次的完整資料
       {
-        peerId: 'client-peer-id-1',
-        name: 'John Doe',
-        card: '13'
+        round: 1,
+        results: [
+          { name: 'Host', card: '13' },
+          { name: 'John', card: '8' }
+        ]
       },
       {
-        peerId: 'client-peer-id-2',
-        name: 'Jane Smith',
-        card: '8'
+        round: 2,
+        results: [
+          { name: 'Host', card: '8' },
+          { name: 'John', card: '8' }
+        ]
       }
-      // ...
     ],
-    stats: {                           // 統計資訊
-      average: 8.5,
-      max: 13,
-      min: 3,
-      distribution: {
-        '3': 1,
-        '5': 2,
-        '8': 4,
-        '13': 1
-      }
-    }
+    finalDecision: '8',               // 最終決定
+    completedAt: '2024-01-01T00:05:00.000Z',  // 完成時間
+    participants: 2                    // 參與者數量
   },
   // 協作模式 - Client 端記錄
   {
-    id: 'uuid-v4',
-    timestamp: 1234567890,
-    meetingId: 'A3B7C9',
-    roundId: 'round-123',
-    cardSet: 'Fibonacci',
-    mode: 'client',                   // 模式：'client'
-    myCard: '13',                     // 自己的估點
-    myName: 'John Doe',               // 自己的名稱
-    stats: {                          // 統計資訊（從 Host 接收）
-      average: 8.5,
-      max: 13,
-      min: 3,
-      distribution: {
-        '3': 1,
-        '5': 2,
-        '8': 4,
-        '13': 1
-      }
-    }
-  },
-  // ...
+    id: 'timestamp-string',
+    timestamp: '2024-01-01T00:00:00.000Z',
+    value: '13',                      // Client 選擇的牌值
+    mode: 'client',
+    meetingId: 'A3B7C9',             // 會議 ID
+    participants: 3,                  // 參與者數量
+    starred: false                    // 是否已標記（star），避免被自動刪除
+  }
 ]
 ```
 
+**欄位說明**：
+
+- **通用欄位**：
+  - `id`: 唯一識別碼（時間戳字串）
+  - `timestamp`: ISO 時間字串
+  - `mode`: 模式（'solo', 'host', 'client'）
+  - `value`: 估點值（solo/client 模式，或單輪記錄時可能為 null）
+  - `issue`: Issue 名稱（可選）
+  - `round`: 輪次（可選）
+  - `starred`: 是否已標記（布林值，預設為 `false`），標記的記錄不會被自動刪除
+
+- **協作模式欄位**：
+  - `meetingId`: 會議 ID
+  - `results`: 單輪的所有參與者結果陣列（host 模式單輪記錄）
+  - `participants`: 參與者數量
+
+- **Issue 完成記錄欄位**（host 模式，舊格式）：
+  - `issueId`: Issue ID
+  - `issueTitle`: Issue 標題
+  - `issueDescription`: Issue 描述
+  - `rounds`: 所有輪次的完整資料陣列
+  - `finalDecision`: 最終決定
+  - `completedAt`: 完成時間（ISO 時間字串）
+
+- **會議記錄欄位**（host 模式，新格式 - 一個會議包含多個 issue）：
+  - `meetingId`: 會議 ID
+  - `meetingName`: 會議名稱（可選，如果留空則使用會議 ID）
+  - `participants`: 參與者數量
+  - `startedAt`: 會議開始時間（ISO 時間字串）
+  - `completedAt`: 會議結束時間（最後一個 issue 完成的時間，ISO 時間字串）
+  - `starred`: 是否已標記（布林值，預設為 `false`），標記的記錄不會被自動刪除
+  - `issues`: Issue 陣列，每個 Issue 包含：
+    - `issueId`: Issue ID
+    - `issueTitle`: Issue 標題
+    - `issueDescription`: Issue 描述
+    - `rounds`: 所有輪次的完整資料陣列
+      - `roundNumber`: 輪次編號
+      - `results`: 該輪次的所有參與者結果 `[{name, card}, ...]`
+      - `completedAt`: 該輪次完成時間（ISO 時間字串）
+      - `finalDecision`: 該輪次的最終決定（如果有）
+    - `finalDecision`: Issue 的最終決定
+    - `completedAt`: Issue 完成時間（ISO 時間字串）
+
+**數據結構說明**：
+- 新格式（會議記錄）：同一個會議中的所有 issue 和多輪投票會合併為一筆歷史記錄
+- 舊格式（單一 issue 記錄）：向後兼容，仍可正常顯示
+- 當建立新房間時，會建立新的會議記錄
+- 在同一個會議中，每次翻牌或完成 issue 時，會更新同一筆會議記錄
+
+**詳細資料查看**：
+- 歷史記錄頁面支援點擊查看詳細資料
+- 有詳細資料的記錄會顯示「查看詳細資料」按鈕（👁️）
+- 詳細資料頁面會顯示：
+  - 基本資訊（模式、時間、會議 ID、參與者數量）
+  - Issue 資訊（標題、描述、最終決定、完成時間）
+  - 單輪結果（統計資訊、所有參與者結果）
+  - 所有輪次（多輪估點的完整資料）
+
 **限制**：
-- 最多儲存 100 筆記錄（可透過設定調整）
-- 超過限制時，刪除最舊的記錄
+- 最多儲存 10 筆記錄（固定限制）
+- 最多可以標記（star）9 筆記錄
+- 超過限制時，優先刪除未標記（starred = false）的記錄
+- 如果所有記錄都已標記，則刪除最舊的標記記錄
+- 標記的記錄可以避免被自動刪除，但手動刪除不受限制
 
 **存取方式**：
 
@@ -223,13 +286,65 @@ history.push(newRecord);
 
 **限制記錄數量**：
 ```javascript
-// 限制記錄數量
-const maxRecords = storage.get('settings')?.maxHistoryRecords || 100;
-if (history.length > maxRecords) {
-  history.shift(); // 刪除最舊的記錄
+// 限制記錄數量（最多 10 筆）
+const MAX_HISTORY_ITEMS = 10;
+const MAX_STARRED_ITEMS = 9;
+
+function enforceMaxHistoryItems(history) {
+  if (history.length <= MAX_HISTORY_ITEMS) {
+    return;
+  }
+  
+  // 分離 star 和未 star 的記錄
+  const starred = history.filter(r => r.starred === true);
+  const unstarred = history.filter(r => !r.starred);
+  
+  // 如果 star 的記錄超過限制，保留最舊的 star 記錄
+  if (starred.length > MAX_HISTORY_ITEMS) {
+    starred.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const toRemove = starred.slice(MAX_HISTORY_ITEMS);
+    toRemove.forEach(r => {
+      const index = history.findIndex(h => h.id === r.id);
+      if (index >= 0) history.splice(index, 1);
+    });
+  } else {
+    // 刪除未 star 的記錄，直到總數不超過限制
+    unstarred.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    while (history.length > MAX_HISTORY_ITEMS && unstarred.length > 0) {
+      const toRemove = unstarred.shift();
+      const index = history.findIndex(h => h.id === toRemove.id);
+      if (index >= 0) history.splice(index, 1);
+    }
+  }
 }
 
 storage.set('history', history);
+```
+
+**標記（Star）功能**：
+```javascript
+// 切換標記狀態
+function toggleStar(id) {
+  const history = getHistory();
+  const record = history.find(r => r.id === id);
+  
+  if (!record) {
+    return false;
+  }
+  
+  // 如果要 star，檢查是否已達到上限（最多 9 個）
+  if (!record.starred) {
+    const starredCount = history.filter(r => r.starred === true).length;
+    if (starredCount >= MAX_STARRED_ITEMS) {
+      return false; // 已達到上限
+    }
+  }
+  
+  // 切換 star 狀態
+  record.starred = !record.starred;
+  storage.set('history', history);
+  return record.starred;
+}
 ```
 
 ---

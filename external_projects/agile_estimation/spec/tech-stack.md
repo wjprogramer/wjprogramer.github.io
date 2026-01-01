@@ -85,7 +85,7 @@
 
 ```javascript
 // js/utils/signaling-config.js
-import { storage } from './storage.js';
+import { storage } from './utils/storage/index.js';
 
 export function getSignalingConfig() {
   const settings = storage.get('settings') || {};
@@ -261,7 +261,11 @@ external_projects/agile_estimation/
 │   │   ├── Signaling.js           # 信號處理（如需要）
 │   │   └── DataChannel.js        # 資料通道管理
 │   ├── utils/                    # 工具函式
-│   │   ├── storage.js            # localStorage 封裝
+│   │   ├── storage/              # Storage 模組
+│   │   │   ├── index.js          # 真實 Storage 實作
+│   │   │   ├── mock.js            # Mock Storage（測試用）
+│   │   │   ├── factory.js         # Storage 工廠函數
+│   │   │   └── interface.js       # Storage 介面定義
 │   │   ├── theme.js              # 主題管理
 │   │   ├── i18n.js               # 多國語系
 │   │   ├── clipboard.js          # 剪貼簿操作（複製連結、會議 ID 等）
@@ -663,10 +667,10 @@ SPA 的入口 HTML 檔案結構：
 
 ### 資料管理工具
 
-**storage.js**：封裝 localStorage 操作
+**storage/index.js**：封裝 localStorage 操作
 
 ```javascript
-// js/utils/storage.js
+// js/utils/storage/index.js
 const STORAGE_PREFIX = 'agile_estimation_';
 
 export const storage = {

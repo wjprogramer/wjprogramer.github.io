@@ -3,7 +3,8 @@
  * 使用 PeerJS 管理 P2P 連線
  */
 
-import { storage } from '../utils/storage.js';
+import { storage } from '../utils/storage/index.js';
+import { createDefaultPeerFactory } from './peer-factory.js';
 
 // 訊息類型
 export const MessageType = {
@@ -63,7 +64,13 @@ export function generateMeetingId() {
  * 管理 Host 端的 P2P 連線
  */
 export class HostManager {
-  constructor() {
+  /**
+   * @param {string} hostName - Host 名稱
+   * @param {Object} options - 選項
+   * @param {Object} options.peerFactory - Peer Factory（用於依賴注入，測試時可傳入 Mock）
+   * @param {string} options.meetingName - 會議名稱
+   */
+  constructor(hostName = 'Host', options = {}) {
     this.peer = null;
     this.meetingId = null;
     this.connections = new Map(); // peerId -> { conn, participant }
@@ -71,6 +78,12 @@ export class HostManager {
     this.state = ConnectionState.DISCONNECTED;
     this.estimationState = EstimationState.WAITING;
     this.blacklist = storage.get('blacklist') || [];
+    this.hostName = hostName; // Host 名稱，用於檢查重複
+    this.currentIssue = null; // 當前估點的 Issue 資訊 { title, description }
+    this.meetingName = options.meetingName || null; // 會議名稱
+    
+    // 依賴注入：Peer Factory
+    this.peerFactory = options.peerFactory || createDefaultPeerFactory();
     
     // 回調函數
     this.onStateChange = null;
@@ -83,16 +96,20 @@ export class HostManager {
   
   /**
    * 建立會議室
+   * @param {string} meetingName - 會議名稱（可選）
    * @returns {Promise<string>} 會議 ID
    */
-  async createMeeting() {
+  async createMeeting(meetingName = null) {
     return new Promise((resolve, reject) => {
       this.meetingId = generateMeetingId();
+      if (meetingName !== null) {
+        this.meetingName = meetingName;
+      }
       this.state = ConnectionState.CONNECTING;
       this._notifyStateChange();
       
-      // 建立 Peer（使用會議 ID 作為 Peer ID）
-      this.peer = new Peer(`agile-est-${this.meetingId}`, {
+      // 使用 Peer Factory 建立 Peer（支持依賴注入）
+      this.peer = this.peerFactory.createPeer(`agile-est-${this.meetingId}`, {
         debug: 1
       });
       
@@ -218,6 +235,29 @@ export class HostManager {
       return;
     }
     
+    const trimmedName = name.trim();
+    
+    // 檢查名稱是否與 Host 重複
+    if (trimmedName.toLowerCase() === this.hostName.toLowerCase()) {
+      conn.send({
+        type: MessageType.JOIN_REJECT,
+        reason: 'duplicate_name'
+      });
+      conn.close();
+      return;
+    }
+    
+    // 檢查名稱是否與其他參與者重複
+    const existingNames = Array.from(this.participants.values()).map(p => p.name.toLowerCase());
+    if (existingNames.includes(trimmedName.toLowerCase())) {
+      conn.send({
+        type: MessageType.JOIN_REJECT,
+        reason: 'duplicate_name'
+      });
+      conn.close();
+      return;
+    }
+    
     // 建立參與者資料
     const participant = {
       peerId: conn.peer,
@@ -234,12 +274,18 @@ export class HostManager {
     this.connections.set(conn.peer, { conn, participant });
     this.participants.set(conn.peer, participant);
     
-    // 發送確認訊息
+    // 發送確認訊息（包含 Issue 資訊，如果估點已開始）
     conn.send({
       type: MessageType.JOIN_ACK,
       meetingId: this.meetingId,
       estimationState: this.estimationState,
-      participants: this._getParticipantsArray()
+      participants: this._getParticipantsArray(),
+      issue: this.estimationState === EstimationState.SELECTING && this.currentIssue
+        ? {
+            title: this.currentIssue.title || '',
+            description: this.currentIssue.description || ''
+          }
+        : null
     });
     
     // 通知其他參與者
@@ -328,8 +374,22 @@ export class HostManager {
   /**
    * 開始估點
    */
-  startEstimation() {
+  /**
+   * 開始估點
+   * @param {Object} issueInfo - Issue 資訊 { title, description }（可選）
+   */
+  startEstimation(issueInfo = null) {
     this.estimationState = EstimationState.SELECTING;
+    
+    // 儲存當前 Issue 資訊
+    if (issueInfo) {
+      this.currentIssue = {
+        title: issueInfo.title || '',
+        description: issueInfo.description || ''
+      };
+    } else {
+      this.currentIssue = null;
+    }
     
     // 重置所有參與者的選擇
     for (const participant of this.participants.values()) {
@@ -337,9 +397,10 @@ export class HostManager {
       participant.estimationState = EstimationState.SELECTING;
     }
     
-    // 廣播開始估點訊息
+    // 廣播開始估點訊息（包含 Issue 資訊）
     this._broadcast({
-      type: MessageType.START_ESTIMATION
+      type: MessageType.START_ESTIMATION,
+      issue: this.currentIssue
     });
     
     this._broadcastParticipantUpdate();
@@ -347,9 +408,10 @@ export class HostManager {
   
   /**
    * 翻牌
-   * @returns {Array} 所有參與者的估點結果
+   * @param {Object} hostResult - Host 的估點結果（可選）{ name, card }
+   * @returns {Array} 所有參與者的估點結果（包含 Host）
    */
-  flipCards() {
+  flipCards(hostResult = null) {
     this.estimationState = EstimationState.REVEALED;
     
     // 更新所有參與者狀態
@@ -360,10 +422,18 @@ export class HostManager {
     // 收集結果
     const results = this._getParticipantsArray().map(p => ({
       name: p.name,
-      card: p.selectedCard
+      card: p.selectedCard  // 可能是 null（未選取）
     }));
     
-    // 廣播翻牌訊息
+    // 如果 Host 參與估點，添加 Host 的結果（包括未選取的情況）
+    if (hostResult && hostResult.name) {
+      results.push({
+        name: hostResult.name,
+        card: hostResult.card  // 可能是 null（未選取）
+      });
+    }
+    
+    // 廣播翻牌訊息（包含 Host 的結果）
     this._broadcast({
       type: MessageType.FLIP_CARDS,
       results
@@ -379,6 +449,7 @@ export class HostManager {
    */
   resetRound() {
     this.estimationState = EstimationState.WAITING;
+    this.currentIssue = null; // 重置 Issue 資訊
     
     // 重置所有參與者
     for (const participant of this.participants.values()) {
@@ -492,7 +563,11 @@ export class HostManager {
  * 管理 Client 端的 P2P 連線
  */
 export class ClientManager {
-  constructor() {
+  /**
+   * @param {Object} options - 選項
+   * @param {Object} options.peerFactory - Peer Factory（用於依賴注入，測試時可傳入 Mock）
+   */
+  constructor(options = {}) {
     this.peer = null;
     this.connection = null;
     this.meetingId = null;
@@ -501,6 +576,10 @@ export class ClientManager {
     this.estimationState = EstimationState.WAITING;
     this.selectedCard = null;
     this.participants = [];
+    this.currentIssue = null; // 當前估點的 Issue 資訊
+    
+    // 依賴注入：Peer Factory
+    this.peerFactory = options.peerFactory || createDefaultPeerFactory();
     
     // 回調函數
     this.onStateChange = null;
@@ -510,6 +589,7 @@ export class ClientManager {
     this.onParticipantUpdate = null;
     this.onKicked = null;
     this.onError = null;
+    this.onMeetingClosed = null; // 會議正常結束回調
   }
   
   /**
@@ -525,8 +605,8 @@ export class ClientManager {
       this.state = ConnectionState.CONNECTING;
       this._notifyStateChange();
       
-      // 建立 Peer
-      this.peer = new Peer({
+      // 使用 Peer Factory 建立 Peer（支持依賴注入）
+      this.peer = this.peerFactory.createPeer(undefined, {
         debug: 1
       });
       
@@ -605,6 +685,25 @@ export class ClientManager {
         this.state = ConnectionState.CONNECTED;
         this.estimationState = data.estimationState || EstimationState.WAITING;
         this.participants = data.participants || [];
+        
+        // 如果加入時估點已經開始，儲存 Issue 資訊並觸發回調
+        if (this.estimationState === EstimationState.SELECTING) {
+          if (data.issue) {
+            this.currentIssue = {
+              title: data.issue.title || '',
+              description: data.issue.description || ''
+            };
+          } else {
+            this.currentIssue = null;
+          }
+          // 觸發估點開始回調（延遲執行，確保回調已設置）
+          setTimeout(() => {
+            if (this.onEstimationStart) {
+              this.onEstimationStart(this.currentIssue);
+            }
+          }, 0);
+        }
+        
         this._notifyStateChange();
         if (resolve) resolve();
         break;
@@ -618,8 +717,17 @@ export class ClientManager {
       case MessageType.START_ESTIMATION:
         this.estimationState = EstimationState.SELECTING;
         this.selectedCard = null;
+        // 儲存 Issue 資訊
+        if (data.issue) {
+          this.currentIssue = {
+            title: data.issue.title || '',
+            description: data.issue.description || ''
+          };
+        } else {
+          this.currentIssue = null;
+        }
         if (this.onEstimationStart) {
-          this.onEstimationStart();
+          this.onEstimationStart(this.currentIssue);
         }
         break;
         
@@ -658,7 +766,11 @@ export class ClientManager {
         if (data.reason === 'meeting_closed') {
           this.state = ConnectionState.DISCONNECTED;
           this._notifyStateChange();
-          if (this.onError) {
+          // 正常結束會議，使用專門的回調
+          if (this.onMeetingClosed) {
+            this.onMeetingClosed();
+          } else if (this.onError) {
+            // 如果沒有設置 onMeetingClosed，才使用 onError（向後兼容）
             this.onError(new Error('Meeting closed by host'));
           }
         }

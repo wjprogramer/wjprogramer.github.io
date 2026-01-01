@@ -3,7 +3,7 @@
  * 管理深色/淺色主題切換
  */
 
-import { storage } from './storage.js';
+import { storage } from './storage/index.js';
 
 const THEME_KEY = 'theme';
 const DARK = 'dark';

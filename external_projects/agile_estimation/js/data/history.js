@@ -2,10 +2,11 @@
  * History Data Management
  */
 
-import { storage } from '../utils/storage.js';
+import { storage } from '../utils/storage/index.js';
 
 const HISTORY_KEY = 'history';
-const MAX_HISTORY_ITEMS = 100;
+const MAX_HISTORY_ITEMS = 10;
+const MAX_STARRED_ITEMS = 9;
 
 /**
  * 取得歷史記錄
@@ -18,33 +19,244 @@ export function getHistory() {
 /**
  * 新增歷史記錄
  * @param {Object} record - 記錄資料
- * @param {string} record.value - 估點值
+ * @param {string} record.value - 估點值（solo/client 模式）
  * @param {string} record.mode - 模式（solo, host, client）
- * @param {string} record.issue - Issue 名稱（可選）
- * @param {number} record.round - 輪次（可選）
+ * @param {string} record.meetingId - 會議 ID（host/client 模式）
+ * @param {Array} record.results - 所有參與者的結果（host 模式，單輪）
+ * @param {number} record.participants - 參與者數量
+ * @param {string} record.issueId - Issue ID（host 模式）
+ * @param {string} record.issueTitle - Issue 標題（host 模式）
+ * @param {string} record.issueDescription - Issue 描述（host 模式）
+ * @param {number} record.roundNumber - 輪次編號（host 模式，翻牌時）
+ * @param {Array} record.rounds - 所有輪次的資料（host 模式，Issue 完成時）
+ * @param {string} record.finalDecision - 最終決定（host 模式，Issue 完成時）
+ * @param {string} record.completedAt - 完成時間（host 模式，Issue 完成時）
  */
 export function addHistory(record) {
   const history = getHistory();
   
+  // Host 模式使用會議記錄結構
+  if (record.mode === 'host' && record.meetingId) {
+    return addOrUpdateMeetingHistory(record);
+  }
+  
+  // Solo/Client 模式
   const newRecord = {
     id: Date.now().toString(),
     timestamp: new Date().toISOString(),
-    value: record.value,
+    value: record.value || null,
     mode: record.mode || 'solo',
-    issue: record.issue || null,
-    round: record.round || 1
+    meetingId: record.meetingId || null,
+    participants: record.participants || null,
+    starred: false
   };
   
   // 新記錄加到最前面
   history.unshift(newRecord);
   
-  // 限制最大數量
-  if (history.length > MAX_HISTORY_ITEMS) {
-    history.splice(MAX_HISTORY_ITEMS);
-  }
+  // 限制最大數量，優先刪除未 star 的記錄
+  enforceMaxHistoryItems(history);
   
   storage.set(HISTORY_KEY, history);
   return newRecord;
+}
+
+/**
+ * 新增或更新會議歷史記錄（一個會議包含多個 issue）
+ * @param {Object} record - 記錄資料
+ * @returns {Object} 更新後的記錄
+ */
+function addOrUpdateMeetingHistory(record) {
+  const history = getHistory();
+  const meetingId = record.meetingId;
+  const now = new Date().toISOString();
+  
+  // 查找是否已存在該會議的記錄
+  let meetingRecord = history.find(r => r.meetingId === meetingId && r.mode === 'host' && r.issues);
+  
+  if (meetingRecord) {
+    // 更新會議名稱（如果有提供）
+    if (record.meetingName !== undefined) {
+      meetingRecord.meetingName = record.meetingName || null;
+    }
+    
+    // 更新現有記錄
+    if (record.issueId && record.issueTitle) {
+      // 完成一個 issue
+      const existingIssueIndex = meetingRecord.issues.findIndex(i => i.issueId === record.issueId);
+      
+      if (existingIssueIndex >= 0) {
+        // 更新現有 issue
+        meetingRecord.issues[existingIssueIndex] = {
+          issueId: record.issueId,
+          issueTitle: record.issueTitle,
+          issueDescription: record.issueDescription || null,
+          rounds: record.rounds || [],
+          finalDecision: record.finalDecision || null,
+          completedAt: record.completedAt || now
+        };
+      } else {
+        // 新增 issue
+        meetingRecord.issues.push({
+          issueId: record.issueId,
+          issueTitle: record.issueTitle,
+          issueDescription: record.issueDescription || null,
+          rounds: record.rounds || [],
+          finalDecision: record.finalDecision || null,
+          completedAt: record.completedAt || now
+        });
+      }
+      
+      // 更新會議完成時間
+      meetingRecord.completedAt = record.completedAt || now;
+    } else if (record.results && record.issueId) {
+      // 更新當前 issue 的當前輪次結果（翻牌時）
+      const issueIndex = meetingRecord.issues.findIndex(i => i.issueId === record.issueId);
+      
+      if (issueIndex >= 0) {
+        // 找到 issue，更新或新增輪次
+        const issue = meetingRecord.issues[issueIndex];
+        const roundNumber = record.roundNumber || (issue.rounds.length + 1);
+        
+        // 查找是否已存在該輪次
+        const existingRoundIndex = issue.rounds.findIndex(r => r.roundNumber === roundNumber);
+        
+        if (existingRoundIndex >= 0) {
+          // 更新現有輪次的結果
+          issue.rounds[existingRoundIndex].results = record.results.map(r => ({
+            name: r.name,
+            card: r.card
+          }));
+          if (!issue.rounds[existingRoundIndex].completedAt) {
+            issue.rounds[existingRoundIndex].completedAt = now;
+          }
+        } else {
+          // 新增一輪
+          issue.rounds.push({
+            roundNumber,
+            results: record.results.map(r => ({
+              name: r.name,
+              card: r.card
+            })),
+            completedAt: now
+          });
+        }
+      } else {
+        // Issue 不存在，建立新 issue（不應該發生，但為了安全）
+        meetingRecord.issues.push({
+          issueId: record.issueId,
+          issueTitle: record.issueTitle || '未命名 Issue',
+          issueDescription: record.issueDescription || null,
+          rounds: [{
+            roundNumber: 1,
+            results: record.results.map(r => ({
+              name: r.name,
+              card: r.card
+            })),
+            completedAt: now
+          }],
+          finalDecision: null,
+          completedAt: null
+        });
+      }
+    }
+    
+    // 更新參與者數量（如果有提供）
+    if (record.participants) {
+      meetingRecord.participants = record.participants;
+    }
+    
+    storage.set(HISTORY_KEY, history);
+    return meetingRecord;
+  } else {
+    // 建立新會議記錄
+    const newRecord = {
+      id: Date.now().toString(),
+      timestamp: now,
+      mode: 'host',
+      meetingId: meetingId,
+      meetingName: record.meetingName || null,
+      participants: record.participants || null,
+      startedAt: now,
+      completedAt: null,
+      issues: [],
+      starred: false
+    };
+    
+    if (record.issueId && record.issueTitle) {
+      // 完成一個 issue
+      newRecord.issues.push({
+        issueId: record.issueId,
+        issueTitle: record.issueTitle,
+        issueDescription: record.issueDescription || null,
+        rounds: record.rounds || [],
+        finalDecision: record.finalDecision || null,
+        completedAt: record.completedAt || now
+      });
+      newRecord.completedAt = record.completedAt || now;
+    } else if (record.results && record.issueId) {
+      // 單輪結果
+      newRecord.issues.push({
+        issueId: record.issueId,
+        issueTitle: record.issueTitle || '未命名 Issue',
+        issueDescription: record.issueDescription || null,
+        rounds: [{
+          roundNumber: record.roundNumber || 1,
+          results: record.results.map(r => ({
+            name: r.name,
+            card: r.card
+          })),
+          completedAt: now
+        }],
+        finalDecision: null,
+        completedAt: null
+      });
+    }
+    
+    // 新記錄加到最前面
+    history.unshift(newRecord);
+    
+    // 限制最大數量，優先刪除未 star 的記錄
+    enforceMaxHistoryItems(history);
+    
+    storage.set(HISTORY_KEY, history);
+    return newRecord;
+  }
+}
+
+/**
+ * 強制執行最大歷史記錄數量限制
+ * 優先刪除未 star 的記錄
+ * @param {Array} history - 歷史記錄陣列（會直接修改）
+ */
+function enforceMaxHistoryItems(history) {
+  if (history.length <= MAX_HISTORY_ITEMS) {
+    return;
+  }
+  
+  // 分離 star 和未 star 的記錄
+  const starred = history.filter(r => r.starred === true);
+  const unstarred = history.filter(r => !r.starred);
+  
+  // 如果 star 的記錄超過限制，保留最舊的 star 記錄
+  if (starred.length > MAX_HISTORY_ITEMS) {
+    // 按時間排序，保留最新的
+    starred.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    // 只保留前 MAX_HISTORY_ITEMS 個
+    const toRemove = starred.slice(MAX_HISTORY_ITEMS);
+    toRemove.forEach(r => {
+      const index = history.findIndex(h => h.id === r.id);
+      if (index >= 0) history.splice(index, 1);
+    });
+  } else {
+    // 刪除未 star 的記錄，直到總數不超過限制
+    unstarred.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // 最舊的優先刪除
+    while (history.length > MAX_HISTORY_ITEMS && unstarred.length > 0) {
+      const toRemove = unstarred.shift();
+      const index = history.findIndex(h => h.id === toRemove.id);
+      if (index >= 0) history.splice(index, 1);
+    }
+  }
 }
 
 /**
@@ -62,6 +274,42 @@ export function removeHistory(id) {
  */
 export function clearHistory() {
   storage.set(HISTORY_KEY, []);
+}
+
+/**
+ * 切換歷史記錄的 star 狀態
+ * @param {string} id - 記錄 ID
+ * @returns {boolean} 新的 star 狀態，如果達到上限則返回 false
+ */
+export function toggleStar(id) {
+  const history = getHistory();
+  const record = history.find(r => r.id === id);
+  
+  if (!record) {
+    return false;
+  }
+  
+  // 如果要 star，檢查是否已達到上限
+  if (!record.starred) {
+    const starredCount = history.filter(r => r.starred === true).length;
+    if (starredCount >= MAX_STARRED_ITEMS) {
+      return false; // 已達到上限
+    }
+  }
+  
+  // 切換 star 狀態
+  record.starred = !record.starred;
+  storage.set(HISTORY_KEY, history);
+  return record.starred;
+}
+
+/**
+ * 取得已 star 的記錄數量
+ * @returns {number} star 的記錄數量
+ */
+export function getStarredCount() {
+  const history = getHistory();
+  return history.filter(r => r.starred === true).length;
 }
 
 /**

@@ -9,9 +9,11 @@ import { i18n } from './utils/i18n.js';
 import { renderHome } from './pages/home.js';
 import { renderSolo } from './pages/solo.js';
 import { renderHistory } from './pages/history.js';
+import { renderHistoryDetail } from './pages/history-detail.js';
 import { renderHost } from './pages/host.js';
 import { renderJoin } from './pages/join.js';
 import { renderSettings } from './pages/settings.js';
+import { renderTest } from './pages/test.js';
 
 /**
  * 初始化應用程式
@@ -32,7 +34,9 @@ async function initApp() {
       .register('/join', renderJoin)
       .register('/join/:id', ({ params }) => renderJoin(params))
       .register('/history', renderHistory)
-      .register('/settings', renderSettings);
+      .register('/history/:id', ({ params }) => renderHistoryDetail(params))
+      .register('/settings', renderSettings)
+      .register('/test', renderTest);
     
     // 初始化路由（在所有路由註冊完成後）
     router.init();
