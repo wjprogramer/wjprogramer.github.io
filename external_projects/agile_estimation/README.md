@@ -394,6 +394,26 @@ external_projects/agile_estimation/
   - 支援多種整合（Jira、GitHub、Azure DevOps 等）
   - 提供免費和付費方案
 
+### 字體資源
+
+#### 像素/點陣字體參考
+
+參考文章：[10 個免費下載的像素字體](https://wumanzoo.com/10-pixel-fonts-for-free-download/#%E8%BC%83%E4%B8%8D%E5%AE%B9%E6%98%93%E7%BC%BA%E5%AD%97%E7%9A%84%E5%83%8F%E7%B4%A0%E9%BB%9E%E9%99%A3%E5%AD%97%E9%AB%94)
+
+**較不容易缺字的像素/點陣字體**：
+- [俐方體 11 號](https://wumanzoo.com/10-pixel-fonts-for-free-download/#俐方體_11_號)
+- [精品點陣體 7×7](https://wumanzoo.com/10-pixel-fonts-for-free-download/#精品點陣體_7×7)
+- [Silver](https://wumanzoo.com/10-pixel-fonts-for-free-download/#Silver)
+- [Unifont](https://wumanzoo.com/10-pixel-fonts-for-free-download/#Unifont)
+
+**支援部分漢字的像素/點陣字體**：
+- [ドットゴシック16](https://wumanzoo.com/10-pixel-fonts-for-free-download/#ドットゴシック16)
+- [PixelMplus（M+ BITMAP FONTS）](https://wumanzoo.com/10-pixel-fonts-for-free-download/#PixelMplus（M_BITMAP_FONTS）)
+- [マルモニカ](https://wumanzoo.com/10-pixel-fonts-for-free-download/#マルモニカ)
+- [k8x12](https://wumanzoo.com/10-pixel-fonts-for-free-download/#k8x12)
+- [k12x8](https://wumanzoo.com/10-pixel-fonts-for-free-download/#k12x8)
+- [美咲フォント](https://wumanzoo.com/10-pixel-fonts-for-free-download/#美咲フォント)
+
 ---
 
 ## 下一步
