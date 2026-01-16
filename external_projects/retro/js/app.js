@@ -49,19 +49,26 @@ class App {
       await initI18n();
       
       // 檢查是否已連結 Google Drive，如果是則初始化
-      const settings = await storage.getSettings();
+      // 注意：先從 localStorage 讀取（因為 Google Drive 可能還沒初始化）
+      const settings = storage.localStorage.getSettings();
+      console.log('App init: googleDriveEnabled =', settings.googleDriveEnabled);
       if (settings.googleDriveEnabled) {
         try {
+          console.log('App init: Initializing Google Drive...');
           await storage.initGoogleDrive();
+          console.log('App init: Google Drive initialized, checking isUsingGoogleDrive...');
           // 檢查是否仍然登入
-          if (storage.isUsingGoogleDrive()) {
-            console.log('Google Drive 已連結');
+          const isUsing = storage.isUsingGoogleDrive();
+          console.log('App init: isUsingGoogleDrive =', isUsing);
+          if (isUsing) {
+            console.log('App init: Google Drive 已連結');
           } else {
+            console.log('App init: Google Drive 未連結，更新設定');
             // 如果未登入，只更新 googleDriveEnabled 欄位
             await storage.saveSettings({ googleDriveEnabled: false });
           }
         } catch (error) {
-          console.error('Google Drive 初始化失敗:', error);
+          console.error('App init: Google Drive 初始化失敗:', error);
           // 只更新 googleDriveEnabled 欄位，避免覆蓋其他設定
           await storage.saveSettings({ googleDriveEnabled: false });
         }

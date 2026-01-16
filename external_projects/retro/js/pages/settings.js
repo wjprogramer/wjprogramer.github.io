@@ -15,12 +15,31 @@ export class SettingsPage {
 
   async render(container) {
     this.container = container; // 儲存 container 引用
+    
+    // 先顯示 loading 狀態
+    container.innerHTML = `
+      <div class="page-container">
+        <div class="main-content">
+          <div class="container">
+            <div style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+              <div style="text-align: center;">
+                <div class="loading" style="width: 40px; height: 40px; margin: 0 auto var(--spacing-md);"></div>
+                <p class="text-muted">${t('common.loading')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // 載入資料
     const currentTheme = await getCurrentTheme();
     const themeSetting = await getThemeSetting();
     const currentLang = getCurrentLanguage();
     const settings = await storage.getSettings();
     const isGoogleDriveConnected = storage.isUsingGoogleDrive();
     
+    // 渲染實際內容
     container.innerHTML = `
       <div class="page-container">
         <div class="main-content">
@@ -66,7 +85,6 @@ export class SettingsPage {
                   </p>
                   ${isGoogleDriveConnected ? `
                     <button class="btn btn-secondary" id="google-drive-disconnect-btn" data-i18n="settings.googleDriveDisconnect"></button>
-                    <button class="btn btn-accent" id="google-drive-sync-btn" style="margin-left: var(--spacing-md);" data-i18n="settings.googleDriveSyncing"></button>
                   ` : `
                     <button class="btn btn-primary" id="google-drive-connect-btn" data-i18n="settings.googleDriveSignIn"></button>
                   `}
@@ -166,13 +184,7 @@ export class SettingsPage {
           const result = await storage.signInToGoogleDrive();
           if (result.success) {
             Toast.success(t('settings.googleDriveConnected'));
-            // 同步資料
-            try {
-              await storage.syncData();
-            } catch (syncError) {
-              console.error('Sync error (non-critical):', syncError);
-              // 同步錯誤不影響連結成功
-            }
+            // 注意：不再自動同步，localStorage 和 Google Drive 資料是分開的
             // 重新渲染頁面
             if (this.container) {
               await this.render(this.container);
@@ -212,29 +224,12 @@ export class SettingsPage {
       });
     }
 
-    // Google Drive 同步
+    // Google Drive 同步按鈕已移除
+    // localStorage 和 Google Drive 的資料是分開的，不會互相同步
     const syncBtn = document.getElementById('google-drive-sync-btn');
     if (syncBtn) {
-      syncBtn.addEventListener('click', async () => {
-        try {
-          syncBtn.disabled = true;
-          syncBtn.textContent = t('settings.googleDriveSyncing');
-          
-          await storage.syncData();
-          Toast.success(t('settings.googleDriveSyncSuccess'));
-          
-          syncBtn.disabled = false;
-          syncBtn.textContent = t('settings.googleDriveSyncSuccess');
-          setTimeout(() => {
-            syncBtn.textContent = t('settings.googleDriveSyncing');
-          }, 2000);
-        } catch (error) {
-          console.error('Error syncing:', error);
-          Toast.error(t('settings.googleDriveSyncError'));
-          syncBtn.disabled = false;
-          syncBtn.textContent = t('settings.googleDriveSyncing');
-        }
-      });
+      // 隱藏同步按鈕，因為資料是分開管理的
+      syncBtn.style.display = 'none';
     }
   }
 

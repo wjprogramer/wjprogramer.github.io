@@ -15,7 +15,10 @@ class StorageManager {
     
     // 如果初始化成功且已登入，切換到 Google Drive storage
     if (result && this.googleDrive.isAuthenticated()) {
+      console.log('StorageManager: Switching to Google Drive storage');
       this.currentStorage = this.googleDrive;
+    } else {
+      console.log('StorageManager: Not switching to Google Drive, result:', result, 'isAuthenticated:', this.googleDrive.isAuthenticated());
     }
     
     return result;
@@ -26,9 +29,12 @@ class StorageManager {
     const result = await this.googleDrive.signIn();
     if (result.success) {
       this.currentStorage = this.googleDrive;
-      // 更新設定
+      // 更新設定（同時保存到 localStorage 和 Google Drive，確保重整後能讀取）
       const settings = await this.getSettings();
       settings.googleDriveEnabled = true;
+      // 先保存到 localStorage（作為備份，確保重整後能讀取）
+      this.localStorage.saveSettings(settings);
+      // 再保存到 Google Drive
       await this.saveSettings(settings);
       return result;
     }
@@ -48,7 +54,10 @@ class StorageManager {
 
   // 檢查是否使用 Google Drive
   isUsingGoogleDrive() {
-    return this.currentStorage === this.googleDrive && this.googleDrive.isAuthenticated();
+    const isCurrent = this.currentStorage === this.googleDrive;
+    const isAuth = this.googleDrive.isAuthenticated();
+    console.log('isUsingGoogleDrive: currentStorage === googleDrive:', isCurrent, 'isAuthenticated:', isAuth);
+    return isCurrent && isAuth;
   }
 
   // 取得當前儲存實例
@@ -134,13 +143,12 @@ class StorageManager {
     return Promise.resolve(this.currentStorage.clearHistory());
   }
 
-  // 同步資料（從 Google Drive 同步到 localStorage 或反之）
+  // 同步資料（已移除，localStorage 和 Google Drive 資料分開管理）
+  // 注意：localStorage 和 Google Drive 的資料是獨立的，不會互相同步
   async syncData() {
-    if (this.isUsingGoogleDrive()) {
-      // 從 Google Drive 讀取並同步到 localStorage（作為備份）
-      const retrospectives = await this.googleDrive.getRetrospectives();
-      this.localStorage.saveRetrospectives(retrospectives);
-    }
+    // 此功能已移除，因為 localStorage 和 Google Drive 的資料應該分開管理
+    console.warn('syncData() 已移除，localStorage 和 Google Drive 資料是分開的');
+    return Promise.resolve();
   }
 }
 

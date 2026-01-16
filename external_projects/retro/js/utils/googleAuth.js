@@ -115,17 +115,43 @@ export async function tryRestoreGoogleSignIn() {
   try {
     // 先嘗試從 localStorage 恢復 token
     const savedToken = restoreTokenFromStorage();
-    if (savedToken && typeof gapi !== 'undefined' && gapi.client) {
+    console.log('tryRestoreGoogleSignIn: savedToken found:', !!savedToken);
+    
+    if (savedToken) {
+      // 確保 gapi 已初始化
+      if (typeof gapi === 'undefined' || !gapi.client) {
+        console.log('tryRestoreGoogleSignIn: gapi.client not ready, waiting...');
+        // 等待 gapi 初始化
+        let attempts = 0;
+        while (attempts < 50 && (typeof gapi === 'undefined' || !gapi.client)) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (typeof gapi === 'undefined' || !gapi.client) {
+          console.error('tryRestoreGoogleSignIn: gapi.client still not ready after waiting');
+          return null;
+        }
+      }
+      
+      console.log('tryRestoreGoogleSignIn: Setting token to gapi.client');
       gapi.client.setToken({
         access_token: savedToken.access_token
       });
       
-      // 驗證 token 是否仍然有效（可選，可以嘗試一個簡單的 API 調用）
-      // 這裡先假設 token 有效，如果無效會在實際使用時發現
-      return {
-        accessToken: savedToken.access_token,
-        expiresIn: Math.floor((savedToken.expires_at - Date.now()) / 1000)
-      };
+      // 驗證 token 是否設定成功
+      const token = gapi.client.getToken();
+      if (token && token.access_token) {
+        console.log('tryRestoreGoogleSignIn: Token restored successfully');
+        return {
+          accessToken: savedToken.access_token,
+          expiresIn: Math.floor((savedToken.expires_at - Date.now()) / 1000)
+        };
+      } else {
+        console.error('tryRestoreGoogleSignIn: Token not set correctly');
+      }
+    } else {
+      console.log('tryRestoreGoogleSignIn: No saved token found');
     }
     
     return null;
@@ -194,7 +220,16 @@ export function signOutFromGoogle() {
 
 // 檢查是否已登入
 export function isSignedIn() {
-  return gapi.client.getToken() !== null;
+  try {
+    if (typeof gapi === 'undefined' || !gapi.client) {
+      return false;
+    }
+    const token = gapi.client.getToken();
+    return token !== null && token !== undefined;
+  } catch (error) {
+    console.error('Error checking sign-in status:', error);
+    return false;
+  }
 }
 
 // 取得當前 access token

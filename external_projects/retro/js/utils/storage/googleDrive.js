@@ -15,13 +15,18 @@ export class GoogleDriveStorage {
     if (this.initialized) {
       // 如果已經初始化，檢查是否仍然登入
       if (isSignedIn()) {
+        console.log('Google Drive: Already signed in');
         return true;
       }
       // 嘗試恢復登入狀態
       try {
-        await tryRestoreGoogleSignIn();
-        if (isSignedIn()) {
+        console.log('Google Drive: Attempting to restore sign-in...');
+        const restored = await tryRestoreGoogleSignIn();
+        if (restored && isSignedIn()) {
+          console.log('Google Drive: Sign-in restored successfully');
           return true;
+        } else {
+          console.log('Google Drive: Sign-in restore failed or token invalid');
         }
       } catch (error) {
         console.error('Error restoring Google sign-in:', error);
@@ -32,12 +37,17 @@ export class GoogleDriveStorage {
     try {
       await initGoogleAPI();
       this.initialized = true;
+      console.log('Google Drive: API initialized');
       
-      // 嘗試恢復登入狀態
+      // 嘗試恢復登入狀態（必須在 initGoogleAPI 之後）
       try {
-        await tryRestoreGoogleSignIn();
-        if (isSignedIn()) {
+        console.log('Google Drive: Attempting to restore sign-in after init...');
+        const restored = await tryRestoreGoogleSignIn();
+        if (restored && isSignedIn()) {
+          console.log('Google Drive: Sign-in restored successfully after init');
           return true;
+        } else {
+          console.log('Google Drive: Sign-in restore failed after init, restored:', restored, 'isSignedIn:', isSignedIn());
         }
       } catch (error) {
         console.error('Error restoring Google sign-in:', error);
