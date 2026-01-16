@@ -54,6 +54,15 @@ export class HomePage {
                     <p>${t('home.soloModeDesc')}</p>
                   </div>
                 </div>
+                
+                <div class="card card-interactive" data-mode="history">
+                  <div class="card-header">
+                    <h3 class="card-title">${t('history.title')}</h3>
+                  </div>
+                  <div class="card-body">
+                    <p>${t('history.viewHistory') || '查看過往的回顧記錄'}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -81,6 +90,8 @@ export class HomePage {
           this.router.navigate('/join');
         } else if (mode === 'solo') {
           this.router.navigate('/retro');
+        } else if (mode === 'history') {
+          this.router.navigate('/history');
         }
       });
     });

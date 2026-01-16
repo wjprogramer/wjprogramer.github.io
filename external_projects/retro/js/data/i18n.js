@@ -73,7 +73,10 @@ export const translations = {
       delete: '刪除',
       export: '匯出',
       date: '日期',
-      participants: '參與者'
+      participants: '參與者',
+      viewHistory: '查看過往的回顧記錄',
+      item: '個項目',
+      items: '個項目'
     },
     settings: {
       title: '設定',
@@ -185,7 +188,10 @@ export const translations = {
       delete: 'Delete',
       export: 'Export',
       date: 'Date',
-      participants: 'Participants'
+      participants: 'Participants',
+      viewHistory: 'View past retrospective records',
+      item: 'item',
+      items: 'items'
     },
     settings: {
       title: 'Settings',

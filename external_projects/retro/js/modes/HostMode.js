@@ -15,6 +15,7 @@ export class HostMode {
     this.onParticipantLeaveCallbacks = [];
     this.onItemUpdateCallbacks = [];
     this.onStatusChangeCallbacks = [];
+    this.saveTimeout = null; // 用於 debounce 自動保存
   }
 
   // 建立會議室
@@ -163,19 +164,23 @@ export class HostMode {
     };
 
     this.participants.set(peerId, participant);
-    this.retro.participants.push(participant);
+        this.retro.participants.push(participant);
+        this.retro.updatedAt = Date.now();
 
-    // 廣播給所有參與者
-    this.dataChannel.send(DataChannel.MESSAGE_TYPES.JOIN, {
-      peerId,
-      name,
-      participants: Array.from(this.participants.values())
-    });
+        // 廣播給所有參與者
+        this.dataChannel.send(DataChannel.MESSAGE_TYPES.JOIN, {
+          peerId,
+          name,
+          participants: Array.from(this.participants.values())
+        });
 
-    // 發送完整狀態給新加入的參與者（確保他們收到 SYNC 訊息）
-    this.syncState(peerId);
+        // 發送完整狀態給新加入的參與者（確保他們收到 SYNC 訊息）
+        this.syncState(peerId);
 
-    this.onParticipantJoinCallbacks.forEach(cb => cb(participant));
+        this.onParticipantJoinCallbacks.forEach(cb => cb(participant));
+        
+        // 自動保存
+        this.autoSave();
   }
 
   // 處理參與者離開
@@ -184,7 +189,8 @@ export class HostMode {
     if (participant) {
       participant.leftAt = Date.now();
       this.participants.delete(peerId);
-      
+      this.retro.updatedAt = Date.now();
+
       // 廣播給所有參與者
       this.dataChannel.send(DataChannel.MESSAGE_TYPES.LEAVE, {
         peerId,
@@ -192,6 +198,9 @@ export class HostMode {
       });
 
       this.onParticipantLeaveCallbacks.forEach(cb => cb(participant));
+      
+      // 自動保存
+      this.autoSave();
     }
   }
 
@@ -212,6 +221,9 @@ export class HostMode {
     });
 
     this.onItemUpdateCallbacks.forEach(cb => cb());
+    
+    // 自動保存
+    this.autoSave();
   }
 
   // 處理更新項目
@@ -233,6 +245,9 @@ export class HostMode {
       });
 
       this.onItemUpdateCallbacks.forEach(cb => cb());
+      
+      // 自動保存
+      this.autoSave();
     }
   }
 
@@ -254,6 +269,9 @@ export class HostMode {
       });
 
       this.onItemUpdateCallbacks.forEach(cb => cb());
+      
+      // 自動保存
+      this.autoSave();
     }
   }
 
@@ -292,6 +310,9 @@ export class HostMode {
     });
 
     this.onItemUpdateCallbacks.forEach(cb => cb());
+    
+    // 自動保存
+    this.autoSave();
   }
 
   // 同步狀態給新加入的參與者
@@ -312,6 +333,9 @@ export class HostMode {
     });
 
     this.onStatusChangeCallbacks.forEach(cb => cb(status));
+    
+    // 自動保存
+    this.autoSave();
   }
 
   // 踢除參與者
@@ -391,11 +415,54 @@ export class HostMode {
     return Array.from(this.participants.values());
   }
 
+  // 自動保存 retro（使用 debounce 避免頻繁保存）
+  async autoSave() {
+    // 清除之前的 timeout
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+    
+    // 延遲 1 秒後保存（debounce）
+    this.saveTimeout = setTimeout(async () => {
+      try {
+        const retrospectives = await storage.getRetrospectives();
+        const index = retrospectives.findIndex(r => r.id === this.retro.id || r.meetingId === this.retro.meetingId);
+        
+        if (index !== -1) {
+          // 更新現有記錄
+          retrospectives[index] = this.retro;
+        } else {
+          // 新增記錄
+          retrospectives.push(this.retro);
+        }
+        
+        await storage.saveRetrospectives(retrospectives);
+        console.log('Auto-saved retro to storage');
+      } catch (error) {
+        console.error('Error auto-saving retro:', error);
+        // 保存失敗不影響功能，只記錄錯誤
+      }
+    }, 1000); // 1 秒 debounce
+  }
+
   // 結束會議
   async endMeeting() {
-    // 儲存回顧記錄
+    // 清除 debounce timeout
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    
+    // 立即儲存回顧記錄
     const retrospectives = await storage.getRetrospectives();
-    retrospectives.push(this.retro);
+    const index = retrospectives.findIndex(r => r.id === this.retro.id || r.meetingId === this.retro.meetingId);
+    
+    if (index !== -1) {
+      retrospectives[index] = this.retro;
+    } else {
+      retrospectives.push(this.retro);
+    }
+    
     await storage.saveRetrospectives(retrospectives);
 
     // 斷開所有連線

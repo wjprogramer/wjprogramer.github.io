@@ -431,19 +431,12 @@ export class RetrospectivePage {
       
       // 如果正在新增項目，顯示輸入框
       if (this.editingCategory === category) {
-        const allowAnonymous = this.currentRetro?.allowAnonymous || false;
         html += `
           <div class="retro-item-input-container">
             <textarea class="retro-item-input" 
               placeholder="${t('retrospective.itemTextPlaceholder')}" 
               data-category="${category}"
             ></textarea>
-            ${allowAnonymous ? `
-              <label style="display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer; margin-bottom: var(--spacing-sm); font-size: 0.875rem;">
-                <input type="checkbox" class="retro-item-anonymous" data-category="${category}">
-                <span>${t('retrospective.anonymous')}</span>
-              </label>
-            ` : ''}
           </div>
         `;
       }
@@ -882,7 +875,6 @@ export class RetrospectivePage {
     if (!container) return;
     
     const textarea = container.querySelector('.retro-item-input');
-    const anonymousCheckbox = container.querySelector('.retro-item-anonymous');
     
     if (!textarea) return;
     
@@ -897,7 +889,8 @@ export class RetrospectivePage {
     }
     
     // 如果有內容，保存項目
-    const isAnonymous = anonymousCheckbox?.checked && (this.currentRetro?.allowAnonymous || false);
+    // 根據 retro.allowAnonymous 決定是否匿名（全部匿名或全部不匿名）
+    const isAnonymous = this.currentRetro?.allowAnonymous || false;
     await this.addItem(category, text, isAnonymous);
     
     // 如果指定關閉，則關閉編輯狀態
@@ -916,7 +909,8 @@ export class RetrospectivePage {
   }
 
   showAddItemModal() {
-    const allowAnonymous = this.currentRetro?.allowAnonymous || false;
+    // 注意：此方法已不再使用，因為現在使用直接新增的方式
+    // 保留作為備用
     const modal = document.createElement('div');
     modal.className = 'modal-backdrop';
     modal.innerHTML = `
@@ -935,14 +929,6 @@ export class RetrospectivePage {
               style="width: 100%; min-height: 120px; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-family: inherit; resize: vertical;"
             ></textarea>
           </div>
-          ${allowAnonymous ? `
-            <div style="margin-bottom: var(--spacing-md);">
-              <label style="display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer;">
-                <input type="checkbox" id="item-anonymous">
-                <span>${t('retrospective.anonymous')}</span>
-              </label>
-            </div>
-          ` : ''}
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary cancel-btn">${t('common.cancel')}</button>
@@ -962,7 +948,6 @@ export class RetrospectivePage {
     modal.querySelector('.cancel-btn').addEventListener('click', closeModal);
     modal.querySelector('.save-btn').addEventListener('click', async () => {
       const text = document.getElementById('item-text').value.trim();
-      const isAnonymous = allowAnonymous && document.getElementById('item-anonymous')?.checked;
       if (text) {
         // 注意：showAddItemModal 已經不再使用，因為現在使用直接新增的方式
         // 這裡保留作為備用，但需要指定 category
@@ -977,12 +962,15 @@ export class RetrospectivePage {
   }
 
   async addItem(category, text, isAnonymous = false) {
+    // 根據 retro.allowAnonymous 決定是否匿名（全部匿名或全部不匿名）
+    const shouldBeAnonymous = this.currentRetro?.allowAnonymous || false;
+    
     const newItem = {
       id: this.generateId(),
       text: text,
       author: {
         name: this.isP2PMode ? (this.participantMode?.name || 'Participant') : 'You',
-        isAnonymous: isAnonymous && (this.currentRetro?.allowAnonymous || false)
+        isAnonymous: shouldBeAnonymous // 統一使用 retro.allowAnonymous 設定
       },
       createdAt: Date.now(),
       updatedAt: Date.now(),

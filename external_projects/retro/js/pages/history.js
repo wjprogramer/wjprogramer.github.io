@@ -12,8 +12,36 @@ export class HistoryPage {
   }
 
   async render(container) {
+    // 先顯示 loading 狀態
+    container.innerHTML = `
+      <div class="page-container">
+        <div class="main-content">
+          <div class="container">
+            <div style="margin-bottom: var(--spacing-lg);">
+              <button class="btn btn-text" onclick="window.location.hash='/'">
+                ← ${t('common.cancel')}
+              </button>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">${t('history.title')}</h2>
+              </div>
+              <div class="card-body" style="display: flex; justify-content: center; align-items: center; min-height: 300px;">
+                <div style="text-align: center;">
+                  <div class="loading" style="width: 40px; height: 40px; margin: 0 auto var(--spacing-md);"></div>
+                  <p class="text-muted">${t('common.loading')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // 載入資料
     this.retrospectives = await storage.getRetrospectives();
     
+    // 渲染實際內容
     container.innerHTML = `
       <div class="page-container">
         <div class="main-content">
@@ -61,9 +89,15 @@ export class HistoryPage {
                 <p class="text-muted" style="margin-bottom: var(--spacing-sm);">
                   ${t('history.date')}: ${retro.date}
                 </p>
-                <p class="text-muted" style="font-size: 0.875rem;">
-                  ${itemCount} ${t('retrospective.addItem')}
+                <p class="text-muted" style="font-size: 0.875rem; margin-bottom: var(--spacing-sm);">
+                  ${itemCount} ${itemCount === 1 ? (t('history.item') || '個項目') : (t('history.items') || '個項目')}
                 </p>
+                ${retro.description ? `<p class="text-muted" style="font-size: 0.875rem; margin-top: var(--spacing-sm);">${this.escapeHtml(retro.description)}</p>` : ''}
+                ${retro.participants && retro.participants.length > 0 ? `
+                  <p class="text-muted" style="font-size: 0.875rem; margin-top: var(--spacing-sm);">
+                    ${t('history.participants')}: ${retro.participants.length}
+                  </p>
+                ` : ''}
               </div>
               <div style="display: flex; gap: var(--spacing-sm);">
                 <button class="btn btn-primary btn-sm view-btn">${t('history.view')}</button>
