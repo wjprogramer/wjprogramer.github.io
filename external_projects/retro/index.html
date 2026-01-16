@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Retro - 團隊回顧工具，輕鬆進行敏捷回顧會議">
+  <title>Retro - 團隊回顧工具</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iconoir-icons/iconoir@main/css/iconoir.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/themes/light.css">
+  <link rel="stylesheet" href="css/components/button.css">
+  <link rel="stylesheet" href="css/components/card.css">
+  <link rel="stylesheet" href="css/components/modal.css">
+  <link rel="stylesheet" href="css/components/header.css">
+  <link rel="stylesheet" href="css/components/participant-list.css">
+</head>
+<body>
+  <div id="app">
+    <!-- SPA 內容將動態載入到這裡 -->
+  </div>
+
+  <!-- Google API Client Library -->
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
+  <!-- PeerJS Library (預先載入以避免動態載入失敗) -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" 
+          onerror="console.error('Failed to load PeerJS from unpkg'); 
+                   var script = document.createElement('script');
+                   script.src = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
+                   script.onerror = function() { console.error('Failed to load PeerJS from jsdelivr'); };
+                   document.head.appendChild(script);"></script>
+  
+  <!-- QRCode Library (預先載入以避免動態載入失敗) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  
+  <!-- JavaScript -->
+  <!-- 立即初始化主題（避免閃爍） -->
+  <script>
+    (function() {
+      try {
+        const NAMESPACE = 'retro_';
+        const data = localStorage.getItem(NAMESPACE + 'settings');
+        const settings = data ? JSON.parse(data) : null;
+        let theme = settings?.theme || 'auto';
+        
+        if (theme === 'auto') {
+          theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        if (theme === 'dark') {
+          const linkId = 'dark-theme-css';
+          if (!document.getElementById(linkId)) {
+            const link = document.createElement('link');
+            link.id = linkId;
+            link.rel = 'stylesheet';
+            link.href = 'css/themes/dark.css';
+            document.head.appendChild(link);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to init theme:', e);
+      }
+    })();
+  </script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,103 @@
+/* Participant List Styles */
+.participant-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-base);
+  animation: slideIn 0.5s var(--transition-bounce);
+  animation-fill-mode: both;
+}
+
+.participant-item:nth-child(1) { animation-delay: 0s; }
+.participant-item:nth-child(2) { animation-delay: 0.1s; }
+.participant-item:nth-child(3) { animation-delay: 0.2s; }
+.participant-item:nth-child(4) { animation-delay: 0.3s; }
+.participant-item:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.participant-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.participant-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.participant-details {
+  flex: 1;
+}
+
+.participant-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.participant-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.connected {
+  background: var(--color-success);
+}
+
+.status-dot.disconnected {
+  background: var(--text-tertiary);
+}
+
+.status-dot.submitted {
+  background: var(--color-primary);
+}
+
+.status-dot.pending {
+  background: var(--color-warning);
+}
+
+.participant-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+

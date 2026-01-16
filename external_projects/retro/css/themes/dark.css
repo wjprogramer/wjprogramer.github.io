@@ -1,0 +1,15 @@
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg-primary: #1F1F2E;
+  --bg-secondary: #2A2A3E;
+  --bg-sidebar: #252536;
+  --bg-card: #2A2A3E;
+  
+  --text-primary: #E8E8E8;
+  --text-secondary: #B8B8B8;
+  --text-tertiary: #888888;
+  
+  --border-color: #3A3A4A;
+  --divider-color: #2F2F3F;
+}
+

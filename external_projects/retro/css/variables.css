@@ -1,0 +1,90 @@
+/* CSS Variables - 搖曳露營風格 */
+:root {
+  /* 主色調 */
+  --color-primary: #4ECDC4;
+  --color-primary-light: #5FD3CC;
+  --color-secondary: #FFB347;
+  --color-secondary-light: #FFA07A;
+  
+  /* 功能色 */
+  --color-success: #6BCF7F;
+  --color-warning: #FFD93D;
+  --color-danger: #FF8A8A;
+  
+  /* 背景色 - Light Mode */
+  --bg-primary: #E8F4F8;
+  --bg-secondary: #F0F8FA;
+  --bg-sidebar: #FFFFFF;
+  --bg-card: #FFFFFF;
+  
+  /* 文字色 */
+  --text-primary: #3A3A3A;
+  --text-secondary: #6B6B6B;
+  --text-tertiary: #9B9B9B;
+  
+  /* 邊框與分隔線 */
+  --border-color: #E8E8E8;
+  --divider-color: #F0F0F0;
+  
+  /* 強調色 */
+  --accent-1: #A8E6CF;
+  --accent-2: #FFD3B6;
+  
+  /* 圓角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  /* 間距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* 陰影 */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  
+  /* 動畫 */
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* Z-index */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-toast: 600;
+}
+
+/* Dark Mode Variables */
+[data-theme="dark"] {
+  --color-primary: #6EDCD4;
+  --color-primary-light: #7FE4DC;
+  --color-secondary: #FFC966;
+  --color-secondary-light: #FFB880;
+  
+  --bg-primary: #1F1F2E;
+  --bg-secondary: #2A2A3E;
+  --bg-sidebar: #252536;
+  --bg-card: #2A2A3E;
+  
+  --text-primary: #E8E8E8;
+  --text-secondary: #B8B8B8;
+  --text-tertiary: #888888;
+  
+  --border-color: #3A3A4A;
+  --divider-color: #2F2F3F;
+  
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
