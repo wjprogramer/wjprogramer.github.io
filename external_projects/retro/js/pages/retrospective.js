@@ -10,8 +10,14 @@ import { copyToClipboard } from '../utils/clipboard.js';
 import { ParticipantList } from '../components/ParticipantList.js';
 
 export class RetrospectivePage {
-  constructor(params = {}) {
-    this.meetingId = params.meetingId;
+  constructor(params = {}, query = '') {
+    // params.meetingId 實際上是 retroId（會議的 id，用於恢復資料）
+    this.retroId = params.meetingId;
+    // meetingId（peer id）從 query 參數中取得
+    this.queryParams = this.parseQuery(query);
+    this.meetingId = this.queryParams.meetingId || null; // peer id（用於 WebRTC 連線）
+    this.mode = this.queryParams.mode || null; // 模式：'host' 或 'participant'，用於區分重整時的處理方式
+    
     this.router = new Router();
     this.currentRetro = null;
     this.items = {
@@ -28,32 +34,319 @@ export class RetrospectivePage {
     this.editingItemId = null; // 追蹤正在編輯的項目 ID
     this.categories = ['howDoYouFeel', 'whatWentWell', 'whatDidntGoWell', 'whatNeedsChange', 'shoutOuts'];
     this.renderedItemIds = new Set(); // 追蹤已經渲染過的項目 ID，用於判斷是否需要動畫
+    this.isDestroyed = false; // 追蹤頁面是否已被銷毀
+    this.renderContainer = null; // 追蹤當前渲染的 container
+    this.googleDriveInitHandler = null; // Google Drive 初始化完成事件處理器
+    
+    this.from = this.queryParams.from || null; // 記錄來源頁面
+  }
+
+  // 解析 query string
+  parseQuery(query) {
+    const params = {};
+    if (!query) return params;
+    
+    const pairs = query.split('&');
+    for (const pair of pairs) {
+      const [key, value] = pair.split('=');
+      if (key) {
+        params[decodeURIComponent(key)] = value ? decodeURIComponent(value) : '';
+      }
+    }
+    return params;
   }
 
   async render(container) {
-    // 檢查是否為 P2P 模式（有 meetingId 且不是從 localStorage 載入的）
-    if (this.meetingId) {
+    // 重置標記
+    this.isDestroyed = false;
+    this.renderContainer = container;
+    
+    // 先顯示 loading 狀態（只有在需要載入資料時才顯示）
+    let needsLoading = false;
+    
+    // 檢查是否為 P2P 模式
+    // 如果有 retroId 和 meetingId（peer id），可能是 host 模式需要恢復
+    // 如果只有 retroId，可能是從歷史記錄查看或參與者模式
+    if (this.retroId) {
       // 嘗試從全域狀態取得 P2P 模式實例
       const globalState = window.retroState || {};
+      
+      // 檢查是否是參與者模式（從全域狀態）
       if (globalState.participantMode && globalState.meetingId === this.meetingId) {
         this.participantMode = globalState.participantMode;
         this.isP2PMode = true;
         this.currentRetro = this.participantMode.getRetro();
-      } else if (globalState.hostMode && globalState.meetingId === this.meetingId) {
+      } 
+      // 檢查是否是 host 模式（從全域狀態，且 meetingId 匹配）
+      else if (globalState.hostMode && globalState.meetingId === this.meetingId) {
         this.hostMode = globalState.hostMode;
         this.isP2PMode = true;
         this.currentRetro = this.hostMode.retro;
-      } else {
-        // 載入歷史記錄
-        this.currentRetro = await this.loadRetro(this.meetingId);
+        console.log('Host mode: currentRetro =', this.currentRetro);
+      } 
+      // 如果是參與者模式且需要恢復（有 meetingId 和 retroId，但沒有全域狀態，且 mode=participant）
+      else if (this.meetingId && this.retroId && this.mode === 'participant') {
+        // 參與者重整，需要重新連線
+        console.log('Participant mode: Restoring connection, retroId =', this.retroId, 'meetingId =', this.meetingId);
+        this.isDestroyed = false;
+        this.renderContainer = container;
+        needsLoading = true;
+        container.innerHTML = `
+          <div class="page-container">
+            <div class="main-content">
+              <div class="container" style="max-width: 1600px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+                <div style="margin-bottom: var(--spacing-lg);">
+                  <button class="btn btn-text" onclick="window.location.hash='/'">
+                    ← ${t('common.cancel')}
+                  </button>
+                </div>
+                <div class="card">
+                  <div class="card-body" style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+                    <div style="text-align: center;">
+                      <div class="loading" style="width: 40px; height: 40px; margin: 0 auto var(--spacing-md);"></div>
+                      <p class="text-muted">${t('common.loading')}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // 恢復參與者連線
+        try {
+          await this.restoreParticipantConnection(this.retroId, this.meetingId);
+          
+          // 檢查頁面是否已被銷毀
+          if (this.isDestroyed || this.renderContainer !== container) {
+            return;
+          }
+          
+          if (!this.currentRetro) {
+            this.showNotFoundError(container);
+            return;
+          }
+        } catch (error) {
+          console.error('Error restoring participant connection:', error);
+          if (!this.isDestroyed && this.renderContainer === container) {
+            // 顯示更具體的錯誤訊息
+            const errorMessage = error.message || '連線失敗';
+            if (errorMessage.includes('ID') && errorMessage.includes('taken')) {
+              // PeerJS ID 已被使用（可能是被誤判為 host）
+              this.showConnectionError(container, '連線失敗：會議 ID 已被使用，請確認您是以參與者身份加入');
+            } else if (errorMessage.includes('被踢除')) {
+              this.showConnectionError(container, errorMessage);
+            } else if (errorMessage.includes('超時')) {
+              this.showConnectionError(container, '連線超時，請檢查網路連線或會議是否仍在進行');
+            } else {
+              this.showConnectionError(container, `連線失敗：${errorMessage}`);
+            }
+          }
+          return;
+        }
+      }
+      // 如果是 host 模式且需要恢復（有 meetingId 和 retroId，但沒有全域狀態，且 mode=host 或沒有 mode）
+      else if (this.meetingId && this.retroId && this.retroId !== this.meetingId && this.mode !== 'participant') {
+        // 可能是 host 重整，需要恢復會議
+        console.log('Host mode: Restoring meeting, retroId =', this.retroId, 'meetingId =', this.meetingId);
+        this.isDestroyed = false;
+        this.renderContainer = container;
+        needsLoading = true;
+        container.innerHTML = `
+          <div class="page-container">
+            <div class="main-content">
+              <div class="container" style="max-width: 1600px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+                <div style="margin-bottom: var(--spacing-lg);">
+                  <button class="btn btn-text" onclick="window.location.hash='/'">
+                    ← ${t('common.cancel')}
+                  </button>
+                </div>
+                <div class="card">
+                  <div class="card-body" style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+                    <div style="text-align: center;">
+                      <div class="loading" style="width: 40px; height: 40px; margin: 0 auto var(--spacing-md);"></div>
+                      <p class="text-muted">${t('common.loading')}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // 恢復 host 會議
+        try {
+          await this.restoreHostMeeting(this.retroId, this.meetingId);
+          
+          // 檢查頁面是否已被銷毀
+          if (this.isDestroyed || this.renderContainer !== container) {
+            return;
+          }
+          
+          if (!this.currentRetro) {
+            this.showNotFoundError(container);
+            return;
+          }
+        } catch (error) {
+          console.error('Error restoring host meeting:', error);
+          if (!this.isDestroyed && this.renderContainer === container) {
+            this.showNotFoundError(container);
+          }
+          return;
+        }
+      } 
+      // 否則從歷史記錄載入（可能是參與者模式或查看歷史記錄）
+      else {
+        // 需要載入歷史記錄，顯示 loading
+        this.isDestroyed = false;
+        this.renderContainer = container;
+        needsLoading = true;
+        container.innerHTML = `
+          <div class="page-container">
+            <div class="main-content">
+              <div class="container" style="max-width: 1600px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+                <div style="margin-bottom: var(--spacing-lg);">
+                  <button class="btn btn-text" onclick="window.location.hash='/'">
+                    ← ${t('common.cancel')}
+                  </button>
+                </div>
+                <div class="card">
+                  <div class="card-body" style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+                    <div style="text-align: center;">
+                      <div class="loading" style="width: 40px; height: 40px; margin: 0 auto var(--spacing-md);"></div>
+                      <p class="text-muted">${t('common.loading')}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // 載入歷史記錄（使用 retroId）
+        this.currentRetro = await this.loadRetro(this.retroId);
+        
+        // 檢查頁面是否已被銷毀
+        if (this.isDestroyed || this.renderContainer !== container) {
+          return;
+        }
+        
+        // 如果找不到資料，可能需要等待 Google Drive 初始化完成
+        if (!this.currentRetro) {
+          // 檢查 Google Drive 是否已啟用但還沒初始化完成
+          const settings = storage.localStorage.getSettings();
+          if (settings.googleDriveEnabled && !storage.isUsingGoogleDrive()) {
+            // Google Drive 可能還在初始化中，監聽初始化完成事件
+            this.googleDriveInitHandler = async (event) => {
+              const { isConnected } = event.detail || {};
+              
+              // 檢查頁面是否已被銷毀
+              if (this.isDestroyed || !this.renderContainer || this.renderContainer !== container) {
+                return;
+              }
+              
+              // 如果 Google Drive 已連結，重新載入
+              if (isConnected) {
+                this.currentRetro = await this.loadRetro(this.retroId);
+                
+                // 再次檢查頁面是否已被銷毀
+                if (this.isDestroyed || !this.renderContainer || this.renderContainer !== container) {
+                  return;
+                }
+                
+                // 如果找到資料，繼續渲染
+                if (this.currentRetro) {
+                  // 初始化項目資料
+                  this.initializeItems();
+                  // 繼續執行後續的渲染邏輯
+                  await this.renderRetroContent(container);
+                  return;
+                }
+              }
+              
+              // 如果還是找不到，顯示錯誤訊息
+              if (!this.currentRetro) {
+                this.showNotFoundError(container);
+              }
+            };
+            window.addEventListener('googleDriveInitComplete', this.googleDriveInitHandler);
+            
+            // 等待一段時間，如果還是找不到，顯示錯誤訊息
+            setTimeout(() => {
+              if (!this.currentRetro && !this.isDestroyed && this.renderContainer === container) {
+                this.showNotFoundError(container);
+              }
+            }, 3000); // 等待 3 秒
+            return;
+          } else {
+            // 直接顯示錯誤訊息
+            this.showNotFoundError(container);
+            return;
+          }
+        }
       }
     } else {
-      // 單人模式：初始化新的回顧
+      // 單人模式：如果沒有 meetingId，應該不會到這裡（因為現在單人模式都會帶 id）
+      // 但為了向後兼容，如果沒有 meetingId，創建新的回顧
       this.currentRetro = this.createNewRetro();
     }
 
     if (this.currentRetro) {
-      this.items = this.currentRetro.items || this.items;
+      // 初始化項目資料
+      this.initializeItems();
+    } else {
+      // 如果沒有 currentRetro，顯示錯誤
+      console.error('No currentRetro found');
+      container.innerHTML = `
+        <div class="page-container">
+          <div class="main-content">
+            <div class="container" style="max-width: 1600px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+              <div style="margin-bottom: var(--spacing-lg);">
+                <button class="btn btn-text" onclick="window.location.hash='/'">
+                  ← ${t('common.cancel')}
+                </button>
+              </div>
+              <div class="card">
+                <div class="card-body" style="text-align: center; padding: var(--spacing-2xl);">
+                  <p class="text-muted" style="margin-bottom: var(--spacing-md);">無法載入回顧資料</p>
+                  <button class="btn btn-primary" onclick="window.location.hash='/'">
+                    返回首頁
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    
+    // 渲染回顧內容
+    await this.renderRetroContent(container);
+  }
+
+  // 初始化項目資料
+  initializeItems() {
+    if (this.currentRetro) {
+      // 確保正確載入項目（深拷貝，避免引用問題）
+      if (this.currentRetro.items) {
+        this.items = {
+          howDoYouFeel: [...(this.currentRetro.items.howDoYouFeel || [])],
+          whatWentWell: [...(this.currentRetro.items.whatWentWell || [])],
+          whatDidntGoWell: [...(this.currentRetro.items.whatDidntGoWell || [])],
+          whatNeedsChange: [...(this.currentRetro.items.whatNeedsChange || [])],
+          shoutOuts: [...(this.currentRetro.items.shoutOuts || [])]
+        };
+      } else {
+        // 如果沒有項目，使用預設的空結構
+        this.items = {
+          howDoYouFeel: [],
+          whatWentWell: [],
+          whatDidntGoWell: [],
+          whatNeedsChange: [],
+          shoutOuts: []
+        };
+      }
       // 初始化時，將所有已存在的項目標記為已渲染（避免初始載入時所有卡片都有動畫）
       this.categories.forEach(category => {
         const items = this.items[category] || [];
@@ -62,6 +355,32 @@ export class RetrospectivePage {
         });
       });
     }
+  }
+
+  // 渲染回顧內容（將渲染邏輯分離出來，方便在 Google Drive 初始化完成後調用）
+  async renderRetroContent(container) {
+    // 檢查頁面是否已被銷毀
+    if (this.isDestroyed) {
+      console.log('renderRetroContent: Page is destroyed');
+      return;
+    }
+    
+    // 確保 renderContainer 已設置
+    if (!this.renderContainer) {
+      this.renderContainer = container;
+    }
+    
+    if (this.renderContainer !== container) {
+      console.log('renderRetroContent: Container mismatch');
+      return;
+    }
+    
+    if (!this.currentRetro) {
+      console.error('renderRetroContent: No currentRetro');
+      return;
+    }
+    
+    console.log('renderRetroContent: Rendering retro with id =', this.currentRetro.id);
 
     // 如果是 P2P 模式，註冊更新回調
     if (this.isP2PMode && this.participantMode) {
@@ -95,14 +414,17 @@ export class RetrospectivePage {
 
     // 檢查是否為 host 模式
     const isHost = this.isP2PMode && this.hostMode;
-    const joinLink = this.meetingId ? `${window.location.origin}${window.location.pathname}#/join/${this.meetingId}` : null;
+    // joinLink 包含 meetingId（peer id）和 retroId，讓參與者知道要連到哪個 retro
+    const joinLink = this.meetingId && this.currentRetro?.id 
+      ? `${window.location.origin}${window.location.pathname}#/join/${this.meetingId}?retroId=${this.currentRetro.id}` 
+      : null;
     
     container.innerHTML = `
       <div class="page-container">
         <div class="main-content">
-          <div class="container" style="max-width: 1600px;">
+          <div class="container" style="max-width: 1600px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
             <div style="margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-md);">
-              <button class="btn btn-text" onclick="window.location.hash='/'">
+              <button class="btn btn-text" id="back-btn">
                 ← ${t('common.cancel')}
               </button>
               
@@ -192,7 +514,7 @@ export class RetrospectivePage {
               }
             </style>
             
-            <div id="retro-columns-container" class="retro-columns" style="width: 100%; overflow-x: auto;">
+            <div id="retro-columns-container" class="retro-columns" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;">
               ${this.renderColumns()}
             </div>
           </div>
@@ -239,7 +561,9 @@ export class RetrospectivePage {
         grid-template-columns: repeat(5, 1fr);
         gap: var(--spacing-lg);
         margin-bottom: var(--spacing-lg);
-        min-width: 1200px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
       }
       
       .retro-column {
@@ -250,6 +574,8 @@ export class RetrospectivePage {
         display: flex;
         flex-direction: column;
         min-height: 400px;
+        min-width: 0;
+        box-sizing: border-box;
       }
       
       .retro-column-header {
@@ -259,6 +585,7 @@ export class RetrospectivePage {
         margin-bottom: var(--spacing-md);
         padding-bottom: var(--spacing-md);
         border-bottom: 1px solid var(--divider-color);
+        min-width: 0;
       }
       
       .retro-column-title {
@@ -267,6 +594,10 @@ export class RetrospectivePage {
         color: var(--text-primary);
         margin: 0;
         flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       
       .retro-add-btn {
@@ -305,6 +636,7 @@ export class RetrospectivePage {
         flex: 1;
         overflow-y: auto;
         min-height: 0;
+        min-width: 0;
       }
       
       .retro-column-items .card {
@@ -326,6 +658,7 @@ export class RetrospectivePage {
         font-size: 0.875rem;
         resize: vertical;
         margin-bottom: var(--spacing-sm);
+        box-sizing: border-box;
       }
       
       .retro-item-input:focus {
@@ -350,6 +683,7 @@ export class RetrospectivePage {
         font-size: 0.875rem;
         resize: vertical;
         margin-bottom: var(--spacing-sm);
+        box-sizing: border-box;
       }
       
       .retro-item-edit-input:focus {
@@ -368,15 +702,20 @@ export class RetrospectivePage {
         }
       }
       
-      @media (max-width: 900px) {
+      @media (max-width: 1024px) {
         .retro-columns {
           grid-template-columns: repeat(2, 1fr);
         }
       }
       
-      @media (max-width: 600px) {
+      @media (max-width: 768px) {
         .retro-columns {
           grid-template-columns: 1fr;
+          gap: var(--spacing-md);
+        }
+        
+        .retro-column {
+          min-height: 300px;
         }
       }
     `;
@@ -645,6 +984,19 @@ export class RetrospectivePage {
   }
 
   bindEvents() {
+    // 綁定返回按鈕
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        // 使用瀏覽器歷史記錄返回上一頁
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          // 如果沒有歷史記錄，則返回首頁
+          this.router.navigate('/');
+        }
+      });
+    }
     // 新增項目按鈕（每個欄位的 + 按鈕）
     document.querySelectorAll('.retro-add-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -722,7 +1074,9 @@ export class RetrospectivePage {
   
   // 生成 QR Code
   async generateQRCode() {
-    const joinLink = this.meetingId ? `${window.location.origin}${window.location.pathname}#/join/${this.meetingId}` : null;
+    const joinLink = this.meetingId && this.currentRetro?.id 
+      ? `${window.location.origin}${window.location.pathname}#/join/${this.meetingId}?retroId=${this.currentRetro.id}` 
+      : null;
     if (!joinLink) return;
     
     // 檢查 QRCode 是否可用
@@ -1141,22 +1495,162 @@ export class RetrospectivePage {
   }
 
   async loadRetro(meetingId) {
+    // 先從本地端查找（最快，同步操作）
+    const localRetrospectives = storage.localStorage.getRetrospectives();
+    let retro = localRetrospectives.find(r => r.meetingId === meetingId || r.id === meetingId);
+    
+    // 如果本地端沒找到，且 Google Drive 已連結且已初始化，再從雲端查找
+    if (!retro && storage.isUsingGoogleDrive()) {
+      try {
+        const cloudRetrospectives = await storage.googleDrive.getRetrospectives();
+        const cloudRetro = cloudRetrospectives.find(r => r.meetingId === meetingId || r.id === meetingId);
+        // 如果雲端有找到，使用雲端的（因為雲端資料可能更新）
+        if (cloudRetro) {
+          retro = cloudRetro;
+        }
+      } catch (error) {
+        console.error('Error loading cloud retrospectives:', error);
+        // 如果載入雲端失敗，繼續使用本地端的（如果有的話）
+      }
+    }
+    
+    return retro;
+  }
+
+  // 恢復 host 會議
+  async restoreHostMeeting(retroId, peerId) {
+    const { HostMode } = await import('../modes/HostMode.js');
+    
+    // 創建新的 HostMode 實例
+    this.hostMode = new HostMode();
+    this.isP2PMode = true;
+    
+    // 恢復會議
+    // 注意：peerId 應該是 meetingId（因為在 host 模式中，peer ID = meeting ID）
+    // 如果 URL 中的 peerId 與保存的 meetingId 不匹配，使用保存的 meetingId
+    const result = await this.hostMode.restoreMeeting(retroId, peerId);
+    this.currentRetro = result.retro;
+    this.meetingId = result.meetingId;
+    
+    // 儲存到全域狀態
+    if (!window.retroState) {
+      window.retroState = {};
+    }
+    window.retroState.hostMode = this.hostMode;
+    window.retroState.meetingId = this.meetingId;
+    
+    console.log('Host meeting restored successfully');
+  }
+  
+  // 恢復參與者連線
+  async restoreParticipantConnection(retroId, meetingId) {
+    const { ParticipantMode } = await import('../modes/ParticipantMode.js');
+    
+    // 從儲存中載入會議資料，取得 retro 資訊（用於驗證）
     const retrospectives = await storage.getRetrospectives();
-    return retrospectives.find(r => r.meetingId === meetingId || r.id === meetingId);
+    const savedRetro = retrospectives.find(r => r.id === retroId);
+    
+    if (!savedRetro) {
+      throw new Error('找不到會議記錄');
+    }
+    
+    // 創建新的 ParticipantMode 實例
+    this.participantMode = new ParticipantMode();
+    this.isP2PMode = true;
+    
+    // 從設定中取得上次使用的名稱（如果有的話）
+    const settings = await storage.getSettings();
+    const lastUserName = settings?.lastUserName || 'Participant';
+    
+    // 重新加入會議（使用 retroId 進行驗證）
+    await this.participantMode.joinMeeting(meetingId, meetingId, lastUserName, retroId);
+    
+    // 等待連線建立和資料同步
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('連線超時'));
+      }, 10000); // 10 秒超時
+      
+      this.participantMode.onConnected(() => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      
+      this.participantMode.onKicked((reason) => {
+        clearTimeout(timeout);
+        reject(new Error(`被踢除: ${reason}`));
+      });
+    });
+    
+    // 等待收到 SYNC 訊息
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('資料同步超時'));
+      }, 10000); // 10 秒超時
+      
+      const checkRetro = () => {
+        if (this.participantMode.getRetro()) {
+          clearTimeout(timeout);
+          resolve();
+        }
+      };
+      
+      this.participantMode.onItemUpdate(checkRetro);
+      // 如果已經有 retro，立即 resolve
+      setTimeout(checkRetro, 100);
+    });
+    
+    this.currentRetro = this.participantMode.getRetro();
+    
+    // 儲存到全域狀態
+    if (!window.retroState) {
+      window.retroState = {};
+    }
+    window.retroState.participantMode = this.participantMode;
+    window.retroState.meetingId = meetingId;
+    
+    console.log('Participant connection restored successfully');
   }
 
   async saveRetro() {
     if (this.currentRetro) {
-      this.currentRetro.items = this.items;
+      // 深拷貝 items，避免引用問題
+      this.currentRetro.items = {
+        howDoYouFeel: [...(this.items.howDoYouFeel || [])],
+        whatWentWell: [...(this.items.whatWentWell || [])],
+        whatDidntGoWell: [...(this.items.whatDidntGoWell || [])],
+        whatNeedsChange: [...(this.items.whatNeedsChange || [])],
+        shoutOuts: [...(this.items.shoutOuts || [])]
+      };
       this.currentRetro.updatedAt = Date.now();
       
       const retrospectives = await storage.getRetrospectives();
       const index = retrospectives.findIndex(r => r.id === this.currentRetro.id);
       
       if (index !== -1) {
-        retrospectives[index] = this.currentRetro;
+        // 更新現有記錄（深拷貝，避免引用問題）
+        retrospectives[index] = {
+          ...this.currentRetro,
+          items: {
+            howDoYouFeel: [...(this.currentRetro.items.howDoYouFeel || [])],
+            whatWentWell: [...(this.currentRetro.items.whatWentWell || [])],
+            whatDidntGoWell: [...(this.currentRetro.items.whatDidntGoWell || [])],
+            whatNeedsChange: [...(this.currentRetro.items.whatNeedsChange || [])],
+            shoutOuts: [...(this.currentRetro.items.shoutOuts || [])]
+          }
+        };
       } else {
-        retrospectives.push(this.currentRetro);
+        // 新增記錄（深拷貝）
+        retrospectives.push({
+          ...this.currentRetro,
+          items: {
+            howDoYouFeel: [...(this.currentRetro.items.howDoYouFeel || [])],
+            whatWentWell: [...(this.currentRetro.items.whatWentWell || [])],
+            whatDidntGoWell: [...(this.currentRetro.items.whatDidntGoWell || [])],
+            whatNeedsChange: [...(this.currentRetro.items.whatNeedsChange || [])],
+            shoutOuts: [...(this.currentRetro.items.shoutOuts || [])]
+          }
+        });
       }
       
       await storage.saveRetrospectives(retrospectives);
@@ -1187,8 +1681,78 @@ export class RetrospectivePage {
     list.bindEvents(container);
   }
 
+  // 顯示找不到資料的錯誤訊息
+  showNotFoundError(container) {
+    if (this.isDestroyed || !this.renderContainer || this.renderContainer !== container) {
+      return;
+    }
+    
+    container.innerHTML = `
+      <div class="page-container">
+        <div class="main-content">
+          <div class="container" style="max-width: 1600px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+            <div style="margin-bottom: var(--spacing-lg);">
+              <button class="btn btn-text" onclick="window.location.hash='/'">
+                ← ${t('common.cancel')}
+              </button>
+            </div>
+            <div class="card">
+              <div class="card-body" style="text-align: center; padding: var(--spacing-2xl);">
+                <p class="text-muted" style="margin-bottom: var(--spacing-md);">找不到此回顧記錄</p>
+                <button class="btn btn-primary" onclick="window.location.hash='/history'">
+                  返回歷史記錄
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  showConnectionError(container, message) {
+    if (this.isDestroyed || !this.renderContainer || this.renderContainer !== container) {
+      return;
+    }
+    
+    container.innerHTML = `
+      <div class="page-container">
+        <div class="main-content">
+          <div class="container" style="max-width: 1600px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+            <div style="margin-bottom: var(--spacing-lg);">
+              <button class="btn btn-text" onclick="window.location.hash='/'">
+                ← ${t('common.cancel')}
+              </button>
+            </div>
+            <div class="card">
+              <div class="card-body" style="text-align: center; padding: var(--spacing-2xl);">
+                <p class="text-muted" style="margin-bottom: var(--spacing-md); color: var(--error-color);">${message}</p>
+                <div style="display: flex; gap: var(--spacing-md); justify-content: center;">
+                  <button class="btn btn-secondary" onclick="window.location.hash='/history'">
+                    返回歷史記錄
+                  </button>
+                  <button class="btn btn-primary" onclick="window.location.reload()">
+                    重新整理
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   destroy() {
-    // 清理資源
+    // 標記頁面已被銷毀，防止非同步操作完成後更新 DOM
+    this.isDestroyed = true;
+    this.renderContainer = null;
+    
+    // 移除 Google Drive 初始化完成事件監聽器
+    if (this.googleDriveInitHandler) {
+      window.removeEventListener('googleDriveInitComplete', this.googleDriveInitHandler);
+      this.googleDriveInitHandler = null;
+    }
   }
 }
 

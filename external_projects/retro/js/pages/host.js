@@ -7,7 +7,7 @@ import { Toast } from '../components/Toast.js';
 import { ParticipantList } from '../components/ParticipantList.js';
 
 export class HostPage {
-  constructor() {
+  constructor(params = {}, query = '') {
     this.router = new Router();
     this.hostMode = null;
     this.meetingId = null;
@@ -194,6 +194,7 @@ export class HostPage {
       const result = await this.hostMode.createMeeting(title, description, date, allowAnonymous);
       this.meetingId = result.meetingId;
       this.peerId = result.peerId;
+      const retroId = result.retro.id; // 會議的 id（用於恢復資料）
       
       // 儲存到全域狀態（供 retrospective 頁面使用）
       if (!window.retroState) {
@@ -202,11 +203,21 @@ export class HostPage {
       window.retroState.hostMode = this.hostMode;
       window.retroState.meetingId = this.meetingId;
       
-      // 開房後直接導航到回顧頁面
-      Toast.success('會議室建立成功');
+      // 立即保存會議記錄（以便重整後恢復）
+      try {
+        await this.hostMode.saveRetro();
+      } catch (error) {
+        console.error('Error saving retro on create:', error);
+        // 即使保存失敗也繼續，至少全域狀態中有資料
+      }
       
-      // 直接導航到回顧頁面
-      this.router.navigate(`/retrospective/${this.meetingId}`);
+      // 開房後直接導航到回顧頁面
+      // URL 格式：/retrospective/{retroId}?meetingId={peerId}&mode=host
+      // retroId: 會議的 id（用於恢復資料）
+      // meetingId: peer id（用於 WebRTC 連線）
+      // mode: 標記為 host 模式，避免重整時被誤判為 participant
+      Toast.success('會議室建立成功');
+      this.router.navigate(`/retrospective/${retroId}?meetingId=${this.meetingId}&mode=host`);
     } catch (error) {
       console.error('Failed to create meeting:', error);
       console.error('Error details:', {

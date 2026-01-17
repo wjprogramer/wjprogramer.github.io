@@ -2,9 +2,10 @@
 import { t } from '../utils/i18n.js';
 import { Router } from '../router.js';
 import { Header } from '../components/Header.js';
+import { storage } from '../utils/storage/index.js';
 
 export class HomePage {
-  constructor() {
+  constructor(params = {}, query = '') {
     this.router = new Router();
   }
 
@@ -89,12 +90,74 @@ export class HomePage {
         } else if (mode === 'participant') {
           this.router.navigate('/join');
         } else if (mode === 'solo') {
-          this.router.navigate('/retro');
+          // 單人模式：先創建回顧記錄並獲取 id，然後導航到 /retrospective/{id}
+          this.createSoloRetroAndNavigate();
         } else if (mode === 'history') {
           this.router.navigate('/history');
         }
       });
     });
+  }
+
+  // 創建單人模式回顧並導航
+  async createSoloRetroAndNavigate() {
+    try {
+      // 先從本地端檢查是否有未完成的單人回顧（同步，最快）
+      const localRetrospectives = storage.localStorage.getRetrospectives();
+      const existingSoloRetro = localRetrospectives.find(r => 
+        !r.meetingId && 
+        (r.status === 'collecting' || r.status === 'preparing')
+      );
+      
+      let soloId;
+      
+      if (existingSoloRetro) {
+        // 如果有未完成的單人回顧，使用它的 id
+        soloId = existingSoloRetro.id;
+      } else {
+        // 如果沒有，創建新的回顧記錄
+        const newRetro = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          meetingId: null,
+          title: '單人回顧',
+          description: null,
+          date: new Date().toISOString().split('T')[0],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          allowAnonymous: false,
+          host: { name: 'You' },
+          participants: [],
+          items: {
+            howDoYouFeel: [],
+            whatWentWell: [],
+            whatDidntGoWell: [],
+            whatNeedsChange: [],
+            shoutOuts: []
+          },
+          status: 'collecting'
+        };
+        
+        // 先保存到本地端（同步，不會卡住）
+        localRetrospectives.push(newRetro);
+        storage.localStorage.saveRetrospectives(localRetrospectives);
+        
+        // 如果 Google Drive 已連結且已初始化，也在背景保存到雲端（不阻塞）
+        if (storage.isUsingGoogleDrive()) {
+          storage.googleDrive.saveRetrospectives(localRetrospectives).catch(error => {
+            console.error('Error saving to cloud:', error);
+          });
+        }
+        
+        soloId = newRetro.id;
+      }
+      
+      // 導航到回顧頁面，帶上 id（使用 path，符合 RESTful 風格）
+      this.router.navigate(`/retrospective/${soloId}`);
+    } catch (error) {
+      console.error('Error creating solo retro:', error);
+      // 如果出錯，至少導航到單人模式頁面（不帶 id，讓頁面自己處理）
+      this.router.navigate('/retro');
+    }
   }
 
   destroy() {

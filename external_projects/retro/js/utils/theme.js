@@ -31,21 +31,11 @@ export async function initTheme() {
     // 先同步套用主題（避免閃爍）
     initThemeSync();
     
-    // 記錄同步載入的主題設定（從 localStorage 直接讀取，是最新的）
-    const NAMESPACE = 'retro_';
-    const syncData = localStorage.getItem(`${NAMESPACE}settings`);
-    const syncSettings = syncData ? JSON.parse(syncData) : null;
-    const syncThemeSetting = syncSettings?.theme || 'auto';
+    // 直接從 localStorage 讀取主題設定（不從 Google Drive 讀取）
+    const settings = storage.localStorage.getSettings();
+    const themeSetting = settings?.theme || 'auto';
     
-    // 然後異步載入完整設定（可能來自 Google Drive）
-    const settings = await storage.getSettings();
-    const asyncThemeSetting = settings?.theme || 'auto';
-    
-    // 優先使用 localStorage 中的主題設定（因為它是最新的）
-    // 只有在 localStorage 中沒有明確設定（或為 'auto'）時，才使用異步載入的設定
-    const finalThemeSetting = (syncThemeSetting && syncThemeSetting !== 'auto') ? syncThemeSetting : asyncThemeSetting;
-    
-    let finalTheme = finalThemeSetting;
+    let finalTheme = themeSetting;
     // 如果主題是 auto，偵測系統主題
     if (finalTheme === 'auto') {
       finalTheme = detectSystemTheme();
@@ -59,7 +49,7 @@ export async function initTheme() {
     }
     
     // 監聽系統主題變化（只有在主題設定為 'auto' 時）
-    if (finalThemeSetting === 'auto') {
+    if (themeSetting === 'auto') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       // 移除舊的監聽器（如果有的話，避免重複監聽）
       if (window._themeMediaQueryListener) {
@@ -118,7 +108,8 @@ function loadDarkTheme() {
 // 切換主題
 export async function toggleTheme() {
   try {
-    const settings = await storage.getSettings();
+    // 直接從 localStorage 讀取，不從 Google Drive 讀取
+    const settings = storage.localStorage.getSettings();
     const currentTheme = settings?.theme || 'auto';
     
     let newTheme;
@@ -139,9 +130,10 @@ export async function toggleTheme() {
 // 設定主題
 export async function setTheme(theme) {
   try {
-    const settings = await storage.getSettings() || {};
+    // 直接使用 localStorage，不儲存到 Google Drive
+    const settings = storage.localStorage.getSettings();
     settings.theme = theme;
-    await storage.saveSettings(settings);
+    storage.localStorage.saveSettings(settings);
     
     if (theme === 'auto') {
       theme = detectSystemTheme();
@@ -166,7 +158,8 @@ export async function setTheme(theme) {
 // 取得當前主題（實際套用的主題）
 export async function getCurrentTheme() {
   try {
-    const settings = await storage.getSettings();
+    // 直接從 localStorage 讀取，不從 Google Drive 讀取
+    const settings = storage.localStorage.getSettings();
     const theme = settings?.theme || 'auto';
     
     if (theme === 'auto') {
@@ -183,7 +176,8 @@ export async function getCurrentTheme() {
 // 取得主題設定（auto/light/dark）
 export async function getThemeSetting() {
   try {
-    const settings = await storage.getSettings();
+    // 直接從 localStorage 讀取，不從 Google Drive 讀取
+    const settings = storage.localStorage.getSettings();
     return settings?.theme || 'auto';
   } catch (error) {
     console.error('Failed to get theme setting:', error);

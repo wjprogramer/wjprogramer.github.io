@@ -6,7 +6,8 @@ let currentLanguage = 'zh-TW';
 
 // 初始化 i18n
 export async function initI18n() {
-  const settings = storage.getSettings();
+  // 直接從 localStorage 讀取，不從 Google Drive 讀取
+  const settings = storage.localStorage.getSettings();
   const lang = settings?.language || detectBrowserLanguage();
   setLanguage(lang);
 }
@@ -58,10 +59,10 @@ export function setLanguage(lang) {
   // 更新 HTML lang 屬性
   document.documentElement.setAttribute('lang', lang);
   
-  // 儲存語言偏好
-  const settings = storage.getSettings() || {};
+  // 儲存語言偏好（直接使用 localStorage，不儲存到 Google Drive）
+  const settings = storage.localStorage.getSettings() || {};
   settings.language = lang;
-  storage.saveSettings(settings);
+  storage.localStorage.saveSettings(settings);
   
   // 套用翻譯到 DOM（無縫切換）
   applyTranslations();

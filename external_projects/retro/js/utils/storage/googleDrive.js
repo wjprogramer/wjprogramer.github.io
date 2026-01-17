@@ -97,6 +97,11 @@ export class GoogleDriveStorage {
       throw new Error('未登入 Google 帳號');
     }
 
+    // 如果已經有 fileId，直接返回（避免重複查詢）
+    if (this.fileId) {
+      return this.fileId;
+    }
+
     // 先嘗試尋找現有檔案
     try {
       const response = await gapi.client.drive.files.list({
@@ -258,8 +263,10 @@ export class GoogleDriveStorage {
   // 儲存回顧記錄
   async saveRetrospectives(retrospectives) {
     try {
+      // 讀取完整資料（包含 settings 等）
       const data = await this.readFile();
       data.retrospectives = retrospectives;
+      // 直接寫入，不需要再次讀取
       await this.writeFile(data);
       return true;
     } catch (error) {
@@ -270,30 +277,64 @@ export class GoogleDriveStorage {
 
   // 新增回顧記錄
   async addRetrospective(retrospective) {
-    const retrospectives = await this.getRetrospectives();
-    retrospectives.push(retrospective);
-    await this.saveRetrospectives(retrospectives);
-    return retrospective;
+    try {
+      // 只讀取一次完整資料
+      const data = await this.readFile();
+      const retrospectives = data.retrospectives || [];
+      retrospectives.push(retrospective);
+      // 直接寫入，避免在 saveRetrospectives 中再次讀取
+      data.retrospectives = retrospectives;
+      await this.writeFile(data);
+      return retrospective;
+    } catch (error) {
+      console.error('Error adding retrospective:', error);
+      throw error;
+    }
   }
 
   // 更新回顧記錄
   async updateRetrospective(id, updates) {
-    const retrospectives = await this.getRetrospectives();
-    const index = retrospectives.findIndex(r => r.id === id);
-    if (index !== -1) {
-      retrospectives[index] = { ...retrospectives[index], ...updates };
-      await this.saveRetrospectives(retrospectives);
-      return retrospectives[index];
+    try {
+      // 只讀取一次完整資料
+      const data = await this.readFile();
+      const retrospectives = data.retrospectives || [];
+      const index = retrospectives.findIndex(r => r.id === id);
+      if (index !== -1) {
+        retrospectives[index] = { ...retrospectives[index], ...updates };
+        // 直接寫入，避免在 saveRetrospectives 中再次讀取
+        data.retrospectives = retrospectives;
+        await this.writeFile(data);
+        return retrospectives[index];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating retrospective:', error);
+      throw error;
     }
-    return null;
   }
 
   // 刪除回顧記錄
   async deleteRetrospective(id) {
-    const retrospectives = await this.getRetrospectives();
-    const filtered = retrospectives.filter(r => r.id !== id);
-    await this.saveRetrospectives(filtered);
-    return filtered.length < retrospectives.length;
+    try {
+      // 只讀取一次完整資料
+      const data = await this.readFile();
+      const retrospectives = data.retrospectives || [];
+      const originalLength = retrospectives.length;
+      const filtered = retrospectives.filter(r => r.id !== id);
+      
+      // 如果沒有找到要刪除的項目，返回 false
+      if (filtered.length === originalLength) {
+        return false;
+      }
+      
+      // 更新資料並直接寫入，避免在 saveRetrospectives 中再次讀取
+      data.retrospectives = filtered;
+      await this.writeFile(data);
+      return true;
+    } catch (error) {
+      console.error('Error deleting retrospective:', error);
+      return false;
+    }
   }
 
   // 取得黑名單

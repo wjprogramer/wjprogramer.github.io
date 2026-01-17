@@ -137,7 +137,18 @@ export class HostMode {
 
   // 處理參與者加入
   handleParticipantJoin(peerId, payload) {
-    const { name } = payload;
+    const { name, expectedRetroId } = payload;
+    
+    // 驗證 retro id 是否匹配（如果參與者提供了期望的 retro id，表示這是重連）
+    if (expectedRetroId && expectedRetroId !== this.retro.id) {
+      console.error('Retro ID mismatch! Participant expected:', expectedRetroId, 'Host has:', this.retro.id);
+      // retro id 不匹配，拒絕連線（可能是 host 用相同 peer id 建立了新的 retro）
+      this.dataChannel.send(DataChannel.MESSAGE_TYPES.KICK, {
+        reason: 'RETRO_ID_MISMATCH'
+      }, peerId);
+      this.peerManager.disconnect(peerId);
+      return;
+    }
     
     // 檢查是否已經處理過這個參與者（防止重複處理）
     if (this.participants.has(peerId)) {
@@ -445,6 +456,90 @@ export class HostMode {
     }, 1000); // 1 秒 debounce
   }
 
+  // 恢復會議（重整後使用）
+  async restoreMeeting(retroId, peerId) {
+    // 從儲存中載入會議資料
+    const retrospectives = await storage.getRetrospectives();
+    const savedRetro = retrospectives.find(r => r.id === retroId);
+    
+    if (!savedRetro) {
+      throw new Error('找不到會議記錄');
+    }
+    
+    // 驗證 peer ID 和 meeting ID 是否匹配
+    // 如果提供的 peerId 與保存的 meetingId 不匹配，可能是 host 想要用相同的 peer ID 建立新會議
+    // 這種情況下，我們應該拒絕恢復，因為這會導致參與者連到錯誤的會議
+    if (savedRetro.meetingId && peerId !== savedRetro.meetingId) {
+      console.warn('Peer ID mismatch! Saved meetingId:', savedRetro.meetingId, 'Provided peerId:', peerId);
+      // 如果 peer ID 不匹配，但這是恢復操作，我們應該使用保存的 meetingId
+      // 因為恢復時，我們應該使用相同的 peer ID（即 meetingId）
+      console.log('Using saved meetingId as peerId for restoration');
+      peerId = savedRetro.meetingId;
+    }
+    
+    // 恢復會議資料
+    this.retro = savedRetro;
+    this.meetingId = savedRetro.meetingId;
+    
+    // 使用相同的 peer ID（meetingId）重新初始化 Peer
+    try {
+      const restoredPeerId = await this.peerManager.init(true, peerId);
+      this.retro.host.peerId = restoredPeerId;
+      
+      // 重新初始化資料通道
+      this.dataChannel = new DataChannel(this.peerManager);
+      this.setupDataChannel();
+      
+      // 恢復參與者列表（從 retro.participants）
+      // 注意：恢復時，參與者可能還沒重新連線，所以先清空
+      // 當參與者重新連線時，會通過 handleParticipantJoin 重新加入
+      this.participants.clear();
+      // 清空 retro.participants，因為參與者需要重新加入
+      this.retro.participants = [];
+      
+      console.log('Host meeting restored:', {
+        retroId: this.retro.id,
+        meetingId: this.meetingId,
+        peerId: restoredPeerId,
+        participants: this.participants.size
+      });
+      
+      return {
+        meetingId: this.meetingId,
+        peerId: restoredPeerId,
+        retro: this.retro
+      };
+    } catch (error) {
+      console.error('Failed to restore meeting:', error);
+      throw error;
+    }
+  }
+
+  // 保存會議記錄（公開方法，供外部調用）
+  async saveRetro() {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    
+    try {
+      const retrospectives = await storage.getRetrospectives();
+      const index = retrospectives.findIndex(r => r.id === this.retro.id || r.meetingId === this.retro.meetingId);
+      
+      if (index !== -1) {
+        retrospectives[index] = this.retro;
+      } else {
+        retrospectives.push(this.retro);
+      }
+      
+      await storage.saveRetrospectives(retrospectives);
+      console.log('Saved retro to storage');
+    } catch (error) {
+      console.error('Error saving retro:', error);
+      throw error;
+    }
+  }
+
   // 結束會議
   async endMeeting() {
     // 清除 debounce timeout
@@ -454,16 +549,7 @@ export class HostMode {
     }
     
     // 立即儲存回顧記錄
-    const retrospectives = await storage.getRetrospectives();
-    const index = retrospectives.findIndex(r => r.id === this.retro.id || r.meetingId === this.retro.meetingId);
-    
-    if (index !== -1) {
-      retrospectives[index] = this.retro;
-    } else {
-      retrospectives.push(this.retro);
-    }
-    
-    await storage.saveRetrospectives(retrospectives);
+    await this.saveRetro();
 
     // 斷開所有連線
     this.peerManager.disconnectAll();

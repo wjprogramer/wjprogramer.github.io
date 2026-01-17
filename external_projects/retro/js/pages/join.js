@@ -6,12 +6,28 @@ import { Toast } from '../components/Toast.js';
 import { storage } from '../utils/storage/index.js';
 
 export class JoinPage {
-  constructor(params = {}) {
+  constructor(params = {}, query = '') {
     this.router = new Router();
     this.meetingId = params.meetingId || '';
+    this.queryParams = this.parseQuery(query);
+    this.retroId = this.queryParams.retroId || null; // 從查詢參數取得 retro id
     this.participantMode = null;
     this.videoStream = null;
     this.scanning = false;
+  }
+  
+  // 解析查詢參數
+  parseQuery(query) {
+    const params = {};
+    if (query) {
+      query.split('&').forEach(param => {
+        const [key, value] = param.split('=');
+        if (key && value) {
+          params[decodeURIComponent(key)] = decodeURIComponent(value);
+        }
+      });
+    }
+    return params;
   }
 
   async render(container) {
@@ -273,9 +289,14 @@ export class JoinPage {
           }
           
           // 延遲一下讓用戶看到訊息，然後導航
+          // 參與者模式：URL 格式：/retrospective/{retroId}?meetingId={meetingId}&mode=participant
+          // retroId: 從 URL 參數或 SYNC 訊息中取得
+          // meetingId: peer id（用於 WebRTC 連線）
+          // mode: 標記為參與者模式，避免重整時被誤判為 host
+          const retroId = this.retroId || this.participantMode.getRetro()?.id || meetingId;
           setTimeout(() => {
             Toast.success('連線成功');
-            this.router.navigate(`/retrospective/${meetingId}`);
+            this.router.navigate(`/retrospective/${retroId}?meetingId=${meetingId}&mode=participant`);
           }, 500);
         }
       });
@@ -309,6 +330,9 @@ export class JoinPage {
               nameInput.select();
             }
           }, 100);
+        } else if (reason === 'RETRO_ID_MISMATCH') {
+          message = '會議記錄 ID 不匹配，可能是 host 已重新建立會議';
+          this.resetJoinUI(joinBtn, meetingIdInput, nameInput, originalBtnText);
         } else if (reason === 'MAX_PARTICIPANTS') {
           message = '會議室已滿';
           this.resetJoinUI(joinBtn, meetingIdInput, nameInput, originalBtnText);
@@ -327,7 +351,7 @@ export class JoinPage {
         }
       });
       
-      await this.participantMode.joinMeeting(meetingId, hostPeerId, name);
+      await this.participantMode.joinMeeting(meetingId, hostPeerId, name, this.retroId);
       
       // 儲存到全域狀態（供 retrospective 頁面使用）
       if (!window.retroState) {

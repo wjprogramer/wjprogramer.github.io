@@ -29,6 +29,10 @@
   flex: 1;
   padding: var(--spacing-lg);
   background-color: var(--bg-primary);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* 容器 */

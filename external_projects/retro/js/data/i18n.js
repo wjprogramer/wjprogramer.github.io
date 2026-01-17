@@ -97,6 +97,7 @@ export const translations = {
       googleDriveSyncError: '同步失敗',
       clearData: '清除資料',
       clearHistory: '清除歷史記錄',
+      clearDataNote: '注意：以下操作只會清除本地端（瀏覽器）的資料，不會影響 Google Drive 中的資料。',
       about: '關於',
       version: '版本'
     },
@@ -212,6 +213,7 @@ export const translations = {
       googleDriveSyncError: 'Sync failed',
       clearData: 'Clear Data',
       clearHistory: 'Clear History',
+      clearDataNote: 'Note: The following operations will only clear local (browser) data and will not affect data in Google Drive.',
       about: 'About',
       version: 'Version'
     },
