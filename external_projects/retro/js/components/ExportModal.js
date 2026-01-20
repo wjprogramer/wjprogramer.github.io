@@ -24,6 +24,7 @@ export class ExportModal {
             </label>
             <select id="export-format" style="width: 100%; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
               <option value="markdown">Markdown</option>
+              <option value="json">JSON</option>
             </select>
           </div>
         </div>
@@ -58,7 +59,27 @@ export class ExportModal {
     if (format === 'markdown') {
       const markdown = exportToMarkdown(this.retro, this.items);
       this.downloadFile(markdown, `${this.retro.title || 'retrospective'}.md`, 'text/markdown');
+    } else if (format === 'json') {
+      const json = this.exportToJSON();
+      this.downloadFile(json, `${this.retro.title || 'retrospective'}.json`, 'application/json');
     }
+  }
+
+  exportToJSON() {
+    const exportData = {
+      id: this.retro.id,
+      title: this.retro.title,
+      description: this.retro.description,
+      date: this.retro.date,
+      createdAt: this.retro.createdAt,
+      updatedAt: this.retro.updatedAt,
+      allowAnonymous: this.retro.allowAnonymous,
+      status: this.retro.status,
+      host: this.retro.host,
+      participants: this.retro.participants || [],
+      items: this.items
+    };
+    return JSON.stringify(exportData, null, 2);
   }
 
   downloadFile(content, filename, mimeType) {
