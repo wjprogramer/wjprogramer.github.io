@@ -171,6 +171,55 @@ export class HostPage {
       return;
     }
     
+    // 檢查是否已連接 Google Drive，如果是則顯示 loading
+    const { storage } = await import('../utils/storage/index.js');
+    const isUsingGoogleDrive = storage.isUsingGoogleDrive();
+    let loadingOverlay = null;
+    
+    if (isUsingGoogleDrive) {
+      // 顯示全屏 loading overlay
+      loadingOverlay = document.createElement('div');
+      loadingOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        flex-direction: column;
+        gap: var(--spacing-md);
+      `;
+      loadingOverlay.innerHTML = `
+        <div class="loading" style="width: 40px; height: 40px;"></div>
+        <p style="color: white; font-size: 1rem;">正在建立會議室...</p>
+      `;
+      document.body.appendChild(loadingOverlay);
+      
+      // 禁用建立按鈕防止重複點擊
+      const createBtn = document.getElementById('create-meeting-btn');
+      if (createBtn) {
+        createBtn.disabled = true;
+        createBtn.style.opacity = '0.6';
+        createBtn.style.cursor = 'not-allowed';
+      }
+    }
+    
+    const removeLoading = () => {
+      if (loadingOverlay) {
+        loadingOverlay.remove();
+      }
+      const createBtn = document.getElementById('create-meeting-btn');
+      if (createBtn) {
+        createBtn.disabled = false;
+        createBtn.style.opacity = '1';
+        createBtn.style.cursor = 'pointer';
+      }
+    };
+    
     try {
       this.hostMode = new HostMode();
       
@@ -192,7 +241,6 @@ export class HostPage {
       });
       
       // 獲取使用者名稱（從設置中）
-      const { storage } = await import('../utils/storage/index.js');
       const settings = await storage.getSettings() || {};
       const hostName = settings.lastUserName || 'Host';
       
@@ -216,6 +264,9 @@ export class HostPage {
         // 即使保存失敗也繼續，至少全域狀態中有資料
       }
       
+      // 移除 loading（如果有的話）
+      removeLoading();
+      
       // 開房後直接導航到回顧頁面
       // URL 格式：/retrospective/{retroId}?meetingId={peerId}&mode=host
       // retroId: 會議的 id（用於恢復資料）
@@ -224,6 +275,9 @@ export class HostPage {
       Toast.success('會議室建立成功');
       this.router.navigate(`/retrospective/${retroId}?meetingId=${this.meetingId}&mode=host`);
     } catch (error) {
+      // 移除 loading（如果有的話）
+      removeLoading();
+      
       console.error('Failed to create meeting:', error);
       console.error('Error details:', {
         message: error.message,
