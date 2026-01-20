@@ -388,7 +388,10 @@ export class RetrospectivePage {
         this.currentRetro = this.participantMode.getRetro();
         if (this.currentRetro) {
           this.items = this.currentRetro.items || this.items;
-          this.renderItems();
+          // 如果正在編輯項目，不要重新渲染（避免失去焦點）
+          if (!this.editingItemId) {
+            this.renderItems();
+          }
         }
       });
     } else if (this.isP2PMode && this.hostMode) {
@@ -396,7 +399,10 @@ export class RetrospectivePage {
         this.currentRetro = this.hostMode.retro;
         if (this.currentRetro) {
           this.items = this.currentRetro.items || this.items;
-          this.renderItems();
+          // 如果正在編輯項目，不要重新渲染（避免失去焦點）
+          if (!this.editingItemId) {
+            this.renderItems();
+          }
         }
       });
       
