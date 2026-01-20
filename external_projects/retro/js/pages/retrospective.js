@@ -896,7 +896,6 @@ export class RetrospectivePage {
     // 編輯輸入框自動保存
     const editTextarea = cardElement.querySelector('.retro-item-edit-input');
     if (editTextarea) {
-      let saveTimeout = null;
       const originalValue = editTextarea.value;
       
       // 失去焦點時自動保存
@@ -905,17 +904,6 @@ export class RetrospectivePage {
         setTimeout(async () => {
           await this.autoSaveEditItem(item.id, index, category, originalValue);
         }, 200);
-      });
-      
-      // 輸入時使用 debounce 自動保存
-      editTextarea.addEventListener('input', () => {
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(async () => {
-          // 只在有內容時自動保存
-          if (editTextarea.value.trim()) {
-            await this.autoSaveEditItem(item.id, index, category, originalValue, false);
-          }
-        }, 1000); // 1秒後自動保存
       });
       
       // Enter + Ctrl/Cmd 快速保存並關閉
