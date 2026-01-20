@@ -8,7 +8,7 @@ export class RetroCard {
     this.index = index;
   }
 
-  render(isEditing = false, isNewItem = false) {
+  render(isEditing = false, isNewItem = false, editingBy = null) {
     const authorName = this.item.author?.isAnonymous 
       ? t('retrospective.anonymous') 
       : (this.item.author?.name || 'Unknown');
@@ -28,8 +28,20 @@ export class RetroCard {
       `;
     }
     
+    // 如果正在被其他人編輯，顯示編輯狀態並禁用點擊
+    const isBeingEdited = editingBy !== null;
+    const clickableClass = isBeingEdited ? '' : 'retro-card-clickable';
+    const cursorStyle = isBeingEdited ? 'cursor: not-allowed;' : 'cursor: pointer;';
+    
     return `
-      <div class="card ${animationClass} retro-card-clickable" style="margin-bottom: var(--spacing-md); ${animationStyle} cursor: pointer;">
+      <div class="card ${animationClass} ${clickableClass}" style="margin-bottom: var(--spacing-md); ${animationStyle} ${cursorStyle}; position: relative;" ${isBeingEdited ? 'data-being-edited="true"' : ''}>
+        ${isBeingEdited ? `
+          <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 217, 61, 0.3); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none;">
+            <div style="width: 48px; height: 48px; background: var(--color-warning); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+              <i class="iconoir-edit" style="font-size: 1.5rem; color: white;"></i>
+            </div>
+          </div>
+        ` : ''}
         <div class="card-body">
           <p style="margin-bottom: var(--spacing-md); line-height: 1.6; white-space: pre-wrap;">${this.escapeHtml(this.item.text)}</p>
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; color: var(--text-secondary);">

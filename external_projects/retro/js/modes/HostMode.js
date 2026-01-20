@@ -19,9 +19,15 @@ export class HostMode {
   }
 
   // 建立會議室
-  async createMeeting(title, description, date, allowAnonymous) {
+  async createMeeting(title, description, date, allowAnonymous, hostName = null) {
     // 生成會議 ID
     this.meetingId = this.generateMeetingId();
+    
+    // 如果沒有提供 hostName，嘗試從設置中獲取
+    if (!hostName) {
+      const settings = await storage.getSettings() || {};
+      hostName = settings.lastUserName || 'Host';
+    }
     
     // 建立回顧資料
     this.retro = {
@@ -35,7 +41,7 @@ export class HostMode {
       allowAnonymous,
       host: {
         peerId: null, // 將在 Peer 初始化後設定
-        name: 'Host'
+        name: hostName // 使用實際的使用者名稱
       },
       participants: [],
       items: {
@@ -98,6 +104,27 @@ export class HostMode {
     // 處理投票｀
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.VOTE, (peerId, payload) => {
       this.handleVote(peerId, payload);
+    });
+
+    // 處理編輯狀態（轉發給所有參與者）
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.EDIT_START, (peerId, payload) => {
+      // 轉發給所有參與者（不包括發送者）
+      const message = {
+        type: DataChannel.MESSAGE_TYPES.EDIT_START,
+        payload,
+        timestamp: Date.now()
+      };
+      this.peerManager.broadcast(message);
+    });
+
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.EDIT_END, (peerId, payload) => {
+      // 轉發給所有參與者（不包括發送者）
+      const message = {
+        type: DataChannel.MESSAGE_TYPES.EDIT_END,
+        payload,
+        timestamp: Date.now()
+      };
+      this.peerManager.broadcast(message);
     });
 
     // 監聽連線

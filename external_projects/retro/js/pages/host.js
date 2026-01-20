@@ -191,7 +191,12 @@ export class HostPage {
         Toast.info(`${participant.name} 已離開`);
       });
       
-      const result = await this.hostMode.createMeeting(title, description, date, allowAnonymous);
+      // 獲取使用者名稱（從設置中）
+      const { storage } = await import('../utils/storage/index.js');
+      const settings = await storage.getSettings() || {};
+      const hostName = settings.lastUserName || 'Host';
+      
+      const result = await this.hostMode.createMeeting(title, description, date, allowAnonymous, hostName);
       this.meetingId = result.meetingId;
       this.peerId = result.peerId;
       const retroId = result.retro.id; // 會議的 id（用於恢復資料）

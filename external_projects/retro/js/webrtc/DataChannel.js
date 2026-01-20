@@ -69,7 +69,9 @@ export class DataChannel {
     VOTE: 'VOTE',
     STATUS_CHANGE: 'STATUS_CHANGE',
     SYNC: 'SYNC',
-    KICK: 'KICK'
+    KICK: 'KICK',
+    EDIT_START: 'EDIT_START', // 開始編輯
+    EDIT_END: 'EDIT_END' // 結束編輯
   };
 }
 

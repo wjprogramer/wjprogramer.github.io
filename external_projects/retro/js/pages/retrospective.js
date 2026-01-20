@@ -31,7 +31,8 @@ export class RetrospectivePage {
     this.participantMode = null;
     this.hostMode = null;
     this.editingCategory = null; // 追蹤正在新增項目的欄位
-    this.editingItemId = null; // 追蹤正在編輯的項目 ID
+    this.editingItemId = null; // 追蹤正在編輯的項目 ID（本地）
+    this.editingItems = new Map(); // 追蹤正在被編輯的項目：Map<itemId, {peerId, name, timestamp, timeoutId}>
     this.categories = ['howDoYouFeel', 'whatWentWell', 'whatDidntGoWell', 'whatNeedsChange', 'shoutOuts'];
     this.renderedItemIds = new Set(); // 追蹤已經渲染過的項目 ID，用於判斷是否需要動畫
     this.isDestroyed = false; // 追蹤頁面是否已被銷毀
@@ -394,6 +395,9 @@ export class RetrospectivePage {
           }
         }
       });
+      
+      // 監聽編輯狀態變化
+      await this.setupEditStateListeners(this.participantMode);
     } else if (this.isP2PMode && this.hostMode) {
       this.hostMode.onItemUpdate(() => {
         this.currentRetro = this.hostMode.retro;
@@ -405,6 +409,9 @@ export class RetrospectivePage {
           }
         }
       });
+      
+      // 監聽編輯狀態變化
+      await this.setupEditStateListeners(this.hostMode);
       
       // 註冊參與者加入/離開回調（host 模式）
       this.hostMode.onParticipantJoin((participant) => {
@@ -741,9 +748,13 @@ export class RetrospectivePage {
       items.forEach((item, index) => {
         const card = new RetroCard(item, category, index);
         const isEditing = this.editingItemId === item.id;
+        // 檢查是否有其他人正在編輯此項目（P2P 模式）
+        const editingInfo = this.isP2PMode ? this.editingItems.get(item.id) : null;
+        const isBeingEditedByOthers = editingInfo && !isEditing; // 被其他人編輯，但不是自己編輯
         // 只有新項目（不在已渲染列表中的）才需要動畫
         const isNewItem = !this.renderedItemIds.has(item.id);
-        let cardHtml = card.render(isEditing, isNewItem);
+        const editingBy = isBeingEditedByOthers ? editingInfo.name : null;
+        let cardHtml = card.render(isEditing, isNewItem, editingBy);
         
         // 如果是新項目，延遲標記為已渲染（等動畫播放完成）
         if (isNewItem) {
@@ -771,7 +782,9 @@ export class RetrospectivePage {
           }
         }
         
-        html += `<div data-item-id="${item.id}" data-item-index="${index}">${cardHtml}</div>`;
+        // 如果正在被其他人編輯，添加標記
+        const isBeingEdited = editingInfo && !isEditing;
+        html += `<div data-item-id="${item.id}" data-item-index="${index}" ${isBeingEdited ? 'data-being-edited="true"' : ''}>${cardHtml}</div>`;
       });
       
       // 如果正在新增項目，顯示輸入框
@@ -868,6 +881,14 @@ export class RetrospectivePage {
         if (e.target.closest('.vote-btn')) {
           return;
         }
+        // 如果正在被其他人編輯，不觸發編輯
+        if (cardElement.dataset.beingEdited === 'true') {
+          const editingInfo = this.editingItems.get(item.id);
+          if (editingInfo) {
+            Toast.warning(`${editingInfo.name} 正在編輯此項目`);
+          }
+          return;
+        }
         this.startEditingItem(item.id, category).catch(err => console.error('Error starting edit:', err));
       });
     }
@@ -923,6 +944,16 @@ export class RetrospectivePage {
   }
   
   async startEditingItem(itemId, category) {
+    // 檢查是否正在被其他人編輯（P2P 模式）
+    if (this.isP2PMode) {
+      const editingInfo = this.editingItems.get(itemId);
+      if (editingInfo) {
+        // 正在被其他人編輯，無法編輯
+        Toast.warning(`${editingInfo.name} 正在編輯此項目`);
+        return;
+      }
+    }
+    
     // 如果正在新增項目，先保存
     if (this.editingCategory) {
       await this.autoSaveNewItem(this.editingCategory, true);
@@ -931,7 +962,38 @@ export class RetrospectivePage {
     if (this.editingItemId && this.editingItemId !== itemId) {
       this.cancelEditingItem();
     }
+    
     this.editingItemId = itemId;
+    
+    // 在 P2P 模式下，通知其他人開始編輯
+    if (this.isP2PMode) {
+      // 獲取實際的使用者名稱（即使匿名模式也要傳送，用於判斷是誰在編輯）
+      let editorName = null;
+      if (this.participantMode?.name) {
+        editorName = this.participantMode.name;
+      } else if (this.hostMode?.retro?.host?.name) {
+        editorName = this.hostMode.retro.host.name;
+      } else {
+        // 如果都沒有，嘗試從設置中獲取（用於 host 模式）
+        const settings = await storage.getSettings() || {};
+        editorName = settings.lastUserName || 'Host';
+      }
+      
+      const mode = this.participantMode || this.hostMode;
+      
+      if (mode && mode.dataChannel && editorName) {
+        const { DataChannel } = await import('../webrtc/DataChannel.js');
+        const senderPeerId = mode?.peerManager?.peerId;
+        const payload = {
+          itemId,
+          category,
+          editorName,
+          senderPeerId
+        };
+        mode.dataChannel.send(DataChannel.MESSAGE_TYPES.EDIT_START, payload);
+      }
+    }
+    
     this.renderItems();
     
     // 聚焦到編輯輸入框
@@ -944,8 +1006,26 @@ export class RetrospectivePage {
     }, 0);
   }
   
-  cancelEditingItem() {
+  async cancelEditingItem() {
+    const itemId = this.editingItemId;
+    if (!itemId) return;
+    
     this.editingItemId = null;
+    
+    // 在 P2P 模式下，通知其他人結束編輯
+    if (this.isP2PMode && itemId) {
+      const mode = this.participantMode || this.hostMode;
+      if (mode && mode.dataChannel) {
+        const { DataChannel } = await import('../webrtc/DataChannel.js');
+        const senderPeerId = mode?.peerManager?.peerId;
+        const payload = { 
+          itemId,
+          senderPeerId
+        };
+        mode.dataChannel.send(DataChannel.MESSAGE_TYPES.EDIT_END, payload);
+      }
+    }
+    
     this.renderItems();
   }
   
@@ -1687,6 +1767,113 @@ export class RetrospectivePage {
     list.bindEvents(container);
   }
 
+  // 設定編輯狀態監聽器（P2P 模式）
+  async setupEditStateListeners(mode) {
+    if (!mode || !mode.dataChannel) return;
+    
+    const { DataChannel } = await import('../webrtc/DataChannel.js');
+    
+    // 監聽其他人開始編輯
+    mode.dataChannel.on(DataChannel.MESSAGE_TYPES.EDIT_START, (peerId, payload) => {
+      const { itemId, editorName, senderPeerId } = payload;
+      
+      // 檢查是否是自己的編輯消息
+      const currentPeerId = mode?.peerManager?.peerId;
+      if (senderPeerId && currentPeerId && senderPeerId === currentPeerId) {
+        // 忽略自己的消息
+        return;
+      }
+      
+      // 如果當前正在編輯這個項目，且 editorName 匹配，則忽略
+      if (this.editingItemId === itemId) {
+        const currentEditorName = this.participantMode?.name || this.hostMode?.retro?.host?.name;
+        // 如果名稱匹配，或者是自己的消息（通過 senderPeerId 判斷），則忽略
+        if (currentEditorName === editorName || (senderPeerId && mode?.peerManager?.peerId === senderPeerId)) {
+          return;
+        }
+      }
+      
+      // 清除舊的超時（如果有的話）
+      const existingInfo = this.editingItems.get(itemId);
+      if (existingInfo && existingInfo.timeoutId) {
+        clearTimeout(existingInfo.timeoutId);
+      }
+      
+      // 設置超時清理（30 秒後自動清除，防止編輯者斷線導致永久鎖定）
+      const timeoutId = setTimeout(() => {
+        const editingInfo = this.editingItems.get(itemId);
+        if (editingInfo && editingInfo.peerId === peerId) {
+          this.editingItems.delete(itemId);
+          // 如果不在編輯狀態，才重新渲染（避免失去焦點）
+          if (!this.editingItemId) {
+            this.renderItems();
+          }
+        }
+      }, 30000); // 30 秒超時
+      
+      this.editingItems.set(itemId, {
+        peerId,
+        name: editorName,
+        timestamp: Date.now(),
+        timeoutId
+      });
+      
+      // 如果不在編輯狀態，才重新渲染（避免失去焦點）
+      if (!this.editingItemId) {
+        this.renderItems();
+      }
+    });
+    
+    // 監聽其他人結束編輯
+    mode.dataChannel.on(DataChannel.MESSAGE_TYPES.EDIT_END, (peerId, payload) => {
+      const { itemId, senderPeerId } = payload;
+      
+      // 檢查是否是自己的消息
+      const currentPeerId = mode?.peerManager?.peerId;
+      if (senderPeerId && currentPeerId && senderPeerId === currentPeerId) {
+        // 忽略自己的消息
+        return;
+      }
+      
+      const editingInfo = this.editingItems.get(itemId);
+      
+      // 只有當結束編輯的人和開始編輯的人是同一個人時，才移除編輯狀態
+      const targetPeerId = senderPeerId || peerId;
+      if (editingInfo && editingInfo.peerId === targetPeerId) {
+        // 清除超時
+        if (editingInfo.timeoutId) {
+          clearTimeout(editingInfo.timeoutId);
+        }
+        this.editingItems.delete(itemId);
+        // 如果不在編輯狀態，才重新渲染（避免失去焦點）
+        if (!this.editingItemId) {
+          this.renderItems();
+        }
+      }
+    });
+    
+    // 監聽參與者斷線，清除其編輯狀態
+    if (mode.peerManager) {
+      mode.peerManager.onDisconnection((peerId) => {
+        // 清除該 peer 的所有編輯狀態
+        let hasChanges = false;
+        for (const [itemId, editingInfo] of this.editingItems.entries()) {
+          if (editingInfo.peerId === peerId) {
+            if (editingInfo.timeoutId) {
+              clearTimeout(editingInfo.timeoutId);
+            }
+            this.editingItems.delete(itemId);
+            hasChanges = true;
+          }
+        }
+        
+        if (hasChanges && !this.editingItemId) {
+          this.renderItems();
+        }
+      });
+    }
+  }
+
   // 顯示找不到資料的錯誤訊息
   showNotFoundError(container) {
     if (this.isDestroyed || !this.renderContainer || this.renderContainer !== container) {
@@ -1753,6 +1940,16 @@ export class RetrospectivePage {
     // 標記頁面已被銷毀，防止非同步操作完成後更新 DOM
     this.isDestroyed = true;
     this.renderContainer = null;
+    
+    // 清除所有編輯狀態和超時
+    if (this.editingItems) {
+      for (const [itemId, editingInfo] of this.editingItems.entries()) {
+        if (editingInfo.timeoutId) {
+          clearTimeout(editingInfo.timeoutId);
+        }
+      }
+      this.editingItems.clear();
+    }
     
     // 移除 Google Drive 初始化完成事件監聽器
     if (this.googleDriveInitHandler) {
