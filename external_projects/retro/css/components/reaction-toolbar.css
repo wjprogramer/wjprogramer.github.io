@@ -1,0 +1,138 @@
+/* 反應工具欄樣式 */
+.card-reaction-trigger {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.card:hover .card-reaction-trigger {
+  opacity: 1;
+  display: block !important;
+}
+
+.card:hover .card-reaction-trigger.hide {
+  opacity: 0;
+}
+
+.reaction-plus-btn {
+  box-shadow: var(--shadow-sm);
+}
+
+.reaction-plus-btn:hover {
+  background: var(--bg-secondary) !important;
+  border-color: var(--color-primary) !important;
+  transform: scale(1.1);
+}
+
+.reaction-toolbar-container {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  display: none;
+  position: absolute;
+  bottom: var(--spacing-md);
+  right: var(--spacing-md);
+  z-index: 20;
+}
+
+.reaction-toolbar-container.show {
+  pointer-events: auto;
+  opacity: 1;
+  display: block !important;
+}
+
+.reaction-toolbar {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+}
+
+.reaction-toolbar-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.reaction-emoji-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  padding: 0;
+}
+
+.reaction-emoji-btn:hover {
+  background: var(--bg-secondary);
+  transform: scale(1.2);
+}
+
+.reaction-more-emoji-btn,
+.reaction-comment-btn,
+.reaction-more-options-btn {
+  height: 32px;
+  padding: 0 var(--spacing-sm);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  transition: all var(--transition-base);
+}
+
+.reaction-more-emoji-btn:hover,
+.reaction-comment-btn:hover,
+.reaction-more-options-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.reaction-more-options-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--spacing-xs);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-xs);
+  min-width: 120px;
+  z-index: 30;
+}
+
+.reaction-delete-btn {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--color-danger);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.875rem;
+  transition: all var(--transition-base);
+}
+
+.reaction-delete-btn:hover {
+  background: var(--bg-secondary);
+}

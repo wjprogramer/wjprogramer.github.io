@@ -67,6 +67,7 @@ export class DataChannel {
     UPDATE_ITEM: 'UPDATE_ITEM',
     DELETE_ITEM: 'DELETE_ITEM',
     VOTE: 'VOTE',
+    REACTION: 'REACTION', // Emoji 反應
     STATUS_CHANGE: 'STATUS_CHANGE',
     SYNC: 'SYNC',
     KICK: 'KICK',

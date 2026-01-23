@@ -2,12 +2,14 @@
 import { t } from '../utils/i18n.js';
 import { storage } from '../utils/storage/index.js';
 import { RetroCard } from '../components/RetroCard.js';
-import { VoteButton } from '../components/VoteButton.js';
 import { ExportModal } from '../components/ExportModal.js';
 import { Toast } from '../components/Toast.js';
 import { Router } from '../router.js';
 import { copyToClipboard } from '../utils/clipboard.js';
 import { ParticipantList } from '../components/ParticipantList.js';
+import { ReactionToolbar } from '../components/ReactionToolbar.js';
+import { EmojiPicker } from '../components/EmojiPicker.js';
+import { DataChannel } from '../webrtc/DataChannel.js';
 
 export class RetrospectivePage {
   constructor(params = {}, query = '') {
@@ -767,21 +769,6 @@ export class RetrospectivePage {
           this.renderedItemIds.add(item.id);
         }
         
-        // 如果是 P2P 模式，添加投票按鈕
-        if (this.isP2PMode) {
-          const voteBtn = new VoteButton(item, category, index, (cat, itemId, vote) => {
-            this.handleVote(cat, itemId, vote);
-          });
-          const lastDivIndex = cardHtml.lastIndexOf('</div>');
-          if (lastDivIndex !== -1) {
-            cardHtml = cardHtml.substring(0, lastDivIndex) + 
-                       '<div style="display: flex; justify-content: flex-end; margin-top: var(--spacing-md);">' + 
-                       voteBtn.render() + 
-                       '</div>' + 
-                       cardHtml.substring(lastDivIndex);
-          }
-        }
-        
         // 如果正在被其他人編輯，添加標記
         const isBeingEdited = editingInfo && !isEditing;
         html += `<div data-item-id="${item.id}" data-item-index="${index}" ${isBeingEdited ? 'data-being-edited="true"' : ''}>${cardHtml}</div>`;
@@ -806,17 +793,6 @@ export class RetrospectivePage {
         const cardElement = container.querySelector(`[data-item-id="${item.id}"]`);
         if (cardElement) {
           this.bindCardEvents(cardElement, item, index, category);
-          
-          // 綁定投票按鈕事件
-          if (this.isP2PMode) {
-            const voteBtn = cardElement.querySelector('.vote-btn');
-            if (voteBtn) {
-              const voteButton = new VoteButton(item, category, index, (cat, itemId, vote) => {
-                this.handleVote(cat, itemId, vote);
-              });
-              voteButton.bindEvents(voteBtn);
-            }
-          }
         }
       });
       
@@ -854,18 +830,20 @@ export class RetrospectivePage {
   }
 
   bindCardEvents(cardElement, item, index, category) {
-    const deleteBtn = cardElement.querySelector('.delete-btn');
     const cardClickable = cardElement.querySelector('.retro-card-clickable');
+    const reactionTrigger = cardElement.querySelector('.card-reaction-trigger');
+    const reactionPlusBtn = cardElement.querySelector('.reaction-plus-btn');
+    const reactionToolbarContainer = cardElement.querySelector('.reaction-toolbar-container');
     
     // 點擊卡片進入編輯模式
     if (cardClickable) {
       cardClickable.addEventListener('click', (e) => {
-        // 如果點擊的是 delete 按鈕，不觸發編輯
-        if (e.target.closest('.delete-btn')) {
-          return;
-        }
-        // 如果點擊的是投票按鈕，不觸發編輯
-        if (e.target.closest('.vote-btn')) {
+        // 如果點擊的是反應相關元素，不觸發編輯
+        if (e.target.closest('.reaction-toolbar') || 
+            e.target.closest('.card-reaction-trigger') ||
+            e.target.closest('.reaction-plus-btn') ||
+            e.target.closest('.reaction-badge') ||
+            e.target.closest('.reaction-display')) {
           return;
         }
         // 如果正在被其他人編輯，不觸發編輯
@@ -878,6 +856,93 @@ export class RetrospectivePage {
         }
         this.startEditingItem(item.id, category).catch(err => console.error('Error starting edit:', err));
       });
+    }
+    
+    // 點擊反應徽章切換反應
+    const reactionBadges = cardElement.querySelectorAll('.reaction-badge');
+    reactionBadges.forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const emoji = badge.dataset.emoji;
+        if (emoji) {
+          this.handleReaction(item.id, category, emoji);
+        }
+      });
+    });
+    
+    // Hover 到「＋」按鈕時顯示反應工具欄
+    if (reactionPlusBtn && reactionToolbarContainer) {
+      let toolbarInstance = null;
+      let hideTimeout = null;
+      
+      const showToolbar = () => {
+        if (hideTimeout) {
+          clearTimeout(hideTimeout);
+          hideTimeout = null;
+        }
+        
+        if (!toolbarInstance) {
+          // 隱藏「＋」按鈕
+          if (reactionPlusBtn) {
+            reactionPlusBtn.closest('.card-reaction-trigger')?.classList.add('hide');
+          }
+          
+          // 創建反應工具欄
+          const toolbar = new ReactionToolbar(
+            item.id,
+            category,
+            (itemId, cat, emoji) => this.handleReaction(itemId, cat, emoji),
+            (itemId, cat, container) => this.showEmojiPicker(itemId, cat, container),
+            (itemId, cat, isOpen) => {
+              // 更多選項打開/關閉的回調
+            }
+          );
+          
+          reactionToolbarContainer.innerHTML = toolbar.render();
+          reactionToolbarContainer.classList.add('show');
+          toolbarInstance = toolbar;
+          toolbar.bindEvents(reactionToolbarContainer);
+          
+          // 綁定刪除按鈕事件
+          const deleteBtn = reactionToolbarContainer.querySelector('.reaction-delete-btn');
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              await this.deleteItem(index, category);
+            });
+          }
+        }
+      };
+      
+      const hideToolbar = () => {
+        hideTimeout = setTimeout(() => {
+          if (reactionToolbarContainer) {
+            reactionToolbarContainer.classList.remove('show');
+            // 顯示「＋」按鈕
+            if (reactionPlusBtn) {
+              reactionPlusBtn.closest('.card-reaction-trigger')?.classList.remove('hide');
+            }
+            setTimeout(() => {
+              if (reactionToolbarContainer.classList.contains('show') === false) {
+                reactionToolbarContainer.innerHTML = '';
+                toolbarInstance = null;
+              }
+            }, 300); // 等待 fade out 動畫完成
+          }
+        }, 100); // 延遲一點，避免快速移動時閃爍
+      };
+      
+      reactionPlusBtn.addEventListener('mouseenter', showToolbar);
+      reactionToolbarContainer.addEventListener('mouseenter', () => {
+        if (hideTimeout) {
+          clearTimeout(hideTimeout);
+          hideTimeout = null;
+        }
+      });
+      
+      // 當滑鼠離開「＋」按鈕或工具欄時隱藏
+      reactionPlusBtn.addEventListener('mouseleave', hideToolbar);
+      reactionToolbarContainer.addEventListener('mouseleave', hideToolbar);
     }
     
     // 編輯輸入框自動保存
@@ -908,14 +973,106 @@ export class RetrospectivePage {
         }
       });
     }
+  }
+  
+  // 處理 emoji 反應
+  handleReaction(itemId, category, emoji) {
+    const item = this.items[category]?.find(i => i.id === itemId);
+    if (!item) return;
     
-    // 刪除按鈕
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', async (e) => {
-        e.stopPropagation(); // 阻止觸發卡片點擊事件
-        await this.deleteItem(index, category);
-      });
+    // 初始化 reactions 結構（如果還沒有）
+    if (!item.reactions) {
+      item.reactions = {};
     }
+    
+    // 獲取當前使用者的 peerId（P2P 模式）或用戶名（單人模式）
+    const globalState = window.retroState || {};
+    const currentPeerId = globalState.participantMode?.peerManager?.peerId || 
+                         globalState.hostMode?.peerManager?.peerId ||
+                         'local-user';
+    
+    // 切換反應（如果已經有就移除，沒有就添加）
+    if (!item.reactions[emoji]) {
+      item.reactions[emoji] = { count: 0, users: [] };
+    }
+    
+    const userIndex = item.reactions[emoji].users.indexOf(currentPeerId);
+    if (userIndex > -1) {
+      // 移除反應
+      item.reactions[emoji].users.splice(userIndex, 1);
+      item.reactions[emoji].count = Math.max(0, item.reactions[emoji].count - 1);
+      if (item.reactions[emoji].count === 0) {
+        delete item.reactions[emoji];
+      }
+    } else {
+      // 添加反應
+      item.reactions[emoji].users.push(currentPeerId);
+      item.reactions[emoji].count = (item.reactions[emoji].count || 0) + 1;
+    }
+    
+    // 在 P2P 模式下同步反應
+    if (this.isP2PMode) {
+      if (this.participantMode) {
+        // 參與者模式：發送反應給 host
+        this.participantMode.addReaction(category, itemId, emoji, userIndex > -1);
+      } else if (this.hostMode && this.hostMode.dataChannel) {
+        // Host 模式：直接廣播反應給所有參與者
+        this.hostMode.dataChannel.send(DataChannel.MESSAGE_TYPES.REACTION, {
+          category,
+          itemId,
+          emoji,
+          reactions: item.reactions
+        });
+        // 觸發更新回調
+        this.hostMode.onItemUpdateCallbacks.forEach(cb => cb());
+        // 自動保存
+        this.hostMode.autoSave();
+      }
+    }
+    
+    // 重新渲染項目以顯示更新後的反應
+    this.renderItems();
+  }
+  
+  // 顯示 emoji picker
+  showEmojiPicker(itemId, category, toolbarElement) {
+    // 檢查是否已經有 picker
+    let pickerElement = document.querySelector('.emoji-picker-modal');
+    if (pickerElement) {
+      pickerElement.remove();
+    }
+    
+    // 創建 picker modal
+    const modal = document.createElement('div');
+    modal.className = 'emoji-picker-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;';
+    
+    const picker = new EmojiPicker((emoji) => {
+      this.handleReaction(itemId, category, emoji);
+      modal.remove();
+    });
+    
+    modal.innerHTML = `
+      <div class="emoji-picker-backdrop" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3);"></div>
+      <div class="emoji-picker-wrapper" style="position: relative; background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); max-width: 400px; width: 90%; max-height: calc(100vh - 16px); height: 500px; overflow: hidden;">
+        ${picker.render()}
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const wrapper = modal.querySelector('.emoji-picker-wrapper');
+    picker.bindEvents(wrapper);
+    
+    // 阻止 wrapper 內的點擊事件冒泡到 backdrop
+    wrapper.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    
+    // 點擊背景關閉
+    modal.querySelector('.emoji-picker-backdrop').addEventListener('click', () => {
+      modal.remove();
+    });
   }
   
   async startEditingItem(itemId, category) {
@@ -1415,21 +1572,7 @@ export class RetrospectivePage {
     // 移除成功通知，避免頻繁顯示
   }
   
-  handleVote(category, itemId, vote) {
-    if (this.isP2PMode && this.participantMode) {
-      this.participantMode.vote(category, itemId, vote);
-    } else if (this.isP2PMode && this.hostMode) {
-      // 房主也可以投票
-      const peerId = this.hostMode.peerManager?.peerId;
-      if (peerId) {
-        this.hostMode.handleVote(peerId, {
-          category,
-          itemId,
-          vote
-        });
-      }
-    }
-  }
+  // 投票功能已移除，改用反應功能
 
   editItem(item, index, category) {
     const modal = document.createElement('div');

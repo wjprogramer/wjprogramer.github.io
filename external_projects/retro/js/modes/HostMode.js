@@ -106,6 +106,11 @@ export class HostMode {
       this.handleVote(peerId, payload);
     });
 
+    // 處理 Emoji 反應
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.REACTION, (peerId, payload) => {
+      this.handleReaction(peerId, payload);
+    });
+
     // 處理編輯狀態（轉發給所有參與者）
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.EDIT_START, (peerId, payload) => {
       // 轉發給所有參與者（不包括發送者）
@@ -345,6 +350,58 @@ export class HostMode {
       itemId,
       votes: item.votes,
       voters: item.voters
+    });
+
+    this.onItemUpdateCallbacks.forEach(cb => cb());
+    
+    // 自動保存
+    this.autoSave();
+  }
+
+  // 處理 Emoji 反應
+  handleReaction(peerId, payload) {
+    const { category, itemId, emoji, remove } = payload;
+    const items = this.retro.items[category];
+    if (!items) return;
+
+    const item = items.find(item => item.id === itemId);
+    if (!item) return;
+
+    // 初始化 reactions 結構（如果還沒有）
+    if (!item.reactions) {
+      item.reactions = {};
+    }
+
+    if (!item.reactions[emoji]) {
+      item.reactions[emoji] = { count: 0, users: [] };
+    }
+
+    if (remove) {
+      // 移除反應
+      const userIndex = item.reactions[emoji].users.indexOf(peerId);
+      if (userIndex > -1) {
+        item.reactions[emoji].users.splice(userIndex, 1);
+        item.reactions[emoji].count = Math.max(0, item.reactions[emoji].count - 1);
+        if (item.reactions[emoji].count === 0) {
+          delete item.reactions[emoji];
+        }
+      }
+    } else {
+      // 添加反應
+      if (!item.reactions[emoji].users.includes(peerId)) {
+        item.reactions[emoji].users.push(peerId);
+        item.reactions[emoji].count = (item.reactions[emoji].count || 0) + 1;
+      }
+    }
+
+    this.retro.updatedAt = Date.now();
+
+    // 廣播給所有參與者
+    this.dataChannel.send(DataChannel.MESSAGE_TYPES.REACTION, {
+      category,
+      itemId,
+      emoji,
+      reactions: item.reactions
     });
 
     this.onItemUpdateCallbacks.forEach(cb => cb());

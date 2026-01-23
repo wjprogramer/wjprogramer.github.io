@@ -191,6 +191,18 @@ export class ParticipantMode {
       }
     });
 
+    // 處理 Emoji 反應
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.REACTION, (peerId, payload) => {
+      const { category, itemId, reactions } = payload;
+      if (this.retro && this.retro.items[category]) {
+        const item = this.retro.items[category].find(item => item.id === itemId);
+        if (item) {
+          item.reactions = reactions;
+          this.onItemUpdateCallbacks.forEach(cb => cb());
+        }
+      }
+    });
+
     // 處理狀態變化
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.STATUS_CHANGE, (peerId, payload) => {
       if (this.retro) {
@@ -291,6 +303,30 @@ export class ParticipantMode {
       this.pendingChanges.push({
         type: DataChannel.MESSAGE_TYPES.VOTE,
         payload: { category, itemId, vote },
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  // 添加/移除 Emoji 反應
+  addReaction(category, itemId, emoji, remove = false) {
+    if (!this.retro || !this.retro.items[category]) {
+      return;
+    }
+
+    // 如果已連線，直接發送；否則加入緩存
+    if (this.isConnected && this.dataChannel) {
+      this.dataChannel.send(DataChannel.MESSAGE_TYPES.REACTION, {
+        category,
+        itemId,
+        emoji,
+        remove
+      });
+    } else {
+      // 加入本地緩存
+      this.pendingChanges.push({
+        type: DataChannel.MESSAGE_TYPES.REACTION,
+        payload: { category, itemId, emoji, remove },
         timestamp: Date.now()
       });
     }
