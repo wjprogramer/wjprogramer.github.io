@@ -827,24 +827,11 @@ export class RetrospectivePage {
           textarea.focus();
           
           // 自動保存機制：失去焦點時保存
-          let saveTimeout = null;
-          
           textarea.addEventListener('blur', () => {
             // 延遲一點執行，讓其他事件先處理（比如點擊其他按鈕）
             setTimeout(() => {
               this.autoSaveNewItem(category);
             }, 200);
-          });
-          
-          // 輸入時使用 debounce 自動保存
-          textarea.addEventListener('input', () => {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => {
-              // 只在有內容時自動保存
-              if (textarea.value.trim()) {
-                this.autoSaveNewItem(category, false); // false 表示不關閉編輯狀態
-              }
-            }, 1000); // 1秒後自動保存
           });
           
           // Enter + Ctrl/Cmd 快速保存並關閉
