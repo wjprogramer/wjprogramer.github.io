@@ -89,6 +89,20 @@
   border-color: var(--color-warning) !important;
 }
 
+.card-no-hover:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* History 頁面的 card 不顯示 hover 效果 */
+#history-list .card:hover,
+#history-list > .card:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-color: var(--border-color) !important;
+}
+
 @media (max-width: 768px) {
   .card-grid {
     grid-template-columns: 1fr;

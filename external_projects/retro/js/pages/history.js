@@ -4,6 +4,8 @@ import { storage } from '../utils/storage/index.js';
 import { Router } from '../router.js';
 import { Toast } from '../components/Toast.js';
 import { ExportModal } from '../components/ExportModal.js';
+import { ConfirmModal } from '../components/ConfirmModal.js';
+import { iconoirIcons } from '../utils/iconoir.js';
 
 export class HistoryPage {
   constructor(params = {}, query = '') {
@@ -71,9 +73,10 @@ export class HistoryPage {
               </button>
             </div>
             
-            <div class="card">
-              <div class="card-header">
+            <div class="card card-no-hover">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 class="card-title">${t('history.title')}</h2>
+                <div id="clear-buttons-container">${this.renderClearButtons()}</div>
               </div>
               <div class="card-body" id="history-list">
                 ${this.renderHistoryList()}
@@ -116,6 +119,11 @@ export class HistoryPage {
         const updatedHistoryList = document.getElementById('history-list');
         if (updatedHistoryList && this.renderContainer.contains(updatedHistoryList)) {
           updatedHistoryList.innerHTML = this.renderHistoryList();
+          // 更新清空按鈕
+          const clearButtonsContainer = document.getElementById('clear-buttons-container');
+          if (clearButtonsContainer) {
+            clearButtonsContainer.innerHTML = this.renderClearButtons();
+          }
           this.bindEvents();
         }
       }
@@ -162,12 +170,48 @@ export class HistoryPage {
       this.retrospectives = localRetrospectives;
     }
     
-    // 按日期排序（最新的在前）
+    // 按建立時間排序（最新的在前），不分本地端和遠端
     this.retrospectives.sort((a, b) => {
-      const dateA = new Date(a.date || a.createdAt || 0);
-      const dateB = new Date(b.date || b.createdAt || 0);
-      return dateB - dateA;
+      // 優先使用 createdAt，如果沒有則使用 updatedAt
+      const timeA = new Date(a.createdAt || a.updatedAt || 0).getTime();
+      const timeB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+      return timeB - timeA; // 從新到舊
     });
+  }
+
+  renderClearButtons() {
+    const isGoogleDriveConnected = storage.isUsingGoogleDrive();
+    const hasLocal = this.retrospectives.some(r => !r._source || r._source === 'local');
+    const hasCloud = this.retrospectives.some(r => r._source === 'cloud');
+    
+    // 如果沒有資料且未連結 Google Drive，不顯示按鈕
+    if (this.retrospectives.length === 0 && !isGoogleDriveConnected) {
+      return '';
+    }
+    
+    let buttons = '';
+    // 如果有本地端資料或未連結 Google Drive，顯示清空本地端按鈕
+    if (hasLocal || (!isGoogleDriveConnected && this.retrospectives.length > 0)) {
+      buttons += `
+        <button class="btn btn-danger btn-sm" id="clear-local-btn" style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem; display: inline-flex; align-items: center; gap: var(--spacing-xs);">
+          ${iconoirIcons.trash(2.5, 16)} 清空本地端
+        </button>
+      `;
+    }
+    // 如果已連結 Google Drive 且有雲端資料，顯示清空雲端按鈕
+    if (isGoogleDriveConnected && (hasCloud || this.retrospectives.length > 0)) {
+      buttons += `
+        <button class="btn btn-danger btn-sm" id="clear-cloud-btn" style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem; ${buttons ? 'margin-left: var(--spacing-sm);' : ''} display: inline-flex; align-items: center; gap: var(--spacing-xs);">
+          ${iconoirIcons.trash(2.5, 16)} 清空雲端
+        </button>
+      `;
+    }
+    
+    if (!buttons) {
+      return '';
+    }
+    
+    return `<div style="display: flex; gap: var(--spacing-sm);">${buttons}</div>`;
   }
 
   renderHistoryList() {
@@ -201,7 +245,11 @@ export class HistoryPage {
                   ${sourceIcon}
                 </h3>
                 <p class="text-muted" style="margin-bottom: var(--spacing-sm);">
-                  ${t('history.date')}: ${retro.date}
+                  ${retro.createdAt ? `
+                    <span style="margin-left: var(--spacing-sm); font-size: 0.875rem;">
+                      ${this.formatDateTime(retro.createdAt)}
+                    </span>
+                  ` : ''}
                 </p>
                 <p class="text-muted" style="font-size: 0.875rem; margin-bottom: var(--spacing-sm);">
                   ${itemCount} ${itemCount === 1 ? (t('history.item') || '個項目') : (t('history.items') || '個項目')}
@@ -214,14 +262,14 @@ export class HistoryPage {
                 ` : ''}
               </div>
               <div style="display: flex; gap: var(--spacing-sm);">
-                <button class="btn btn-primary btn-sm view-btn" title="${t('history.view')}" style="padding: var(--spacing-sm); min-width: auto;">
-                  <i class="iconoir-eye"></i>
+                <button class="btn btn-outline-primary btn-sm view-btn" title="${t('history.view')}" style="width: 40px; height: 40px; padding: 0; min-width: 40px; min-height: 40px;">
+                  ${iconoirIcons.eye(2.5)}
                 </button>
-                <button class="btn btn-accent btn-sm export-btn" title="${t('history.export')}" style="padding: var(--spacing-sm); min-width: auto;">
-                  <i class="iconoir-download"></i>
+                <button class="btn btn-outline-accent btn-sm export-btn" title="${t('history.export')}" style="width: 40px; height: 40px; padding: 0; min-width: 40px; min-height: 40px;">
+                  ${iconoirIcons.download(2.5)}
                 </button>
-                <button class="btn btn-danger btn-sm delete-btn" title="${t('history.delete')}" style="padding: var(--spacing-sm); min-width: auto;">
-                  <i class="iconoir-trash"></i>
+                <button class="btn btn-outline-danger btn-sm delete-btn" title="${t('history.delete')}" style="width: 40px; height: 40px; padding: 0; min-width: 40px; min-height: 40px;">
+                  ${iconoirIcons.trash(2.5)}
                 </button>
               </div>
             </div>
@@ -250,6 +298,22 @@ export class HistoryPage {
         this.deleteRetro(id).catch(err => console.error('Error deleting retro:', err));
       }
     });
+    
+    // 清空本地端按鈕
+    const clearLocalBtn = document.getElementById('clear-local-btn');
+    if (clearLocalBtn) {
+      clearLocalBtn.addEventListener('click', () => {
+        this.clearLocalHistory();
+      });
+    }
+    
+    // 清空雲端按鈕
+    const clearCloudBtn = document.getElementById('clear-cloud-btn');
+    if (clearCloudBtn) {
+      clearCloudBtn.addEventListener('click', () => {
+        this.clearCloudHistory();
+      });
+    }
   }
 
   viewRetro(retro) {
@@ -269,52 +333,169 @@ export class HistoryPage {
   }
 
   async deleteRetro(id) {
-    if (confirm(t('common.confirmDelete'))) {
-      const retro = this.retrospectives.find(r => r.id === id);
-      if (!retro) return;
-      
-      // 根據來源決定從哪裡刪除
-      const isGoogleDriveConnected = storage.isUsingGoogleDrive();
-      let result = false;
-      
-      if (retro._source === 'cloud' && isGoogleDriveConnected) {
-        // 從雲端刪除
-        result = await storage.googleDrive.deleteRetrospective(id);
-      } else {
-        // 從本地端刪除
-        result = storage.localStorage.deleteRetrospective(id);
-      }
-      
-      // 檢查頁面是否已被銷毀（用戶可能已經切換到其他頁面）
-      if (this.isDestroyed || !this.renderContainer) {
-        return; // 如果頁面已被銷毀，不更新 DOM
-      }
-      
-      // 檢查 history-list 元素是否還存在（額外安全檢查）
-      const historyList = document.getElementById('history-list');
-      if (!historyList || !this.renderContainer.contains(historyList)) {
-        return; // 元素不存在或不在我們的 container 中，不更新
-      }
-      
-      if (result) {
-        Toast.success(t('common.success'));
-        // 重新載入資料
-        await this.loadRetrospectives();
+    const retro = this.retrospectives.find(r => r.id === id);
+    if (!retro) return;
+    
+    const modal = new ConfirmModal({
+      title: t('common.confirm'),
+      message: t('common.confirmDelete'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      confirmButtonClass: 'btn-danger',
+      onConfirm: async () => {
+        // 根據來源決定從哪裡刪除
+        const isGoogleDriveConnected = storage.isUsingGoogleDrive();
+        let result = false;
         
-        // 再次檢查頁面是否已被銷毀
+        if (retro._source === 'cloud' && isGoogleDriveConnected) {
+          // 從雲端刪除
+          result = await storage.googleDrive.deleteRetrospective(id);
+        } else {
+          // 從本地端刪除
+          result = storage.localStorage.deleteRetrospective(id);
+        }
+        
+        // 檢查頁面是否已被銷毀（用戶可能已經切換到其他頁面）
         if (this.isDestroyed || !this.renderContainer) {
-          return;
+          return; // 如果頁面已被銷毀，不更新 DOM
         }
         
-        const updatedHistoryList = document.getElementById('history-list');
-        if (updatedHistoryList && this.renderContainer.contains(updatedHistoryList)) {
-          updatedHistoryList.innerHTML = this.renderHistoryList();
-          this.bindEvents();
+        // 檢查 history-list 元素是否還存在（額外安全檢查）
+        const historyList = document.getElementById('history-list');
+        if (!historyList || !this.renderContainer.contains(historyList)) {
+          return; // 元素不存在或不在我們的 container 中，不更新
         }
-      } else {
-        Toast.error(t('common.error'));
+        
+        if (result) {
+          Toast.success(t('common.success'));
+          // 重新載入資料
+          await this.loadRetrospectives();
+          
+          // 再次檢查頁面是否已被銷毀
+          if (this.isDestroyed || !this.renderContainer) {
+            return;
+          }
+          
+          const updatedHistoryList = document.getElementById('history-list');
+          if (updatedHistoryList && this.renderContainer.contains(updatedHistoryList)) {
+            updatedHistoryList.innerHTML = this.renderHistoryList();
+            // 更新清空按鈕
+            const clearButtonsContainer = document.getElementById('clear-buttons-container');
+            if (clearButtonsContainer) {
+              clearButtonsContainer.innerHTML = this.renderClearButtons();
+            }
+            this.bindEvents();
+          }
+        } else {
+          Toast.error(t('common.error'));
+        }
       }
-    }
+    });
+    
+    modal.show();
+  }
+
+  async clearLocalHistory() {
+    const modal = new ConfirmModal({
+      title: t('common.confirm'),
+      message: '確定要清空所有本地端歷史紀錄嗎？此操作無法復原。',
+      confirmText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      confirmButtonClass: 'btn-danger',
+      onConfirm: async () => {
+        try {
+          storage.localStorage.clearHistory();
+          Toast.success('已清空本地端歷史紀錄');
+          
+          // 重新載入資料
+          await this.loadRetrospectives();
+          
+          // 檢查頁面是否已被銷毀
+          if (this.isDestroyed || !this.renderContainer) {
+            return;
+          }
+          
+          // 更新 UI
+          const historyList = document.getElementById('history-list');
+          if (historyList && this.renderContainer.contains(historyList)) {
+            historyList.innerHTML = this.renderHistoryList();
+          }
+          
+          // 更新清空按鈕
+          const clearButtonsContainer = document.getElementById('clear-buttons-container');
+          if (clearButtonsContainer) {
+            clearButtonsContainer.innerHTML = this.renderClearButtons();
+          }
+          
+          this.bindEvents();
+        } catch (error) {
+          console.error('Error clearing local history:', error);
+          Toast.error('清空本地端歷史紀錄失敗');
+        }
+      }
+    });
+    
+    modal.show();
+  }
+
+  async clearCloudHistory() {
+    const modal = new ConfirmModal({
+      title: t('common.confirm'),
+      message: '確定要清空所有雲端歷史紀錄嗎？此操作無法復原。',
+      confirmText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      confirmButtonClass: 'btn-danger',
+      onConfirm: async () => {
+        try {
+          if (!storage.isUsingGoogleDrive()) {
+            Toast.error('未連結 Google Drive');
+            return;
+          }
+          
+          await storage.googleDrive.clearHistory();
+          Toast.success('已清空雲端歷史紀錄');
+          
+          // 重新載入資料
+          await this.loadRetrospectives();
+          
+          // 檢查頁面是否已被銷毀
+          if (this.isDestroyed || !this.renderContainer) {
+            return;
+          }
+          
+          // 更新 UI
+          const historyList = document.getElementById('history-list');
+          if (historyList && this.renderContainer.contains(historyList)) {
+            historyList.innerHTML = this.renderHistoryList();
+          }
+          
+          // 更新清空按鈕
+          const clearButtonsContainer = document.getElementById('clear-buttons-container');
+          if (clearButtonsContainer) {
+            clearButtonsContainer.innerHTML = this.renderClearButtons();
+          }
+          
+          this.bindEvents();
+        } catch (error) {
+          console.error('Error clearing cloud history:', error);
+          Toast.error('清空雲端歷史紀錄失敗');
+        }
+      }
+    });
+    
+    modal.show();
+  }
+
+  formatDateTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 
   escapeHtml(text) {
