@@ -33,7 +33,11 @@
   position: absolute;
   bottom: var(--spacing-md);
   right: var(--spacing-md);
-  z-index: 20;
+  z-index: 1000;
+}
+
+.reaction-toolbar-container.show {
+  position: fixed;
 }
 
 .reaction-toolbar-container.show {

@@ -6,6 +6,7 @@
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-base);
   border: 1px solid var(--border-color);
+  overflow: visible;
 }
 
 .card:hover {

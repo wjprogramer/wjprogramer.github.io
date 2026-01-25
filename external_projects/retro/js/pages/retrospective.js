@@ -654,6 +654,20 @@ export class RetrospectivePage {
         min-width: 0;
       }
       
+      .retro-column {
+        overflow: visible;
+        position: relative;
+      }
+      
+      .retro-column-items {
+        position: relative;
+      }
+      
+      .retro-column-items .card {
+        position: relative;
+        overflow: visible;
+      }
+      
       .retro-column-items .card {
         margin-bottom: var(--spacing-md);
         padding: var(--spacing-md);
@@ -874,62 +888,113 @@ export class RetrospectivePage {
     if (reactionPlusBtn && reactionToolbarContainer) {
       let toolbarInstance = null;
       let hideTimeout = null;
+      let showTimeout = null;
       
       const showToolbar = () => {
+        if (showTimeout) {
+          clearTimeout(showTimeout);
+        }
         if (hideTimeout) {
           clearTimeout(hideTimeout);
           hideTimeout = null;
         }
         
-        if (!toolbarInstance) {
-          // 隱藏「＋」按鈕
-          if (reactionPlusBtn) {
-            reactionPlusBtn.closest('.card-reaction-trigger')?.classList.add('hide');
-          }
-          
-          // 創建反應工具欄
-          const toolbar = new ReactionToolbar(
-            item.id,
-            category,
-            (itemId, cat, emoji) => this.handleReaction(itemId, cat, emoji),
-            (itemId, cat, container) => this.showEmojiPicker(itemId, cat, container),
-            (itemId, cat, isOpen) => {
-              // 更多選項打開/關閉的回調
+        showTimeout = setTimeout(() => {
+          if (!toolbarInstance) {
+            // 隱藏「＋」按鈕
+            if (reactionPlusBtn) {
+              reactionPlusBtn.closest('.card-reaction-trigger')?.classList.add('hide');
             }
-          );
-          
-          reactionToolbarContainer.innerHTML = toolbar.render();
-          reactionToolbarContainer.classList.add('show');
-          toolbarInstance = toolbar;
-          toolbar.bindEvents(reactionToolbarContainer);
-          
-          // 綁定刪除按鈕事件
-          const deleteBtn = reactionToolbarContainer.querySelector('.reaction-delete-btn');
-          if (deleteBtn) {
-            deleteBtn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              await this.deleteItem(index, category);
+            
+            // 創建反應工具欄
+            const toolbar = new ReactionToolbar(
+              item.id,
+              category,
+              (itemId, cat, emoji) => this.handleReaction(itemId, cat, emoji),
+              (itemId, cat, container) => this.showEmojiPicker(itemId, cat, container),
+              (itemId, cat, isOpen) => {
+                // 更多選項打開/關閉的回調
+              }
+            );
+            
+            reactionToolbarContainer.innerHTML = toolbar.render();
+            reactionToolbarContainer.classList.add('show');
+            toolbarInstance = toolbar;
+            toolbar.bindEvents(reactionToolbarContainer);
+            
+            // 使用 fixed 定位，動態計算位置以避免被切掉
+            requestAnimationFrame(() => {
+              const cardRect = cardElement.getBoundingClientRect();
+              const toolbarEl = reactionToolbarContainer.querySelector('.reaction-toolbar');
+              if (toolbarEl) {
+                const spacing = 16; // var(--spacing-md) 的值
+                const toolbarRect = toolbarEl.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                // 計算位置：預設在 card 右下角
+                let right = viewportWidth - cardRect.right + spacing;
+                let bottom = viewportHeight - cardRect.bottom + spacing;
+                
+                // 如果會超出右邊界，調整到左邊
+                if (cardRect.right + toolbarRect.width > viewportWidth - 16) {
+                  reactionToolbarContainer.style.right = 'auto';
+                  reactionToolbarContainer.style.left = `${cardRect.left - toolbarRect.width - spacing}px`;
+                } else {
+                  reactionToolbarContainer.style.left = 'auto';
+                  reactionToolbarContainer.style.right = `${right}px`;
+                }
+                
+                // 如果會超出下邊界，調整到上方
+                if (cardRect.bottom + toolbarRect.height > viewportHeight - 16) {
+                  reactionToolbarContainer.style.bottom = 'auto';
+                  reactionToolbarContainer.style.top = `${cardRect.top - toolbarRect.height - spacing}px`;
+                } else {
+                  reactionToolbarContainer.style.top = 'auto';
+                  reactionToolbarContainer.style.bottom = `${bottom}px`;
+                }
+                
+                reactionToolbarContainer.style.position = 'fixed';
+              }
             });
+            
+            // 綁定刪除按鈕事件
+            const deleteBtn = reactionToolbarContainer.querySelector('.reaction-delete-btn');
+            if (deleteBtn) {
+              deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await this.deleteItem(index, category);
+              });
+            }
           }
-        }
+        }, 50); // 稍微延遲，讓 hover 更穩定
       };
       
       const hideToolbar = () => {
+        if (showTimeout) {
+          clearTimeout(showTimeout);
+          showTimeout = null;
+        }
         hideTimeout = setTimeout(() => {
-          if (reactionToolbarContainer) {
+          // 檢查是否還在 hover 狀態
+          const isHovering = reactionPlusBtn.matches(':hover') || 
+                           reactionToolbarContainer.matches(':hover') ||
+                           cardElement.querySelector(':hover')?.closest('.reaction-toolbar');
+          
+          if (!isHovering && reactionToolbarContainer) {
             reactionToolbarContainer.classList.remove('show');
             // 顯示「＋」按鈕
             if (reactionPlusBtn) {
               reactionPlusBtn.closest('.card-reaction-trigger')?.classList.remove('hide');
             }
             setTimeout(() => {
-              if (reactionToolbarContainer.classList.contains('show') === false) {
+              if (reactionToolbarContainer && !reactionToolbarContainer.classList.contains('show')) {
                 reactionToolbarContainer.innerHTML = '';
                 toolbarInstance = null;
               }
             }, 300); // 等待 fade out 動畫完成
           }
-        }, 100); // 延遲一點，避免快速移動時閃爍
+        }, 150); // 增加延遲，避免快速移動時閃爍
       };
       
       reactionPlusBtn.addEventListener('mouseenter', showToolbar);
@@ -937,6 +1002,10 @@ export class RetrospectivePage {
         if (hideTimeout) {
           clearTimeout(hideTimeout);
           hideTimeout = null;
+        }
+        if (showTimeout) {
+          clearTimeout(showTimeout);
+          showTimeout = null;
         }
       });
       
