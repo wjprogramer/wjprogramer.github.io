@@ -1,0 +1,226 @@
+/**
+ * Content Detail 樣式
+ */
+
+.content-detail {
+  /* 內容詳情使用稍微淺一點的背景，創造從背景凸起的效果 */
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius-lg);
+  padding: var(--spacing-2xl);
+  color: var(--content-text);
+  line-height: 1.8;
+  box-shadow: var(--neu-shadow-convex);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.content-detail__title {
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--spacing-md);
+  color: var(--content-text);
+}
+
+.content-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--content-border);
+  margin-bottom: var(--spacing-xl);
+  font-size: var(--text-sm);
+  color: var(--content-text-secondary);
+}
+
+.content-detail__section {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.content-detail__section-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--spacing-md);
+  color: var(--content-text);
+}
+
+.content-detail__section-content {
+  color: var(--content-text);
+  line-height: 1.8;
+}
+
+.content-detail__section-content p {
+  margin-bottom: var(--spacing-md);
+}
+
+.content-detail__section-content ul {
+  list-style: disc;
+  margin-left: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  padding-left: var(--spacing-md);
+}
+
+.content-detail__section-content ol {
+  list-style: decimal;
+  margin-left: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  padding-left: var(--spacing-md);
+}
+
+.content-detail__section-content li {
+  margin-bottom: var(--spacing-sm);
+  display: list-item;
+}
+
+.content-detail__section-content strong {
+  font-weight: var(--font-bold);
+  color: var(--content-text);
+}
+
+.content-detail__section-content em {
+  font-style: italic;
+}
+
+.content-detail__section-content h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  color: var(--content-text);
+}
+
+.content-detail__section-content h4 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  color: var(--content-text);
+}
+
+.content-detail__section-content code {
+  background: var(--neu-bg-dark);
+  padding: 2px 6px;
+  border-radius: var(--neu-radius-sm);
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.content-detail__section-content pre {
+  background: var(--neu-bg-dark);
+  padding: var(--spacing-md);
+  border-radius: var(--neu-radius);
+  overflow-x: auto;
+  margin-bottom: var(--spacing-md);
+}
+
+.content-detail__section-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.content-detail img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--neu-radius);
+  box-shadow: var(--neu-shadow-convex);
+  margin: var(--spacing-lg) 0;
+}
+
+/* 影片容器 */
+.video-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 比例 */
+  height: 0;
+  overflow: hidden;
+  border-radius: var(--neu-radius);
+  box-shadow: var(--neu-shadow-convex);
+  margin: var(--spacing-lg) 0;
+  background: var(--neu-bg-dark);
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* YouTube 影片區塊 */
+.content-detail__section--youtube {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.content-detail__video-description {
+  color: var(--content-text-secondary);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+.content-detail__video-channel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--content-text-secondary);
+}
+
+.content-detail__video-channel-label {
+  font-weight: var(--font-medium);
+}
+
+.content-detail__video-channel-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.content-detail__video-channel-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.content-detail__video-actions {
+  margin-top: var(--spacing-md);
+}
+
+.content-detail__video-watch-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  transition: opacity 0.2s;
+}
+
+.content-detail__video-watch-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .content-detail {
+    padding: var(--spacing-xl) var(--spacing-lg);
+  }
+}
+
+@media (max-width: 599px) {
+  .content-detail {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  
+  .content-detail__title {
+    font-size: var(--text-2xl);
+  }
+  
+  .content-detail__section-title {
+    font-size: var(--text-xl);
+  }
+}
+

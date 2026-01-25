@@ -1,0 +1,256 @@
+/**
+ * Navigation 樣式
+ */
+
+/* 寬螢幕 Sidebar (Desktop) */
+.app-sidebar--desktop {
+  position: fixed;
+  left: var(--spacing-lg);
+  top: calc(64px + var(--spacing-lg) * 2);
+  width: 280px;
+  height: calc(100vh - 64px - var(--spacing-lg) * 3);
+  /* Sidebar 使用稍微淺一點的背景，創造從背景凸起的效果 */
+  background: var(--neu-bg-light);
+  box-shadow: var(--neu-shadow-convex);
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  z-index: 99;
+  display: block;
+}
+
+/* 窄螢幕 Sidebar (Mobile) */
+.app-sidebar--mobile {
+  display: none;
+  position: fixed;
+  /* 全版設計 */
+  width: 100%;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  border-radius: 0;
+  padding: var(--spacing-xl);
+  padding-bottom: calc(var(--spacing-xl) + 60px); /* 為關閉按鈕留空間 */
+  background: var(--neu-bg-light);
+  box-shadow: var(--neu-shadow-convex);
+  overflow-y: auto;
+  z-index: 101;
+  /* 初始狀態：在下方（從下到上滑出） */
+  transform: translateY(100%);
+  /* 初始狀態不設置 transition，避免閃爍 */
+  transition: none;
+  will-change: transform; /* 優化動畫性能 */
+}
+
+/* 當 sidebar 準備好後，啟用 transition */
+.app-sidebar--mobile--ready {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar--mobile--open {
+  /* 打開狀態：滑到正常位置 */
+  transform: translateY(0) !important;
+}
+
+.app-sidebar--mobile--closing {
+  /* 關閉狀態：從上到下消失 */
+  transform: translateY(100%) !important;
+}
+
+/* Sidebar Header (Mobile only) */
+.sidebar__header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+}
+
+.sidebar__icon {
+  font-size: 48px;
+  color: var(--accent-color);
+}
+
+/* Desktop sidebar 不需要 header */
+.app-sidebar--desktop .sidebar__header {
+  display: none;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--neu-radius-sm);
+  color: var(--text-primary);
+  border: var(--border-width) solid var(--border-color);
+  transition: box-shadow var(--transition-fast) ease-out, transform var(--transition-fast) ease-out, background-color var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out, border-width 0s, margin 0s;
+  cursor: pointer;
+  min-height: 44px;
+  /* 使用稍微淺一點的背景，創造凸起效果 */
+  background: var(--neu-bg-light);
+  box-shadow: var(--neu-shadow-convex);
+  margin: 0;
+}
+
+.nav-item:hover {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.nav-item:active {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.nav-item--active {
+  background: var(--accent-color);
+  color: white;
+  box-shadow: 
+    inset 4px 4px 8px rgba(61, 123, 168, 0.6),
+    inset -4px -4px 8px rgba(91, 155, 213, 0.2);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.nav-item--active:hover {
+  /* 保持壓下去的狀態，只稍微加深陰影 */
+  box-shadow: 
+    inset 5px 5px 10px rgba(61, 123, 168, 0.7),
+    inset -5px -5px 10px rgba(91, 155, 213, 0.15);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.nav-item__icon {
+  font-size: 20px;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.sidebar-overlay--active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* 關閉按鈕（只在窄螢幕顯示） */
+.sidebar__close-btn {
+  display: none;
+}
+
+/* 顯示關閉按鈕（只在窄螢幕 sidebar 打開時顯示） */
+.app-sidebar--mobile--open .sidebar__close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  bottom: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 56px;
+  background: var(--neu-bg-light);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 50%;
+  box-shadow: var(--neu-shadow-convex);
+  color: var(--text-primary);
+  cursor: pointer;
+  z-index: 102;
+  transition: box-shadow var(--transition-fast) ease-out, transform var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out, border-width 0s, margin 0s;
+  margin: 0;
+}
+
+.app-sidebar--mobile--open .sidebar__close-btn:hover {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateX(-50%) translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.app-sidebar--mobile--open .sidebar__close-btn:active {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateX(-50%) translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.sidebar__close-btn .material-icons-round {
+  font-size: 28px;
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  /* 寬螢幕時隱藏 desktop sidebar */
+  .app-sidebar--desktop {
+    display: none;
+  }
+  
+  /* 窄螢幕時顯示 mobile sidebar */
+  .app-sidebar--mobile {
+    display: block;
+  }
+  
+  /* 窄螢幕時不顯示 overlay */
+  .sidebar-overlay {
+    display: none;
+  }
+}
+
+@media (min-width: 960px) {
+  /* 寬螢幕時顯示 desktop sidebar */
+  .app-sidebar--desktop {
+    display: block;
+  }
+  
+  /* 寬螢幕時隱藏 mobile sidebar */
+  .app-sidebar--mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 599px) {
+  .app-sidebar--mobile {
+    padding: var(--spacing-lg);
+    padding-bottom: calc(var(--spacing-lg) + 60px);
+  }
+  
+  .app-header {
+    top: var(--spacing-md);
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    margin: 0 var(--spacing-md) var(--spacing-md);
+    height: 56px;
+  }
+  
+  .sidebar__close-btn {
+    bottom: var(--spacing-lg);
+  }
+}
+

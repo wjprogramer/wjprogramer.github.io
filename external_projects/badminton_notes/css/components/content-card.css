@@ -1,0 +1,252 @@
+/**
+ * Content Card 樣式
+ */
+
+.content-card {
+  /* 使用稍微淺一點的背景，創造從背景凸起的效果 */
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-xl);
+  box-shadow: var(--neu-shadow-convex);
+  border: var(--border-width) solid var(--border-color);
+  transition: box-shadow var(--transition-fast) ease-out, transform var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out, border-width 0s, margin 0s;
+  cursor: pointer;
+  /* 確保卡片有明顯的立體感 */
+  position: relative;
+  margin: 0;
+  /* 使用 flexbox 布局，讓 description 可以占滿剩餘高度 */
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* 確保卡片占滿容器高度 */
+}
+
+.content-card:hover {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.content-card:active {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.content-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  flex-shrink: 0; /* 防止被壓縮 */
+}
+
+.content-card__title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  flex: 1;
+  margin: 0;
+}
+
+.content-card__favorite-icon {
+  display: flex;
+  align-items: center;
+  color: var(--accent-color);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.content-card__favorite-icon .material-icons-round {
+  font-size: 24px;
+}
+
+.content-card__meta {
+  display: flex;
+  gap: var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-lg);
+  flex-shrink: 0; /* 防止被壓縮 */
+}
+
+.content-card__description {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  margin-bottom: var(--spacing-lg);
+  /* 占滿剩餘高度 */
+  flex: 1;
+  flex-grow: 1;
+}
+
+.content-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  flex-shrink: 0; /* 防止被壓縮，確保始終在底部 */
+  margin-top: auto; /* 確保貼近底部 */
+}
+
+.content-card__tags .tag {
+  cursor: default;
+  pointer-events: none;
+  /* 扁平化設計：移除陰影，使用簡單的背景色和邊框 */
+  background: var(--tag-bg-default, var(--neu-bg-light));
+  border: var(--border-width) solid var(--tag-border-default, var(--border-color));
+  box-shadow: none;
+  transform: none;
+  margin: 0;
+  color: var(--tag-text-default, var(--text-primary));
+}
+
+/* 難度標籤 */
+.content-card__tags .tag[data-tag="basic"] {
+  background: rgba(72, 187, 120, 0.15);
+  border-color: rgba(72, 187, 120, 0.4);
+  color: #2d7a4f;
+}
+
+.content-card__tags .tag[data-tag="intermediate"] {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #b45309;
+}
+
+.content-card__tags .tag[data-tag="advanced"] {
+  background: rgba(237, 137, 54, 0.15);
+  border-color: rgba(237, 137, 54, 0.4);
+  color: #c05621;
+}
+
+/* 技術類型標籤 */
+.content-card__tags .tag[data-tag="hitting"],
+.content-card__tags .tag[data-tag="backcourt"],
+.content-card__tags .tag[data-tag="attack"],
+.content-card__tags .tag[data-tag="grip"],
+.content-card__tags .tag[data-tag="serve"],
+.content-card__tags .tag[data-tag="net"],
+.content-card__tags .tag[data-tag="footwork"],
+.content-card__tags .tag[data-tag="movement"],
+.content-card__tags .tag[data-tag="midcourt"],
+.content-card__tags .tag[data-tag="backhand"],
+.content-card__tags .tag[data-tag="defense"] {
+  background: rgba(91, 155, 213, 0.15);
+  border-color: rgba(91, 155, 213, 0.4);
+  color: #2c5282;
+}
+
+/* 場景標籤 */
+.content-card__tags .tag[data-tag="singles"],
+.content-card__tags .tag[data-tag="doubles"],
+.content-card__tags .tag[data-tag="mixed_doubles"] {
+  background: rgba(128, 90, 213, 0.15);
+  border-color: rgba(128, 90, 213, 0.4);
+  color: #553c9a;
+}
+
+/* 訓練標籤 */
+.content-card__tags .tag[data-tag="training"],
+.content-card__tags .tag[data-tag="physical"],
+.content-card__tags .tag[data-tag="mental"] {
+  background: rgba(237, 202, 51, 0.15);
+  border-color: rgba(237, 202, 51, 0.4);
+  color: #975a16;
+}
+
+/* 裝備標籤 */
+.content-card__tags .tag[data-tag="equipment"],
+.content-card__tags .tag[data-tag="racket"],
+.content-card__tags .tag[data-tag="stringing"] {
+  background: rgba(113, 128, 150, 0.15);
+  border-color: rgba(113, 128, 150, 0.4);
+  color: #4a5568;
+}
+
+/* 戰術標籤 */
+.content-card__tags .tag[data-tag="tactics"] {
+  background: rgba(66, 153, 225, 0.15);
+  border-color: rgba(66, 153, 225, 0.4);
+  color: #2c5282;
+}
+
+/* Dark mode 調整 */
+[data-theme="dark"] .content-card__tags .tag[data-tag="basic"] {
+  background: rgba(72, 187, 120, 0.25);
+  border-color: rgba(72, 187, 120, 0.5);
+  color: #68d391;
+}
+
+[data-theme="dark"] .content-card__tags .tag[data-tag="intermediate"] {
+  background: rgba(251, 191, 36, 0.25);
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .content-card__tags .tag[data-tag="advanced"] {
+  background: rgba(237, 137, 54, 0.25);
+  border-color: rgba(237, 137, 54, 0.5);
+  color: #f6ad55;
+}
+
+[data-theme="dark"] .content-card__tags .tag[data-tag="hitting"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="backcourt"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="attack"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="grip"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="serve"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="net"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="footwork"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="movement"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="midcourt"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="backhand"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="defense"] {
+  background: rgba(91, 155, 213, 0.25);
+  border-color: rgba(91, 155, 213, 0.5);
+  color: #90cdf4;
+}
+
+[data-theme="dark"] .content-card__tags .tag[data-tag="singles"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="doubles"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="mixed_doubles"] {
+  background: rgba(128, 90, 213, 0.25);
+  border-color: rgba(128, 90, 213, 0.5);
+  color: #b794f4;
+}
+
+[data-theme="dark"] .content-card__tags .tag[data-tag="training"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="physical"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="mental"] {
+  background: rgba(237, 202, 51, 0.25);
+  border-color: rgba(237, 202, 51, 0.5);
+  color: #faf089;
+}
+
+[data-theme="dark"] .content-card__tags .tag[data-tag="equipment"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="racket"],
+[data-theme="dark"] .content-card__tags .tag[data-tag="stringing"] {
+  background: rgba(113, 128, 150, 0.25);
+  border-color: rgba(113, 128, 150, 0.5);
+  color: #cbd5e0;
+}
+
+[data-theme="dark"] .content-card__tags .tag[data-tag="tactics"] {
+  background: rgba(66, 153, 225, 0.25);
+  border-color: rgba(66, 153, 225, 0.5);
+  color: #90cdf4;
+}
+
+/* 響應式 */
+@media (max-width: 599px) {
+  .content-card {
+    padding: var(--spacing-md);
+  }
+  
+  .content-card__title {
+    font-size: var(--text-lg);
+  }
+}
+

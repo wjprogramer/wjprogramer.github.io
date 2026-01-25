@@ -1,0 +1,1078 @@
+/**
+ * 記分板樣式
+ */
+
+/* 記分板頁面 */
+.scoreboard-page {
+  padding: var(--spacing-xl) 0;
+}
+
+/* 比賽設定 */
+.scoreboard-settings {
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--neu-shadow-convex);
+  border: var(--border-width) solid var(--border-color);
+}
+
+.scoreboard-settings__title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+}
+
+.scoreboard-settings-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.scoreboard-settings__label {
+  display: block;
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.scoreboard-settings__select,
+.scoreboard-settings__input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-radius: var(--neu-radius-sm);
+  background: var(--neu-bg-light);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--font-medium);
+  transition: box-shadow var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out;
+  box-sizing: border-box;
+}
+
+/* 改善 placeholder 文字的可見性 */
+.scoreboard-settings__select::placeholder,
+.scoreboard-settings__input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.scoreboard-settings__select:focus,
+.scoreboard-settings__input:focus {
+  outline: none;
+  box-shadow: var(--neu-shadow-concave);
+  border-color: var(--accent-color);
+  border-width: 2px;
+}
+
+/* 改善未聚焦時的邊框可見性 */
+.scoreboard-settings__select:not(:focus),
+.scoreboard-settings__input:not(:focus) {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .scoreboard-settings__select,
+[data-theme="dark"] .scoreboard-settings__input {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .scoreboard-settings__select:not(:focus),
+[data-theme="dark"] .scoreboard-settings__input:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Number input spinner 樣式 - 隱藏預設的上下箭頭 */
+.scoreboard-settings__input[type="number"] {
+  /* Firefox: 隱藏 spinner */
+  -moz-appearance: textfield;
+}
+
+/* WebKit (Chrome, Safari, Edge): 隱藏 spinner */
+.scoreboard-settings__input[type="number"]::-webkit-outer-spin-button,
+.scoreboard-settings__input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.scoreboard-settings__checkbox {
+  margin-top: var(--spacing-sm);
+}
+
+.scoreboard-settings #btn-start-match {
+  width: 100%;
+  margin-top: var(--spacing-lg);
+}
+
+/* 初始分數設定 */
+.scoreboard-initial-scores {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.scoreboard-initial-score-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.scoreboard-initial-score-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+/* 設定頁面的隊伍和選手名稱 */
+.scoreboard-settings-team-names {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.scoreboard-settings-team-group {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.scoreboard-settings-team-group-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.scoreboard-settings-team-group-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.scoreboard-settings-team-name-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.scoreboard-settings-team-name-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+.scoreboard-settings-player-names {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.scoreboard-settings-player-names-team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.scoreboard-settings-player-names-team-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.scoreboard-settings-player-names-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.scoreboard-settings-player-name-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.scoreboard-settings-player-name-item .scoreboard-settings-player-input-wrapper {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* 確保 input 在 wrapper 中可以正確 flex */
+.scoreboard-settings-player-name-item .scoreboard-settings-player-input-wrapper .scoreboard-settings__input {
+  flex: 1;
+  min-width: 0; /* 允許 flex item 縮小 */
+}
+
+.scoreboard-settings-player-name-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.scoreboard-settings-player-name-hint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-weight: var(--font-normal);
+}
+
+/* 控制區域 */
+.scoreboard-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+/* 計時器 */
+.scoreboard-timer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.scoreboard-timer__display {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  min-width: 100px;
+  text-align: center;
+  background: var(--neu-bg-light);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--neu-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  box-shadow: var(--neu-shadow-convex);
+}
+
+.scoreboard-mode-selector {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.scoreboard-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* 隊伍和選手名稱設定 */
+.scoreboard-player-names {
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--neu-shadow-convex);
+  border: var(--border-width) solid var(--border-color);
+}
+
+/* 隊伍名稱設定 */
+.scoreboard-team-names {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.team-names-group {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.team-names-group label {
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.team-names-group input[type="text"] {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-radius: var(--neu-radius-sm);
+  background: var(--neu-bg-light);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--font-medium);
+  transition: box-shadow var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out;
+  box-sizing: border-box;
+}
+
+.team-names-group input[type="text"]::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.team-names-group input[type="text"]:focus {
+  outline: none;
+  box-shadow: var(--neu-shadow-concave);
+  border-color: var(--accent-color);
+  border-width: 2px;
+}
+
+.team-names-group input[type="text"]:not(:focus) {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .team-names-group input[type="text"] {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .team-names-group input[type="text"]:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.scoreboard-player-names-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.scoreboard-player-names-inputs {
+  display: flex;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.player-names-group {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.player-names-group label {
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.player-names-group input[type="text"] {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-radius: var(--neu-radius-sm);
+  background: var(--neu-bg-light);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--font-medium);
+  transition: box-shadow var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out;
+  box-sizing: border-box;
+}
+
+.player-names-group input[type="text"]::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.player-names-group input[type="text"]:focus {
+  outline: none;
+  box-shadow: var(--neu-shadow-concave);
+  border-color: var(--accent-color);
+  border-width: 2px;
+}
+
+.player-names-group input[type="text"]:not(:focus) {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .player-names-group input[type="text"] {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .player-names-group input[type="text"]:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* 局數顯示 */
+.scoreboard-sets {
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--neu-shadow-convex);
+  border: var(--border-width) solid var(--border-color);
+  text-align: center;
+}
+
+.scoreboard-sets-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.scoreboard-set-number {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+
+.scoreboard-sets-won {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+
+/* 分數顯示區域 */
+.scoreboard-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* 隊伍卡片 */
+.scoreboard-team {
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-xl);
+  box-shadow: var(--neu-shadow-convex);
+  border: var(--border-width) solid var(--border-color);
+  text-align: center;
+  margin: 0;
+}
+
+.scoreboard-team--serving {
+  border-color: var(--accent-color);
+  box-shadow: 
+    8px 8px 16px var(--neu-shadow-dark),
+    -8px -8px 16px var(--neu-shadow-light),
+    0 0 0 2px var(--accent-color);
+}
+
+.scoreboard-team__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.scoreboard-team__name {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.scoreboard-team__serve-icon {
+  color: var(--accent-color);
+  font-size: 24px;
+  vertical-align: middle;
+}
+
+.scoreboard-team__inputs {
+  margin-bottom: var(--spacing-md);
+}
+
+.scoreboard-team__name-input {
+  margin-bottom: var(--spacing-sm);
+}
+
+.scoreboard-team__name-field,
+.scoreboard-team__player-field {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-radius: var(--neu-radius-sm);
+  background: var(--neu-bg-light);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  transition: box-shadow var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out;
+  box-sizing: border-box;
+}
+
+.scoreboard-team__name-field::placeholder,
+.scoreboard-team__player-field::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.scoreboard-team__name-field:focus,
+.scoreboard-team__player-field:focus {
+  outline: none;
+  box-shadow: var(--neu-shadow-concave);
+  border-color: var(--accent-color);
+  border-width: 2px;
+}
+
+.scoreboard-team__name-field:not(:focus),
+.scoreboard-team__player-field:not(:focus) {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .scoreboard-team__name-field,
+[data-theme="dark"] .scoreboard-team__player-field {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .scoreboard-team__name-field:not(:focus),
+[data-theme="dark"] .scoreboard-team__player-field:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* 比賽開始後的文字顯示 */
+.scoreboard-team__player-display-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  align-items: stretch;
+  min-width: 0; /* 允許 flex item 縮小 */
+}
+
+.scoreboard-team__player-display {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-sm);
+  align-items: center;
+  width: 100%;
+}
+
+/* 非窄螢幕：左邊選手（圖片在左，名稱在右，名稱靠左對齊） */
+.scoreboard-team__player-display--left {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.scoreboard-team__player-display--left .scoreboard-team__player-text {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* 非窄螢幕：右邊選手（名稱在左，圖片在右，名稱靠右對齊） */
+.scoreboard-team__player-display--right {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.scoreboard-team__player-display--right .scoreboard-team__player-text {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.scoreboard-team__player-text {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* 比賽開始後顯示的 avatar（較小尺寸） */
+.scoreboard-team__player-display .player-avatar {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--neu-radius-sm);
+  flex-shrink: 0;
+}
+
+/* 窄螢幕：每個選手的圖片和名稱改為上下排列 */
+@media (max-width: 768px) {
+  .scoreboard-team__player-inputs.scoreboard-team__player-inputs--started {
+    flex-direction: row;
+    gap: var(--spacing-sm);
+  }
+  
+  .scoreboard-team__player-display-wrapper {
+    flex-direction: column;
+  }
+  
+  .scoreboard-team__player-display {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+  
+  /* 窄螢幕時，恢復正常順序（圖片在上，名稱在下） */
+  .scoreboard-team__player-display--left,
+  .scoreboard-team__player-display--right {
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .scoreboard-team__player-display--left .scoreboard-team__player-text,
+  .scoreboard-team__player-display--right .scoreboard-team__player-text {
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+.scoreboard-team__player-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* 比賽開始後：選手左右排列 */
+.scoreboard-team__player-inputs.scoreboard-team__player-inputs--started {
+  flex-direction: row;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+}
+
+.scoreboard-team__server {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--accent-color);
+  color: white;
+  border-radius: var(--neu-radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+.scoreboard-team__score {
+  font-size: 72px;
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: var(--spacing-lg) 0;
+  line-height: 1;
+}
+
+.scoreboard-team__actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  margin-top: var(--spacing-lg);
+}
+
+/* 分數按鈕 */
+.btn-neu--score {
+  min-width: 80px;
+  height: 60px;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  box-sizing: border-box;
+  /* 確保 hover 時尺寸不變 */
+  border: var(--border-width) solid var(--border-color);
+  margin: 0;
+  transition: box-shadow var(--transition-fast) ease-out;
+}
+
+.btn-neu--score:hover {
+  /* hover 時保持所有尺寸和位置屬性不變 */
+  border-color: var(--border-color) !important;
+  border-width: var(--border-width) !important;
+  margin: 0 !important;
+  transform: none !important;
+  /* 只改變 box-shadow */
+  box-shadow: var(--neu-shadow-pressed);
+}
+
+.btn-neu--score:active {
+  /* active 時保持所有尺寸和位置屬性不變 */
+  border-color: var(--border-color) !important;
+  border-width: var(--border-width) !important;
+  margin: 0 !important;
+  transform: none !important;
+  box-shadow: var(--neu-shadow-pressed);
+}
+
+.btn-neu--score-subtract {
+  font-size: var(--text-xl);
+}
+
+/* 獲勝提示遮罩 */
+.scoreboard-winner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 獲勝提示彈窗 */
+.scoreboard-winner-modal {
+  position: relative;
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius-lg);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--neu-shadow-convex);
+  border: var(--border-width) solid var(--border-color);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 關閉按鈕 */
+.scoreboard-winner-close {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--neu-bg-light);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: 50%;
+  box-shadow: var(--neu-shadow-convex);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast) ease-out, 
+              transform var(--transition-fast) ease-out,
+              border-color var(--transition-fast) ease-out,
+              border-width 0s,
+              margin 0s;
+  margin: 0;
+  z-index: 1;
+}
+
+.scoreboard-winner-close:hover {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.scoreboard-winner-close:active {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.scoreboard-winner-close .material-icons-round {
+  font-size: 24px;
+}
+
+/* 獲勝提示內容 */
+.scoreboard-winner-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.scoreboard-winner-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-color);
+  border-radius: 50%;
+  box-shadow: var(--accent-shadow-convex);
+  color: white;
+  margin-bottom: var(--spacing-md);
+}
+
+.scoreboard-winner-icon .material-icons-round {
+  font-size: 48px;
+}
+
+.scoreboard-winner-title {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.scoreboard-winner-message {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.scoreboard-winner-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* 單局獲勝提示（保留舊的樣式用於單局獲勝） */
+.scoreboard-winner {
+  background: var(--accent-color);
+  color: white;
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-xl);
+  text-align: center;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  box-shadow: var(--neu-shadow-convex);
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .scoreboard-scores {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+  
+  .scoreboard-team__score {
+    font-size: 56px;
+  }
+  
+  .scoreboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .scoreboard-mode-selector,
+  .scoreboard-actions {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .scoreboard-player-names-inputs {
+    flex-direction: column;
+  }
+  
+  .player-names-group {
+    min-width: 100%;
+  }
+}
+
+/* 選手頭像選擇器 */
+.scoreboard-settings-player-input-wrapper,
+.scoreboard-team__player-input-wrapper {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* 確保 input 在 wrapper 中可以正確 flex */
+.scoreboard-settings-player-input-wrapper .scoreboard-settings__input,
+.scoreboard-team__player-input-wrapper .scoreboard-team__player-field {
+  flex: 1;
+  min-width: 0; /* 允許 flex item 縮小 */
+}
+
+.btn-neu--avatar-select {
+  /* 固定尺寸，永遠不變（縮小尺寸） */
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--neu-radius-sm);
+  box-sizing: border-box;
+  /* 保持 border 和 margin 不變，避免尺寸變化 */
+  border: var(--border-width) solid var(--border-color) !important;
+  margin: 0 !important;
+  /* 覆蓋基礎類別的 transform，避免位置移動 */
+  transform: none !important;
+  transition: box-shadow var(--transition-fast) ease-out, 
+              border-color var(--transition-fast) ease-out;
+}
+
+.btn-neu--avatar-select:hover {
+  /* hover 時保持所有尺寸和位置屬性不變 */
+  border-color: var(--border-color) !important;
+  border-width: var(--border-width) !important;
+  margin: 0 !important;
+  /* 完全覆蓋基礎類別的 transform，避免位置移動 */
+  transform: none !important;
+  /* 只改變視覺效果（陰影）來表示 hover 狀態 */
+  box-shadow: var(--neu-shadow-pressed) !important;
+}
+
+.btn-neu--avatar-select:active {
+  border-color: var(--border-color) !important;
+  border-width: var(--border-width) !important;
+  margin: 0 !important;
+  transform: none !important;
+  box-shadow: var(--neu-shadow-pressed) !important;
+}
+
+.btn-neu--avatar-select .player-avatar {
+  /* 圖片填滿整個按鈕區域 */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--neu-radius-sm);
+  display: block;
+  flex-shrink: 0;
+}
+
+.btn-neu--avatar-select .material-icons-round {
+  font-size: 24px;
+  color: var(--text-secondary);
+}
+
+/* 圖片選擇器覆蓋層 */
+.avatar-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: var(--spacing-lg);
+}
+
+.avatar-selector-container {
+  background: var(--neu-bg-light);
+  border-radius: var(--neu-radius);
+  padding: var(--spacing-xl);
+  box-shadow: var(--neu-shadow-convex);
+  border: var(--border-width) solid var(--border-color);
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.avatar-selector-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+  text-align: center;
+}
+
+.avatar-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.avatar-selector-item {
+  aspect-ratio: 1;
+  border-radius: var(--neu-radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  border: var(--border-width) solid var(--border-color);
+  background: var(--neu-bg-light);
+  box-shadow: var(--neu-shadow-convex);
+  transition: box-shadow var(--transition-fast) ease-out, 
+              transform var(--transition-fast) ease-out,
+              border-color var(--transition-fast) ease-out,
+              border-width 0s, margin 0s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-selector-item:hover {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.avatar-selector-item--selected {
+  box-shadow: var(--neu-shadow-pressed);
+  border-color: var(--primary);
+  border-width: 2px;
+}
+
+.avatar-selector-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-selector-close {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-selector-no-avatar {
+  width: 100%;
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .avatar-selector-container {
+    padding: var(--spacing-lg);
+    max-height: 90vh;
+  }
+  
+  .avatar-selector-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: var(--spacing-sm);
+  }
+  
+  /* 保持 input 和 avatar 在同一列，但調整 input 寬度 */
+  .scoreboard-settings-player-input-wrapper,
+  .scoreboard-team__player-input-wrapper {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  /* 讓 input 自動縮小，avatar 保持固定寬度 */
+  .scoreboard-settings-player-input-wrapper .scoreboard-settings__input,
+  .scoreboard-team__player-input-wrapper .scoreboard-team__player-field {
+    flex: 1;
+    min-width: 0; /* 允許 flex item 縮小到內容寬度以下 */
+  }
+  
+  .btn-neu--avatar-select {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0; /* avatar 不縮小 */
+  }
+}
+

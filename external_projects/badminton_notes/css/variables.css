@@ -1,0 +1,192 @@
+/**
+ * CSS 變數定義 - Neumorphism 風格
+ */
+
+:root {
+  /* ===== Neumorphism 基礎色 ===== */
+  /* Light Mode - 淺色背景（更柔和） */
+  --neu-bg: #d6dde7;
+  --neu-bg-light: #e8eef5;
+  --neu-bg-dark: #c4ced9;
+  
+  /* 陰影顏色（更明顯的對比） */
+  --neu-shadow-light: #ffffff;
+  --neu-shadow-dark: #a8b5c6;
+  
+  /* ===== Neumorphism 效果 ===== */
+  --neu-radius: 20px;
+  --neu-radius-sm: 12px;
+  --neu-radius-lg: 28px;
+  
+  /* 外凸陰影（凸起效果 - 光源在右上）
+     亮部在左上（-x, -y），暗部在右下（+x, +y） */
+  --neu-shadow-convex: 
+    6px 6px 12px var(--neu-shadow-dark),
+    -6px -6px 12px var(--neu-shadow-light);
+  
+  /* 內凹陰影（凹陷效果 - 光源在右上）
+     亮部在右上（-x, -y），暗部在左下（+x, +y） */
+  --neu-shadow-concave: 
+    inset -6px -6px 12px var(--neu-shadow-light),
+    inset 6px 6px 12px var(--neu-shadow-dark);
+  
+  /* 懸停時的外凸陰影（更明顯） */
+  --neu-shadow-convex-hover: 
+    8px 8px 16px var(--neu-shadow-dark),
+    -8px -8px 16px var(--neu-shadow-light);
+  
+  /* 按下時的內凹陰影（光源在右上） */
+  --neu-shadow-pressed: 
+    inset -3px -3px 6px var(--neu-shadow-light),
+    inset 3px 3px 6px var(--neu-shadow-dark);
+
+  /* ===== 強調色 ===== */
+  --accent-color: #5b9bd5;
+  --accent-hover: #4a8bc2;
+  --accent-active: #3d7ba8;
+  
+  /* 強調色的 Neumorphism 效果 */
+  --accent-shadow-convex: 
+    6px 6px 12px rgba(91, 155, 213, 0.3),
+    -6px -6px 12px rgba(255, 255, 255, 0.8);
+
+  /* ===== 文字色 ===== */
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-placeholder: #a0aec0;
+
+  /* ===== Border ===== */
+  --border-color: #e6e7ee;
+  --border-width: 1px;
+
+  /* ===== 內容區域 ===== */
+  /* 內容區域使用稍微淺一點的背景，創造 Neumorphism 效果 */
+  --content-bg: var(--neu-bg-light);
+  --content-text: #1a202c;
+  --content-text-secondary: #4a5568;
+  --content-border: rgba(0, 0, 0, 0.1);
+
+  /* ===== 狀態色 ===== */
+  --success: #48bb78;
+  --warning: #ed8936;
+  --error: #f56565;
+  --info: #4299e1;
+
+  /* ===== 字型 ===== */
+  --font-primary: "Noto Sans TC", "Noto Sans SC", "Noto Sans JP", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  /* 字型大小 */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+  --text-4xl: 48px;
+
+  /* 字重 */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* ===== 動畫 ===== */
+  --transition-fast: 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== 間距 ===== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+}
+
+/* 深色模式（參考圖片風格 - 深藍紫色） */
+[data-theme="dark"] {
+  --neu-bg: #2e325c;
+  --neu-bg-light: #2a2f56;
+  --neu-bg-dark: #25294d;
+  
+  /* 深色模式的陰影（更明顯的對比） */
+  --neu-shadow-light: rgba(255, 255, 255, 0.08);
+  --neu-shadow-dark: rgba(0, 0, 0, 0.4);
+  
+  /* 重新定義陰影效果，確保在 dark mode 中正確套用 */
+  --neu-shadow-convex: 
+    6px 6px 12px var(--neu-shadow-dark),
+    -6px -6px 12px var(--neu-shadow-light);
+  
+  --neu-shadow-concave: 
+    inset -6px -6px 12px var(--neu-shadow-light),
+    inset 6px 6px 12px var(--neu-shadow-dark);
+  
+  --neu-shadow-convex-hover: 
+    8px 8px 16px var(--neu-shadow-dark),
+    -8px -8px 16px var(--neu-shadow-light);
+  
+  --neu-shadow-pressed: 
+    inset -3px -3px 6px var(--neu-shadow-light),
+    inset 3px 3px 6px var(--neu-shadow-dark);
+  
+  --text-primary: #f7fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #cbd5e0;
+  --text-placeholder: #a0aec0;
+
+  /* Dark mode border */
+  --border-color: rgba(255, 255, 255, 0.08);
+  
+  /* 深色模式的內容區域 */
+  --content-bg: var(--neu-bg-light);
+  --content-text: #f7fafc;
+  --content-text-secondary: #e2e8f0;
+  --content-border: rgba(255, 255, 255, 0.1);
+  
+  --accent-color: #63b3ed;
+  --accent-hover: #4299e1;
+  --accent-active: #3182ce;
+}
+
+/* 響應式調整 */
+@media (max-width: 959px) {
+  :root {
+    --neu-shadow-convex: 
+      5px 5px 10px var(--neu-shadow-dark),
+      -5px -5px 10px var(--neu-shadow-light);
+    
+    --neu-shadow-concave: 
+      inset -5px -5px 10px var(--neu-shadow-light),
+      inset 5px 5px 10px var(--neu-shadow-dark);
+  }
+}
+
+@media (max-width: 599px) {
+  :root {
+    --neu-shadow-convex: 
+      4px 4px 8px var(--neu-shadow-dark),
+      -4px -4px 8px var(--neu-shadow-light);
+    
+    --neu-shadow-concave: 
+      inset -4px -4px 8px var(--neu-shadow-light),
+      inset 4px 4px 8px var(--neu-shadow-dark);
+    
+    --neu-radius: 16px;
+    --neu-radius-sm: 10px;
+    --neu-radius-lg: 24px;
+    
+    --text-base: 15px;
+    --text-lg: 17px;
+    --text-xl: 19px;
+    --text-2xl: 20px;
+    --text-3xl: 24px;
+    --text-4xl: 32px;
+  }
+}
+

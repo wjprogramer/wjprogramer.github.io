@@ -1,0 +1,244 @@
+/**
+ * Header 樣式
+ */
+
+.app-header {
+  /* Header 僅供排版，無陰影效果 */
+  background: transparent;
+  padding: var(--spacing-md) var(--spacing-lg);
+  position: sticky;
+  top: var(--spacing-lg);
+  left: var(--spacing-lg);
+  right: var(--spacing-lg);
+  margin: 0 var(--spacing-lg) var(--spacing-lg);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+/* 窄螢幕時，當 sidebar 打開時，header 應該在 overlay 後面 */
+@media (max-width: 959px) {
+  .app-header {
+    z-index: 99;
+  }
+}
+
+.header__logo {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  transition: opacity var(--transition-fast) ease-out;
+}
+
+.header__logo:hover {
+  opacity: 0.8;
+}
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.lang-selector-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lang-selector__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 讓點擊事件穿透到父元素 */
+}
+
+.lang-selector__button .material-icons-round {
+  font-size: 24px;
+}
+
+.lang-selector__dropdown {
+  position: absolute;
+  top: calc(100% + var(--spacing-sm));
+  right: 0;
+  background: var(--neu-bg-light);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--neu-radius-sm);
+  box-shadow: var(--neu-shadow-convex);
+  padding: var(--spacing-md);
+  min-width: 140px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity var(--transition-fast) ease-out, 
+              visibility var(--transition-fast) ease-out,
+              transform var(--transition-fast) ease-out,
+              box-shadow var(--transition-fast) ease-out,
+              border-color var(--transition-fast) ease-out,
+              border-width 0s, margin 0s;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+.lang-selector__dropdown--open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  /* 當打開時，保持壓下的狀態 */
+  box-shadow: var(--neu-shadow-pressed);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.lang-selector__option {
+  background: var(--neu-bg-light);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--neu-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow var(--transition-fast) ease-out, 
+              transform var(--transition-fast) ease-out,
+              border-color var(--transition-fast) ease-out,
+              border-width 0s, margin 0s,
+              background-color var(--transition-fast) ease-out;
+  box-shadow: var(--neu-shadow-convex);
+  margin: 0;
+}
+
+.lang-selector__option:hover {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+  background-color: var(--neu-bg-dark);
+}
+
+.lang-selector__option:active {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.lang-selector__option--selected {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+}
+
+.lang-selector__option--selected:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+/* Dark mode 調整 */
+[data-theme="dark"] .lang-selector__dropdown {
+  background: var(--neu-bg-light);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .lang-selector__option {
+  background: var(--neu-bg-light);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .lang-selector__option:hover {
+  background-color: var(--neu-bg-dark);
+}
+
+[data-theme="dark"] .lang-selector__option--selected {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+}
+
+.header__btn {
+  background: var(--neu-bg-light);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--neu-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--text-primary);
+  box-shadow: var(--neu-shadow-convex);
+  transition: box-shadow var(--transition-fast) ease-out, transform var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out, border-width 0s, margin 0s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-height: 44px;
+  margin: 0;
+}
+
+.header__btn:hover {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.header__btn:active,
+.header__btn--selected {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+.header__menu-toggle {
+  display: none;
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .app-header {
+    padding: var(--spacing-md);
+  }
+  
+  .header__menu-toggle {
+    display: flex;
+  }
+}
+
+@media (max-width: 599px) {
+  .app-header {
+    height: 56px;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .header__logo {
+    font-size: var(--text-lg);
+  }
+}
+

@@ -81,6 +81,15 @@ window.onload = (event) => {
             visible: true,
           },
           {
+            title: 'Badminton Notes',
+            group: GROUP_TYPE.NONE,
+            subTitle: '',
+            description: '羽球學習筆記 - 結構化的羽球技術學習平台',
+            path: '/external_projects/badminton_notes/index.html',
+            imageSrc: '/favicons/android-chrome-512x512.png',
+            visible: true,
+          },
+          {
             title: 'Test Area',
             group: GROUP_TYPE.NONE,
             subTitle: '',

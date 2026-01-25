@@ -1,0 +1,116 @@
+/**
+ * CSS Reset
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--neu-bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Select 和 Option 樣式 */
+select {
+  background-color: var(--neu-bg-light);
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+}
+
+select option {
+  background-color: var(--neu-bg-light);
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Dark mode 下的 select 和 option */
+[data-theme="dark"] select {
+  background-color: var(--neu-bg-light);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] select option {
+  background-color: var(--neu-bg-light);
+  color: var(--text-primary);
+}
+
+/* 選中的 option */
+select option:checked {
+  background-color: var(--accent-color);
+  color: #ffffff;
+}
+
+[data-theme="dark"] select option:checked {
+  background-color: var(--accent-color);
+  color: #ffffff;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--font-semibold);
+  line-height: 1.2;
+}
+
+/* 減少動畫（無障礙） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

@@ -1,0 +1,56 @@
+/**
+ * Search 樣式
+ */
+
+.search-box {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+}
+
+.search-box__input {
+  width: 100%;
+  /* 搜尋框使用內凹效果 */
+  background: var(--neu-bg);
+  border: none;
+  border-radius: var(--neu-radius-sm);
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 48px;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  box-shadow: var(--neu-shadow-concave);
+  transition: var(--transition-normal);
+}
+
+.search-box__input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.search-box__input:focus {
+  outline: none;
+  box-shadow: 
+    var(--neu-shadow-concave),
+    0 0 0 3px rgba(91, 155, 213, 0.2);
+}
+
+.search-box__icon {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .search-box {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 599px) {
+  .search-box__input {
+    font-size: 16px; /* 防止 iOS 自動縮放 */
+  }
+}
+

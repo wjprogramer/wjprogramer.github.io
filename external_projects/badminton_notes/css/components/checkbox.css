@@ -1,0 +1,180 @@
+/**
+ * Neumorphism Checkbox 樣式
+ */
+
+/* Checkbox 容器 */
+.checkbox-neu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 隱藏原生 checkbox */
+.checkbox-neu input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* 自定義 checkbox 外觀 */
+.checkbox-neu__box {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  background: var(--neu-bg-light);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--neu-radius-sm);
+  box-shadow: var(--neu-shadow-convex);
+  transition: box-shadow var(--transition-fast) ease-out, 
+              transform var(--transition-fast) ease-out,
+              background var(--transition-fast) ease-out,
+              border-color var(--transition-fast) ease-out,
+              border-width 0s,
+              margin 0s;
+  margin: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* 未選中狀態：懸停效果 */
+.checkbox-neu:hover .checkbox-neu__box:not(:has(+ *)) {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+/* 使用 :has() 的替代方案 - 未選中狀態懸停 */
+.checkbox-neu:hover input[type="checkbox"]:not(:checked) + .checkbox-neu__box {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+/* 選中狀態：凹陷效果 + 強調色背景 */
+.checkbox-neu input[type="checkbox"]:checked + .checkbox-neu__box {
+  background: var(--accent-color);
+  box-shadow: var(--neu-shadow-pressed);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+/* 選中狀態懸停：保持選中樣式，但可以添加輕微效果 */
+.checkbox-neu:hover input[type="checkbox"]:checked + .checkbox-neu__box {
+  box-shadow: var(--neu-shadow-pressed);
+  transform: translateY(1px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+/* 選中狀態的勾選標記 */
+.checkbox-neu__box::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  opacity: 0;
+  transition: transform var(--transition-normal) cubic-bezier(0.4, 0, 0.2, 1),
+              opacity var(--transition-normal) ease-out;
+}
+
+/* 選中時顯示勾選標記 */
+.checkbox-neu input[type="checkbox"]:checked + .checkbox-neu__box::after {
+  transform: rotate(45deg) scale(1);
+  opacity: 1;
+}
+
+/* 按下效果 - 確保補償正確 */
+.checkbox-neu input[type="checkbox"]:active + .checkbox-neu__box {
+  transform: translateY(2px);
+  /* 如果已經有 border-width: 0 和 margin，保持不變 */
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+/* 未選中狀態按下 */
+.checkbox-neu input[type="checkbox"]:not(:checked):active + .checkbox-neu__box {
+  transform: translateY(2px);
+  border-color: transparent;
+  border-width: 0;
+  margin: var(--border-width);
+}
+
+/* 禁用狀態 */
+.checkbox-neu input[type="checkbox"]:disabled + .checkbox-neu__box {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: var(--neu-bg-dark);
+}
+
+.checkbox-neu input[type="checkbox"]:disabled ~ .checkbox-neu__label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Checkbox 標籤文字 */
+.checkbox-neu__label {
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+/* 聚焦狀態（無障礙設計） */
+.checkbox-neu input[type="checkbox"]:focus-visible + .checkbox-neu__box {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* 深色模式調整 */
+[data-theme="dark"] .checkbox-neu__box {
+  background: var(--neu-bg-light);
+}
+
+[data-theme="dark"] .checkbox-neu input[type="checkbox"]:checked + .checkbox-neu__box {
+  background: var(--accent-color);
+}
+
+/* 響應式：較小的 checkbox */
+.checkbox-neu--small .checkbox-neu__box {
+  width: 20px;
+  height: 20px;
+}
+
+.checkbox-neu--small .checkbox-neu__box::after {
+  width: 5px;
+  height: 8px;
+}
+
+/* 響應式：較大的 checkbox */
+.checkbox-neu--large .checkbox-neu__box {
+  width: 28px;
+  height: 28px;
+}
+
+.checkbox-neu--large .checkbox-neu__box::after {
+  width: 7px;
+  height: 12px;
+}
+
