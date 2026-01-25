@@ -48,6 +48,11 @@
   z-index: 1000;
 }
 
+/* 確保 modal 顯示時，toolbar 不會疊在上面 */
+body.modal-open .reaction-toolbar-container {
+  z-index: 300; /* 低於 modal 的 z-index (500) */
+}
+
 .reaction-toolbar-container.show {
   position: fixed;
 }

@@ -9,6 +9,7 @@ import { copyToClipboard } from '../utils/clipboard.js';
 import { ParticipantList } from '../components/ParticipantList.js';
 import { ReactionToolbar } from '../components/ReactionToolbar.js';
 import { EmojiPicker } from '../components/EmojiPicker.js';
+import { ConfirmModal } from '../components/ConfirmModal.js';
 import { DataChannel } from '../webrtc/DataChannel.js';
 
 export class RetrospectivePage {
@@ -1827,27 +1828,56 @@ export class RetrospectivePage {
   }
 
   async deleteItem(index, category) {
-    if (confirm(t('common.confirmDelete'))) {
-      const item = this.items[category][index];
-      
-      if (this.isP2PMode && this.participantMode) {
-        this.participantMode.deleteItem(category, item.id);
-      } else if (this.isP2PMode && this.hostMode) {
-        const peerId = this.hostMode.peerManager?.peerId;
-        if (peerId) {
-          this.hostMode.handleDeleteItem(peerId, {
-            category: category,
-            itemId: item.id
-          });
+    const item = this.items[category][index];
+    
+    // 關閉所有打開的 reaction toolbar，避免疊在 modal 上
+    const openToolbars = document.querySelectorAll('.reaction-toolbar-container.show');
+    openToolbars.forEach(toolbar => {
+      toolbar.classList.remove('show');
+      // 顯示「＋」按鈕
+      const card = toolbar.closest('.card');
+      if (card) {
+        const plusBtn = card.querySelector('.reaction-plus-btn');
+        if (plusBtn) {
+          plusBtn.closest('.card-reaction-trigger')?.classList.remove('hide');
         }
-      } else {
-        this.items[category].splice(index, 1);
-        await this.saveRetro();
       }
-      
-      this.renderItems();
-      // 移除成功通知，避免頻繁顯示
-    }
+      // 清理內容
+      setTimeout(() => {
+        if (!toolbar.classList.contains('show')) {
+          toolbar.innerHTML = '';
+        }
+      }, 300);
+    });
+    
+    const modal = new ConfirmModal({
+      title: t('common.confirm'),
+      message: t('common.confirmDelete'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      confirmButtonClass: 'btn-danger',
+      onConfirm: async () => {
+        if (this.isP2PMode && this.participantMode) {
+          this.participantMode.deleteItem(category, item.id);
+        } else if (this.isP2PMode && this.hostMode) {
+          const peerId = this.hostMode.peerManager?.peerId;
+          if (peerId) {
+            this.hostMode.handleDeleteItem(peerId, {
+              category: category,
+              itemId: item.id
+            });
+          }
+        } else {
+          this.items[category].splice(index, 1);
+          await this.saveRetro();
+        }
+        
+        this.renderItems();
+        // 移除成功通知，避免頻繁顯示
+      }
+    });
+    
+    modal.show();
   }
 
   showExportModal() {

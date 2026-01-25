@@ -32,6 +32,7 @@ export class ConfirmModal {
     `;
     
     document.body.appendChild(modal);
+    document.body.classList.add('modal-open'); // 標記 modal 已打開
     
     // 套用翻譯（如果有使用 data-i18n）
     applyTranslations();
@@ -40,6 +41,10 @@ export class ConfirmModal {
       modal.classList.add('closing');
       setTimeout(() => {
         modal.remove();
+        // 如果沒有其他 modal，移除標記
+        if (!document.querySelector('.modal-backdrop')) {
+          document.body.classList.remove('modal-open');
+        }
       }, 300);
     };
     
