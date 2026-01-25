@@ -1,0 +1,68 @@
+/* Content Card 元件 */
+
+.content-card {
+  display: block;
+  background: var(--content-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  transition: var(--transition-normal);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.content-card:hover {
+  border-color: var(--accent-color);
+  background: var(--bg-secondary);
+}
+
+.content-card__title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.content-card__japanese {
+  font-size: var(--japanese-font-size);
+  line-height: var(--japanese-line-height);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.content-card__meta {
+  display: flex;
+  gap: var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-md);
+}
+
+.content-card__tags {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .content-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 599px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+}
+

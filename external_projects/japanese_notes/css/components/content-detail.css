@@ -1,0 +1,268 @@
+/* Content Detail 元件 */
+
+.content-detail {
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+  color: var(--content-text);
+  line-height: 2;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.content-detail__title {
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--spacing-md);
+  color: var(--content-text);
+}
+
+.content-detail__japanese {
+  font-size: calc(var(--japanese-font-size) * 1.2);
+  line-height: var(--japanese-line-height);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--bg-washi);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--accent-color);
+}
+
+.content-detail__meta {
+  display: flex;
+  gap: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--content-border);
+  margin-bottom: var(--spacing-xl);
+  font-size: var(--text-sm);
+  color: var(--content-text-secondary);
+}
+
+.content-detail__section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.content-detail__section:first-of-type {
+  margin-top: 0;
+}
+
+.content-detail__section-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--spacing-md);
+  margin-top: 0;
+  color: var(--content-text);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.content-detail__section:not(:first-of-type) .content-detail__section-title {
+  margin-top: var(--spacing-lg);
+}
+
+/* 上一個 / 下一個內容導覽 */
+.content-detail__nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}
+
+.content-detail__nav-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--spacing-sm);
+  min-height: 44px;
+  padding: 0 var(--spacing-md);
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  text-decoration: none;
+}
+
+.content-detail__nav-item:hover {
+  color: var(--accent-color);
+}
+
+.content-detail__nav-item--next {
+  align-self: auto;
+}
+
+.content-detail__nav-arrow {
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.content-detail__nav-text {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+/* 圓圈與文字的間距微調 */
+.content-detail__nav-item--prev .content-detail__nav-icon {
+  margin-right: var(--spacing-xs);
+}
+
+.content-detail__nav-item--next .content-detail__nav-icon {
+  margin-left: var(--spacing-xs);
+}
+
+.content-detail__nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), color var(--transition-fast);
+}
+
+/* hover 時：亮色主題 = 黑色圓圈、白色箭頭 */
+.content-detail__nav-item:hover .content-detail__nav-icon {
+  background: #000;
+  border-color: #000;
+}
+
+/* hover 時，可見的箭頭（::after）應該是白色 */
+.content-detail__nav-item:hover .content-detail__nav-icon--next::after,
+.content-detail__nav-item:hover .content-detail__nav-icon--prev::after {
+  color: #fff;
+}
+
+/* hover 時：暗色主題 = 白色圓圈、黑色箭頭 */
+[data-theme="dark"] .content-detail__nav-item:hover .content-detail__nav-icon {
+  background: #fff;
+  border-color: #fff;
+}
+
+/* hover 時，可見的箭頭（::after）應該是黑色 */
+[data-theme="dark"] .content-detail__nav-item:hover .content-detail__nav-icon--next::after,
+[data-theme="dark"] .content-detail__nav-item:hover .content-detail__nav-icon--prev::after {
+  color: #000;
+}
+
+/* 兩個箭頭：一個在中間、一個在外側準備進場 */
+.content-detail__nav-icon--next::before,
+.content-detail__nav-icon--next::after,
+.content-detail__nav-icon--prev::before,
+.content-detail__nav-icon--prev::after {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: left var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* 下一個：→ 箭頭 */
+/* ::before = 初始可見的箭頭 a（黑色，在中間） */
+.content-detail__nav-icon--next::before {
+  content: '→';
+  left: 50%;
+  opacity: 1;
+  color: #000;
+}
+
+[data-theme="dark"] .content-detail__nav-icon--next::before {
+  color: #fff;
+}
+
+/* ::after = hover 時要顯示的箭頭 b（白色，初始在左邊外面） */
+.content-detail__nav-icon--next::after {
+  content: '→';
+  left: -50%; /* 在左邊外面 */
+  opacity: 0;
+  color: #fff;
+}
+
+[data-theme="dark"] .content-detail__nav-icon--next::after {
+  color: #000;
+}
+
+/* Hover 時：a 向右滑出並淡出，b 從左邊滑入並淡入 */
+.content-detail__nav-item--next:hover .content-detail__nav-icon--next::before {
+  left: 150%; /* 滑到右邊外面 */
+  opacity: 0;
+}
+
+.content-detail__nav-item--next:hover .content-detail__nav-icon--next::after {
+  left: 50%; /* 滑入到中間 */
+  opacity: 1;
+}
+
+/* 上一個：← 箭頭（左右反向） */
+/* ::before = 初始可見的箭頭 a（黑色，在中間） */
+.content-detail__nav-icon--prev::before {
+  content: '←';
+  left: 50%;
+  opacity: 1;
+  color: #000;
+}
+
+[data-theme="dark"] .content-detail__nav-icon--prev::before {
+  color: #fff;
+}
+
+/* ::after = hover 時要顯示的箭頭 b（白色，初始在右邊外面） */
+.content-detail__nav-icon--prev::after {
+  content: '←';
+  left: 150%; /* 在右邊外面 */
+  opacity: 0;
+  color: #fff;
+}
+
+[data-theme="dark"] .content-detail__nav-icon--prev::after {
+  color: #000;
+}
+
+/* Hover 時：a 向左滑出並淡出，b 從右邊滑入並淡入 */
+.content-detail__nav-item--prev:hover .content-detail__nav-icon--prev::before {
+  left: -50%; /* 滑到左邊外面 */
+  opacity: 0;
+}
+
+.content-detail__nav-item--prev:hover .content-detail__nav-icon--prev::after {
+  left: 50%; /* 滑入到中間 */
+  opacity: 1;
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .content-detail {
+    padding: var(--spacing-xl) var(--spacing-lg);
+  }
+}
+
+@media (max-width: 599px) {
+  .content-detail {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .content-detail__title {
+    font-size: var(--text-2xl);
+  }
+
+  .content-detail__japanese {
+    font-size: var(--japanese-font-size);
+  }
+
+  .content-detail__nav {
+    margin-top: var(--spacing-lg);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .content-detail__nav-item {
+    min-height: 40px;
+    padding: 0 var(--spacing-sm);
+  }
+}
+

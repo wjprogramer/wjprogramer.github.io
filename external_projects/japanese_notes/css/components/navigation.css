@@ -1,0 +1,99 @@
+/* Navigation 元件 */
+
+.navigation {
+  position: fixed;
+  left: 0;
+  top: 64px;
+  width: 280px;
+  height: calc(100vh - 64px);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  transition: transform var(--transition-normal), background var(--transition-normal);
+}
+
+.navigation__menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.navigation__item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.navigation__item:hover {
+  color: var(--accent-color);
+  background: var(--bg-tertiary);
+  border-color: var(--border-subtle);
+}
+
+.navigation__item--active {
+  color: var(--accent-color);
+  background: var(--accent-light);
+  border-color: var(--accent-color);
+}
+
+.navigation__item-icon {
+  margin-right: var(--spacing-md);
+  font-size: var(--text-lg);
+  width: var(--text-lg);
+  height: var(--text-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navigation__toggle {
+  display: none;
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .navigation {
+    transform: translateX(-100%);
+    z-index: 99;
+    box-shadow: var(--shadow-lg);
+    transition: transform var(--transition-normal);
+  }
+
+  .navigation--open {
+    transform: translateX(0);
+  }
+
+  .navigation-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 98;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-normal);
+  }
+
+  .navigation-overlay--active {
+    opacity: 1;
+    pointer-events: all;
+  }
+}
+
+@media (max-width: 599px) {
+  .navigation {
+    top: 56px;
+    width: 280px;
+    z-index: 1000;
+  }
+
+  .navigation-overlay {
+    z-index: 999;
+  }
+}
+

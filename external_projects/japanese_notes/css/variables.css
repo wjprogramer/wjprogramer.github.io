@@ -1,0 +1,147 @@
+/* CSS 變數 - 和風 + 極簡禪意風格 */
+
+:root {
+  /* ===== 和風 + 極簡禪意 - Light Mode ===== */
+
+  /* ===== 基礎色（和紙色背景） ===== */
+  --bg-primary: #fef9f4; /* 和紙色（わししょく） */
+  --bg-secondary: #fff8f0; /* 淡和紙色 */
+  --bg-tertiary: #f5f0eb; /* 極淡米色 */
+
+  /* ===== 文字色（墨色系） ===== */
+  --text-primary: #5a4a3a; /* 墨色（すみいろ） */
+  --text-secondary: #6b5d4f;
+  --text-muted: #8b7d6f;
+  --text-placeholder: #a89b8d;
+
+  /* ===== 強調色（和風配色） ===== */
+  --accent-color: #8b7355; /* 茶色（ちゃいろ）- 極簡禪意主色 */
+  --accent-hover: #9b8365;
+  --accent-active: #7b6345;
+  --accent-light: #e8e0d6; /* 淡茶色 */
+
+  /* ===== 和風輔助色 ===== */
+  --wafu-sakura: #ffb3d9; /* 櫻花色（さくらいろ）- 少量裝飾用 */
+  --wafu-mizu: #a8d8ea; /* 水色（みずいろ）- 次要元素 */
+  --wafu-matcha: #b8d4a6; /* 抹茶色（まっちゃいろ）- 自然元素 */
+  --wafu-washi: #fef9f4; /* 和紙色（わししょく） */
+
+  /* ===== 邊框色（極簡細線） ===== */
+  --border-color: #e0d8d0; /* 淡米色邊框 */
+  --border-hover: #d4c4b0;
+  --border-subtle: #f0e8e0; /* 極淡邊框，用於分隔 */
+
+  /* ===== 陰影（極簡，減少使用） ===== */
+  --shadow-sm: 0 1px 2px 0 rgba(90, 74, 58, 0.05);
+  --shadow-md: 0 2px 4px 0 rgba(90, 74, 58, 0.08);
+  --shadow-lg: 0 4px 8px 0 rgba(90, 74, 58, 0.1);
+  --shadow-none: none; /* 極簡風格，多數情況不使用陰影 */
+
+  /* ===== 圓角（極簡，小圓角） ===== */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ===== 內容區域（極簡設計） ===== */
+  --content-bg: #ffffff; /* 內容區使用純白，與和紙背景形成對比 */
+  --content-text: #5a4a3a;
+  --content-text-secondary: #6b5d4f;
+  --content-border: #e0d8d0;
+
+  /* ===== 狀態色（和風調和） ===== */
+  --success: #7fb069; /* 柔和的綠色 */
+  --warning: #d4a574; /* 柔和的橙色 */
+  --error: #c97a7a; /* 柔和的紅色 */
+  --info: #8ba8c4; /* 柔和的水色 */
+
+  /* ===== 動畫（柔和但克制） ===== */
+  --transition-fast: 0.2s ease-out;
+  --transition-normal: 0.3s ease-out;
+  --transition-slow: 0.5s ease-out;
+
+  /* ===== 留白（極簡禪意 - 大量留白） ===== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-2xl: 64px;
+
+  /* ===== 字型 ===== */
+  --font-primary: "Noto Sans JP", "Noto Serif JP", "Noto Sans TC", -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  --font-serif: "Noto Serif JP", "Noto Serif TC", serif; /* 傳統和風字體 */
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  /* 字型大小 */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+  --text-4xl: 48px;
+
+  /* 字重 */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* 日文特殊設定 */
+  --japanese-font-size: 1.1em; /* 日文稍大一點 */
+  --japanese-line-height: 1.8; /* 日文行高較大 */
+}
+
+/* 深色模式（和風 + 極簡禪意） */
+[data-theme="dark"] {
+  /* ===== 基礎色（深色和紙色） ===== */
+  --bg-primary: #2a2520; /* 深色和紙色 */
+  --bg-secondary: #3a342f;
+  --bg-tertiary: #4a443f;
+
+  /* ===== 文字色（淺色墨色） ===== */
+  --text-primary: #e8e0d6; /* 淺墨色 */
+  --text-secondary: #d8d0c6;
+  --text-muted: #c8c0b6;
+  --text-placeholder: #b8b0a6;
+
+  /* ===== 強調色（深色模式茶色） ===== */
+  --accent-color: #c4a574; /* 淺茶色 */
+  --accent-hover: #d4b584;
+  --accent-active: #b49564;
+  --accent-light: #3a342f;
+
+  /* ===== 和風輔助色（深色模式） ===== */
+  --wafu-sakura: #d98fb3; /* 深色櫻花色 */
+  --wafu-mizu: #7ab8d0; /* 深色水色 */
+  --wafu-matcha: #9bb88a; /* 深色抹茶色 */
+  --wafu-washi: #2a2520;
+
+  /* ===== 邊框色 ===== */
+  --border-color: #4a443f;
+  --border-hover: #5a544f;
+  --border-subtle: #5a544f; /* 比背景稍亮一階，讓邊界更明顯 */
+
+  /* ===== 陰影（深色模式，極簡） ===== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 8px 0 rgba(0, 0, 0, 0.5);
+  --shadow-none: none;
+
+  /* ===== 內容區域 ===== */
+  --content-bg: #4a443f; /* 比側邊欄更亮，讓主內容區塊浮起來 */
+  --content-text: #e8e0d6;
+  --content-text-secondary: #d8d0c6;
+  --content-border: #4a443f;
+
+  /* ===== 狀態色（深色模式） ===== */
+  --success: #8fc079;
+  --warning: #e4b584;
+  --error: #d98a8a;
+  --info: #9bb8d4;
+}
+

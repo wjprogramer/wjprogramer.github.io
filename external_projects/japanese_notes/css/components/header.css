@@ -1,0 +1,107 @@
+/* Header 元件 */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  background: var(--content-bg);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-xl);
+  transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.header__menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--text-xl);
+}
+
+.header__menu-toggle:hover {
+  color: var(--accent-color);
+  border-color: var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.header__logo {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.header__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.header__action-btn:hover {
+  color: var(--accent-color);
+  border-color: var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.header__action-btn--active {
+  color: var(--accent-color);
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .header__menu-toggle {
+    display: flex;
+  }
+}
+
+@media (max-width: 599px) {
+  .header {
+    height: 56px;
+    padding: 0 var(--spacing-md);
+  }
+
+  .header__logo {
+    font-size: var(--text-lg);
+  }
+
+  .header__menu-toggle {
+    width: 36px;
+    height: 36px;
+    font-size: var(--text-lg);
+  }
+
+  .header__action-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+

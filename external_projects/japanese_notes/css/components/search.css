@@ -1,0 +1,50 @@
+/* Search 元件 */
+
+.search-box {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+}
+
+.search-box__input {
+  width: 100%;
+  background: var(--content-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 48px;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  transition: var(--transition-normal);
+}
+
+.search-box__input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.search-box__input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.search-box__icon {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .search-box {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 599px) {
+  .search-box__input {
+    font-size: 16px; /* 防止 iOS 自動縮放 */
+  }
+}
+

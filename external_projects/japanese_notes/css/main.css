@@ -1,0 +1,176 @@
+/* 主樣式 - 和風 + 極簡禪意 */
+
+/* 和紙紋理背景 */
+body {
+  background-color: var(--bg-washi);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 20px,
+    rgba(255, 255, 255, 0.03) 20px,
+    rgba(255, 255, 255, 0.03) 40px
+  );
+  background-size: 40px 40px;
+  min-height: 100vh;
+}
+
+/* 主內容區域 */
+.main-content {
+  margin-left: 280px;
+  padding: var(--spacing-xl);
+  min-height: calc(100vh - 64px);
+  background: var(--content-bg);
+  transition: margin-left var(--transition-normal);
+}
+
+/* Footer */
+.footer {
+  background: var(--content-bg);
+  margin-left: 280px;
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  border-top: 1px solid var(--border-subtle);
+  transition: margin-left var(--transition-normal);
+}
+
+/* 響應式 */
+@media (max-width: 959px) {
+  .main-content {
+    margin-left: 0;
+    padding: var(--spacing-lg);
+  }
+
+  .footer {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 599px) {
+  .main-content {
+    padding: var(--spacing-md);
+  }
+}
+
+/* 頁面轉場動畫 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* 日文文字樣式 */
+.japanese-text {
+  font-family: "Noto Sans JP", sans-serif;
+  font-size: var(--japanese-font-size);
+  line-height: var(--japanese-line-height);
+  letter-spacing: 0.05em;
+}
+
+/* 假名標註 */
+.furigana {
+  font-size: 0.6em;
+  vertical-align: super;
+  color: var(--text-muted);
+}
+
+/* Ruby 標籤樣式 - 假名標註 */
+ruby {
+  ruby-align: center; /* 置中對齊，讓 furigana 對準漢字中間 */
+  ruby-overhang: auto;
+  line-height: 1.8;
+}
+
+ruby rt {
+  font-size: 0.75em !important;
+  font-weight: 500;
+  color: var(--text-secondary);
+  opacity: 0.9;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  padding: 0 0.1em;
+  text-align: center; /* 確保文字置中 */
+}
+
+/* 確保 ruby 標籤內的文字清晰可見 */
+ruby rb {
+  font-size: inherit;
+}
+
+/* 在較大的文字中，rt 也要相應放大 */
+.content-detail__japanese ruby rt,
+.japanese-example ruby rt {
+  font-size: 0.7em !important;
+}
+
+/* 日文段落 */
+.japanese-paragraph {
+  text-align: justify;
+  text-justify: inter-ideograph;
+  line-height: 1.8;
+}
+
+/* 日文例句 */
+.japanese-example {
+  padding: var(--spacing-md);
+  background: var(--bg-washi);
+  border-left: 2px solid var(--accent-color);
+  border-radius: var(--radius-sm);
+  margin: var(--spacing-md) 0;
+}
+
+/* 極簡分隔線 */
+.divider {
+  height: 1px;
+  background: var(--border-subtle);
+  border: none;
+  margin: var(--spacing-xl) 0;
+}
+
+.divider--spacious {
+  margin: var(--spacing-2xl) 0;
+}
+
+/* Tag Badge 樣式 */
+.tag {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  line-height: 1.4;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.tag:hover {
+  background-color: var(--accent-light);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.tag--category {
+  background-color: var(--accent-light);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  font-weight: var(--font-semibold);
+}
+
+.tag--category:hover {
+  background-color: var(--accent-color);
+  color: var(--bg-primary);
+}
+
