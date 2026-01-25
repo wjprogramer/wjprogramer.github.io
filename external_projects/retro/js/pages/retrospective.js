@@ -860,6 +860,14 @@ export class RetrospectivePage {
             e.target.closest('.reaction-display')) {
           return;
         }
+        
+        // 觸控設備：如果 toolbar 正在顯示，點擊 card 不進入編輯
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const reactionToolbarContainer = cardElement.querySelector('.reaction-toolbar-container');
+        if (isTouchDevice && reactionToolbarContainer?.classList.contains('show')) {
+          return;
+        }
+        
         // 如果正在被其他人編輯，不觸發編輯
         if (cardElement.dataset.beingEdited === 'true') {
           const editingInfo = this.editingItems.get(item.id);
@@ -889,6 +897,10 @@ export class RetrospectivePage {
       let toolbarInstance = null;
       let hideTimeout = null;
       let showTimeout = null;
+      
+      // 檢測是否為觸控設備
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      let outsideClickHandler = null;
       
       const showToolbar = () => {
         if (showTimeout) {
@@ -923,39 +935,62 @@ export class RetrospectivePage {
             toolbar.bindEvents(reactionToolbarContainer);
             
             // 使用 fixed 定位，動態計算位置以避免被切掉
+            // 使用雙重 requestAnimationFrame 確保 DOM 完全渲染
             requestAnimationFrame(() => {
-              const cardRect = cardElement.getBoundingClientRect();
-              const toolbarEl = reactionToolbarContainer.querySelector('.reaction-toolbar');
-              if (toolbarEl) {
-                const spacing = 16; // var(--spacing-md) 的值
-                const toolbarRect = toolbarEl.getBoundingClientRect();
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
-                
-                // 計算位置：預設在 card 右下角
-                let right = viewportWidth - cardRect.right + spacing;
-                let bottom = viewportHeight - cardRect.bottom + spacing;
-                
-                // 如果會超出右邊界，調整到左邊
-                if (cardRect.right + toolbarRect.width > viewportWidth - 16) {
+              requestAnimationFrame(() => {
+                const cardRect = cardElement.getBoundingClientRect();
+                const toolbarEl = reactionToolbarContainer.querySelector('.reaction-toolbar');
+                if (toolbarEl) {
+                  const spacing = 16; // var(--spacing-md) 的值
+                  const viewportWidth = window.innerWidth;
+                  const viewportHeight = window.innerHeight;
+                  const padding = 8; // 視窗邊界的 padding
+                  
+                  // 先讓 toolbar 顯示以獲取實際尺寸
+                  const toolbarRect = toolbarEl.getBoundingClientRect();
+                  const toolbarWidth = toolbarRect.width || toolbarEl.offsetWidth;
+                  const toolbarHeight = toolbarRect.height || toolbarEl.offsetHeight;
+                  
+                  // 預設位置：card 的右下角（相對於 card）
+                  let preferredX = cardRect.right - toolbarWidth - spacing;
+                  let preferredY = cardRect.bottom - toolbarHeight - spacing;
+                  
+                  // 檢查並調整 X 位置（水平方向）
+                  let finalX = preferredX;
+                  if (preferredX + toolbarWidth > viewportWidth - padding) {
+                    // 超出右邊界，嘗試放在左邊
+                    finalX = cardRect.left - toolbarWidth - spacing;
+                    if (finalX < padding) {
+                      // 左邊也放不下，放在 card 左側但貼齊視窗左邊
+                      finalX = padding;
+                    }
+                  } else if (preferredX < padding) {
+                    // 超出左邊界，貼齊視窗左邊
+                    finalX = padding;
+                  }
+                  
+                  // 檢查並調整 Y 位置（垂直方向）
+                  let finalY = preferredY;
+                  if (preferredY + toolbarHeight > viewportHeight - padding) {
+                    // 超出下邊界，嘗試放在上方
+                    finalY = cardRect.top - toolbarHeight - spacing;
+                    if (finalY < padding) {
+                      // 上方也放不下，放在 card 上方但貼齊視窗頂部
+                      finalY = padding;
+                    }
+                  } else if (preferredY < padding) {
+                    // 超出上邊界，貼齊視窗頂部
+                    finalY = padding;
+                  }
+                  
+                  // 應用位置
+                  reactionToolbarContainer.style.position = 'fixed';
+                  reactionToolbarContainer.style.left = `${finalX}px`;
+                  reactionToolbarContainer.style.top = `${finalY}px`;
                   reactionToolbarContainer.style.right = 'auto';
-                  reactionToolbarContainer.style.left = `${cardRect.left - toolbarRect.width - spacing}px`;
-                } else {
-                  reactionToolbarContainer.style.left = 'auto';
-                  reactionToolbarContainer.style.right = `${right}px`;
-                }
-                
-                // 如果會超出下邊界，調整到上方
-                if (cardRect.bottom + toolbarRect.height > viewportHeight - 16) {
                   reactionToolbarContainer.style.bottom = 'auto';
-                  reactionToolbarContainer.style.top = `${cardRect.top - toolbarRect.height - spacing}px`;
-                } else {
-                  reactionToolbarContainer.style.top = 'auto';
-                  reactionToolbarContainer.style.bottom = `${bottom}px`;
                 }
-                
-                reactionToolbarContainer.style.position = 'fixed';
-              }
+              });
             });
             
             // 綁定刪除按鈕事件
@@ -966,8 +1001,24 @@ export class RetrospectivePage {
                 await this.deleteItem(index, category);
               });
             }
+            
+            // 觸控設備：監聽外部點擊來關閉 toolbar
+            if (isTouchDevice) {
+              outsideClickHandler = (e) => {
+                if (toolbarInstance && reactionToolbarContainer.classList.contains('show')) {
+                  if (!reactionToolbarContainer.contains(e.target) && 
+                      !reactionPlusBtn.contains(e.target)) {
+                    hideToolbar();
+                  }
+                }
+              };
+              // 使用 setTimeout 避免立即觸發
+              setTimeout(() => {
+                document.addEventListener('click', outsideClickHandler, true);
+              }, 100);
+            }
           }
-        }, 50); // 稍微延遲，讓 hover 更穩定
+        }, isTouchDevice ? 0 : 50); // 觸控設備立即顯示，桌面版稍微延遲
       };
       
       const hideToolbar = () => {
@@ -975,11 +1026,20 @@ export class RetrospectivePage {
           clearTimeout(showTimeout);
           showTimeout = null;
         }
+        
+        // 移除外部點擊監聽器
+        if (outsideClickHandler) {
+          document.removeEventListener('click', outsideClickHandler, true);
+          outsideClickHandler = null;
+        }
+        
         hideTimeout = setTimeout(() => {
-          // 檢查是否還在 hover 狀態
-          const isHovering = reactionPlusBtn.matches(':hover') || 
-                           reactionToolbarContainer.matches(':hover') ||
-                           cardElement.querySelector(':hover')?.closest('.reaction-toolbar');
+          // 檢查是否還在 hover 狀態（僅桌面版）
+          const isHovering = !isTouchDevice && (
+            reactionPlusBtn.matches(':hover') || 
+            reactionToolbarContainer.matches(':hover') ||
+            cardElement.querySelector(':hover')?.closest('.reaction-toolbar')
+          );
           
           if (!isHovering && reactionToolbarContainer) {
             reactionToolbarContainer.classList.remove('show');
@@ -994,24 +1054,37 @@ export class RetrospectivePage {
               }
             }, 300); // 等待 fade out 動畫完成
           }
-        }, 150); // 增加延遲，避免快速移動時閃爍
+        }, isTouchDevice ? 200 : 150); // 觸控設備延遲更長，避免誤觸
       };
       
-      reactionPlusBtn.addEventListener('mouseenter', showToolbar);
-      reactionToolbarContainer.addEventListener('mouseenter', () => {
-        if (hideTimeout) {
-          clearTimeout(hideTimeout);
-          hideTimeout = null;
-        }
-        if (showTimeout) {
-          clearTimeout(showTimeout);
-          showTimeout = null;
-        }
-      });
-      
-      // 當滑鼠離開「＋」按鈕或工具欄時隱藏
-      reactionPlusBtn.addEventListener('mouseleave', hideToolbar);
-      reactionToolbarContainer.addEventListener('mouseleave', hideToolbar);
+      // 桌面版：使用 hover 事件
+      if (!isTouchDevice) {
+        reactionPlusBtn.addEventListener('mouseenter', showToolbar);
+        reactionToolbarContainer.addEventListener('mouseenter', () => {
+          if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+          }
+          if (showTimeout) {
+            clearTimeout(showTimeout);
+            showTimeout = null;
+          }
+        });
+        reactionPlusBtn.addEventListener('mouseleave', hideToolbar);
+        reactionToolbarContainer.addEventListener('mouseleave', hideToolbar);
+      } else {
+        // 觸控設備：使用點擊事件
+        reactionPlusBtn.addEventListener('click', (e) => {
+          e.stopPropagation(); // 防止觸發 card 的點擊事件
+          if (toolbarInstance && reactionToolbarContainer.classList.contains('show')) {
+            // 如果已經顯示，則隱藏
+            hideToolbar();
+          } else {
+            // 如果未顯示，則顯示
+            showToolbar();
+          }
+        });
+      }
     }
     
     // 編輯輸入框自動保存

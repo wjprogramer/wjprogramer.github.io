@@ -13,6 +13,18 @@
   opacity: 0;
 }
 
+/* 手機版：加號按鈕始終顯示 */
+@media (hover: none) and (pointer: coarse) {
+  .card .card-reaction-trigger {
+    opacity: 1;
+    display: block !important;
+  }
+  
+  .card .card-reaction-trigger.hide {
+    opacity: 0.5; /* 即使隱藏也稍微可見，提示用戶可以點擊 */
+  }
+}
+
 .reaction-plus-btn {
   box-shadow: var(--shadow-sm);
   color: var(--text-primary);
