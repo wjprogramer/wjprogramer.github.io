@@ -1204,12 +1204,50 @@ export class RetrospectivePage {
     document.body.appendChild(modal);
     
     const wrapper = modal.querySelector('.emoji-picker-wrapper');
+    const contentContainer = wrapper.querySelector('.emoji-picker-content');
     picker.bindEvents(wrapper);
     
     // 阻止 wrapper 內的點擊事件冒泡到 backdrop
     wrapper.addEventListener('click', (e) => {
       e.stopPropagation();
     });
+    
+    // 防止滾動穿透：當 emoji picker 內容滾動到底部或頂部時，阻止滾動事件冒泡
+    if (contentContainer) {
+      contentContainer.addEventListener('wheel', (e) => {
+        const { scrollTop, scrollHeight, clientHeight } = contentContainer;
+        const isAtTop = scrollTop === 0;
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // 允許 1px 誤差
+        
+        // 如果滾動到底部且繼續向下滾動，或滾動到頂部且繼續向上滾動，阻止事件冒泡
+        if ((isAtBottom && e.deltaY > 0) || (isAtTop && e.deltaY < 0)) {
+          e.stopPropagation();
+        }
+      }, { passive: false });
+      
+      // 也處理 touchmove 事件（手機版）- 使用 overscroll-behavior CSS 已經足夠，這裡作為額外保護
+      let lastTouchY = null;
+      contentContainer.addEventListener('touchstart', (e) => {
+        lastTouchY = e.touches[0].clientY;
+      }, { passive: true });
+      
+      contentContainer.addEventListener('touchmove', (e) => {
+        if (lastTouchY === null) return;
+        
+        const { scrollTop, scrollHeight, clientHeight } = contentContainer;
+        const isAtTop = scrollTop <= 1; // 允許 1px 誤差
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
+        const currentTouchY = e.touches[0].clientY;
+        const deltaY = currentTouchY - lastTouchY;
+        
+        // 如果滾動到底部且繼續向下滾動，或滾動到頂部且繼續向上滾動，阻止事件冒泡
+        if ((isAtBottom && deltaY < 0) || (isAtTop && deltaY > 0)) {
+          e.stopPropagation();
+        }
+        
+        lastTouchY = currentTouchY;
+      }, { passive: false });
+    }
     
     // 點擊背景關閉
     modal.querySelector('.emoji-picker-backdrop').addEventListener('click', () => {
