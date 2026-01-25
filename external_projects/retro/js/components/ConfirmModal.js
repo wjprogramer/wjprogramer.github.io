@@ -37,51 +37,113 @@ export class ConfirmModal {
     // 套用翻譯（如果有使用 data-i18n）
     applyTranslations();
     
-    const closeModal = () => {
-      modal.classList.add('closing');
-      setTimeout(() => {
+    let isClosing = false; // 防止重複關閉
+    let cleanupTimeout = null;
+    let animationEndHandler = null;
+    
+    const cleanup = () => {
+      // 清理所有事件監聽器和 timeout
+      if (animationEndHandler) {
+        modal.removeEventListener('animationend', animationEndHandler);
+      }
+      if (cleanupTimeout) {
+        clearTimeout(cleanupTimeout);
+        cleanupTimeout = null;
+      }
+      
+      // 移除元素
+      if (modal.parentNode) {
         modal.remove();
-        // 如果沒有其他 modal，移除標記
-        if (!document.querySelector('.modal-backdrop')) {
-          document.body.classList.remove('modal-open');
-        }
-      }, 300);
+      }
+      // 如果沒有其他 modal，移除標記
+      if (!document.querySelector('.modal-backdrop')) {
+        document.body.classList.remove('modal-open');
+      }
     };
     
-    // 關閉按鈕
-    modal.querySelector('.modal-close').addEventListener('click', () => {
+    const closeModal = () => {
+      // 如果已經在關閉過程中，直接返回
+      if (isClosing) return;
+      isClosing = true;
+      
+      // 移除所有事件監聽器，防止重複觸發
+      modal.querySelector('.modal-close').removeEventListener('click', handleCloseClick);
+      modal.querySelector('.cancel-btn').removeEventListener('click', handleCancelClick);
+      modal.querySelector('.confirm-btn').removeEventListener('click', handleConfirmClick);
+      modal.removeEventListener('click', handleBackdropClick);
+      document.removeEventListener('keydown', handleEsc);
+      
+      // 定義動畫結束處理函數
+      animationEndHandler = (e) => {
+        // 只處理 backdrop 的 fadeOut 動畫結束事件
+        if (e.target === modal && e.animationName === 'fadeOut') {
+          cleanup();
+        }
+      };
+      
+      // 監聽動畫結束事件
+      modal.addEventListener('animationend', animationEndHandler);
+      
+      // 使用 requestAnimationFrame 確保瀏覽器準備好渲染動畫
+      requestAnimationFrame(() => {
+        // 確保元素還在 DOM 中
+        if (!modal.parentNode) {
+          cleanup();
+          return;
+        }
+        
+        const modalElement = modal.querySelector('.modal');
+        
+        // 同時對 backdrop 和 modal 添加 closing class
+        modal.classList.add('closing');
+        if (modalElement) {
+          modalElement.classList.add('closing');
+        }
+        
+        // Fallback: 如果動畫沒有觸發（不應該發生），350ms 後強制清理
+        cleanupTimeout = setTimeout(() => {
+          if (isClosing && modal.parentNode) {
+            cleanup();
+          }
+        }, 350);
+      });
+    };
+    
+    // 定義事件處理函數
+    const handleCloseClick = () => {
       this.onCancel();
       closeModal();
-    });
+    };
     
-    // 取消按鈕
-    modal.querySelector('.cancel-btn').addEventListener('click', () => {
+    const handleCancelClick = () => {
       this.onCancel();
       closeModal();
-    });
+    };
     
-    // 確認按鈕
-    modal.querySelector('.confirm-btn').addEventListener('click', () => {
+    const handleConfirmClick = () => {
       this.onConfirm();
       closeModal();
-    });
+    };
     
-    // 點擊背景關閉
-    modal.addEventListener('click', (e) => {
+    const handleBackdropClick = (e) => {
       if (e.target === modal) {
         this.onCancel();
         closeModal();
       }
-    });
+    };
     
-    // ESC 鍵關閉
     const handleEsc = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !isClosing) {
         this.onCancel();
         closeModal();
-        document.removeEventListener('keydown', handleEsc);
       }
     };
+    
+    // 綁定事件監聽器
+    modal.querySelector('.modal-close').addEventListener('click', handleCloseClick);
+    modal.querySelector('.cancel-btn').addEventListener('click', handleCancelClick);
+    modal.querySelector('.confirm-btn').addEventListener('click', handleConfirmClick);
+    modal.addEventListener('click', handleBackdropClick);
     document.addEventListener('keydown', handleEsc);
     
     // 聚焦到確認按鈕（可選）

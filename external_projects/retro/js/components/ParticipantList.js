@@ -1,5 +1,6 @@
 // 參與者列表元件
 import { t } from '../utils/i18n.js';
+import { iconoirIcons } from '../utils/iconoir.js';
 
 export class ParticipantList {
   constructor(participants, isHost = false, onKick = null) {
@@ -38,8 +39,8 @@ export class ParticipantList {
         </div>
         ${this.isHost && isConnected ? `
           <div class="participant-actions">
-            <button class="btn btn-danger btn-sm kick-btn" data-peer-id="${participant.peerId}">
-              ${t('common.delete')}
+            <button class="btn btn-danger btn-sm kick-btn" data-peer-id="${participant.peerId}" title="${t('common.delete')}">
+              ${iconoirIcons.trash(2, 18)}
             </button>
           </div>
         ` : ''}
@@ -52,9 +53,8 @@ export class ParticipantList {
       container.querySelectorAll('.kick-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const peerId = btn.dataset.peerId;
-          if (confirm('確定要踢除此參與者嗎？')) {
-            this.onKick(peerId);
-          }
+          // 確認邏輯由外部回調處理
+          this.onKick(peerId);
         });
       });
     }

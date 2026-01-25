@@ -10,6 +10,7 @@ import { ParticipantList } from '../components/ParticipantList.js';
 import { ReactionToolbar } from '../components/ReactionToolbar.js';
 import { EmojiPicker } from '../components/EmojiPicker.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
+import { iconoirIcons } from '../utils/iconoir.js';
 import { DataChannel } from '../webrtc/DataChannel.js';
 
 export class RetrospectivePage {
@@ -446,11 +447,8 @@ export class RetrospectivePage {
               
               <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
                 ${isHost && joinLink ? `
-                  <button class="btn btn-secondary" id="share-link-btn" title="分享連結">
-                    <i class="iconoir-link"></i>
-                  </button>
                   <button class="btn btn-secondary" id="show-qr-btn" title="顯示 QR Code">
-                    <i class="iconoir-qr-code"></i>
+                    ${iconoirIcons.qrCode(2, 20)}
                   </button>
                 ` : ''}
                 <button class="btn btn-accent" id="export-btn">
@@ -464,7 +462,7 @@ export class RetrospectivePage {
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                   <h3 class="card-title" style="margin: 0;">分享會議</h3>
                   <button class="btn btn-text" id="close-share-btn" style="padding: 0; min-width: auto;">
-                    <i class="iconoir-cancel"></i>
+                    ${iconoirIcons.cancel(2, 20)}
                   </button>
                 </div>
                 <div class="card-body">
@@ -1414,24 +1412,13 @@ export class RetrospectivePage {
     
     // 分享功能（host 模式）
     if (this.isP2PMode && this.hostMode) {
-      const shareLinkBtn = document.getElementById('share-link-btn');
       const showQrBtn = document.getElementById('show-qr-btn');
       const shareSection = document.getElementById('share-section');
       const closeShareBtn = document.getElementById('close-share-btn');
       const copyIdBtn = document.getElementById('copy-id-btn');
       const copyLinkBtn = document.getElementById('copy-link-btn');
       
-      // 顯示/隱藏分享區塊
-      if (shareLinkBtn && shareSection) {
-        shareLinkBtn.addEventListener('click', () => {
-          const isHidden = shareSection.style.display === 'none' || !shareSection.style.display;
-          shareSection.style.display = isHidden ? 'block' : 'none';
-          if (isHidden) {
-            this.generateQRCode();
-          }
-        });
-      }
-      
+      // 顯示/隱藏分享區塊（QR Code）
       if (showQrBtn && shareSection) {
         showQrBtn.addEventListener('click', () => {
           const isHidden = shareSection.style.display === 'none' || !shareSection.style.display;
@@ -2085,10 +2072,19 @@ export class RetrospectivePage {
     if (!container) return;
     
     const list = new ParticipantList(participants, true, async (peerId) => {
-      if (confirm('確定要踢除此參與者嗎？')) {
-        await this.hostMode.kickParticipant(peerId);
-        this.updateParticipantsList();
-      }
+      const modal = new ConfirmModal({
+        title: t('common.confirm'),
+        message: '確定要踢除此參與者嗎？',
+        confirmText: t('common.delete'),
+        cancelText: t('common.cancel'),
+        confirmButtonClass: 'btn-danger',
+        onConfirm: async () => {
+          await this.hostMode.kickParticipant(peerId);
+          this.updateParticipantsList();
+        }
+      });
+      
+      modal.show();
     });
     
     container.innerHTML = list.render();
