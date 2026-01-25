@@ -15,11 +15,13 @@
 
 .reaction-plus-btn {
   box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
 }
 
 .reaction-plus-btn:hover {
   background: var(--bg-secondary) !important;
   border-color: var(--color-primary) !important;
+  color: var(--text-primary) !important;
   transform: scale(1.1);
 }
 

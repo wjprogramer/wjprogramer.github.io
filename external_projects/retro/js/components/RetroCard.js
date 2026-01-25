@@ -55,7 +55,7 @@ export class RetroCard {
         </div>
         <!-- Hover 時顯示的「＋」按鈕（原本投票按鈕的位置） -->
         <div class="card-reaction-trigger" style="display: none; position: absolute; bottom: var(--spacing-md); right: var(--spacing-md); z-index: 5;">
-          <button class="reaction-plus-btn" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-base);">
+          <button class="reaction-plus-btn" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-base);">
             ${iconoirIcons.plus(2, 16)}
           </button>
         </div>

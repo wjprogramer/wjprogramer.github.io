@@ -474,7 +474,7 @@ export class RetrospectivePage {
                       </label>
                       <div style="display: flex; gap: var(--spacing-sm);">
                         <input type="text" id="meeting-id-display" readonly value="${this.meetingId}"
-                          style="flex: 1; padding: var(--spacing-sm); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); font-size: 0.875rem;">
+                          style="flex: 1; padding: var(--spacing-sm); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.875rem;">
                         <button class="btn btn-secondary" id="copy-id-btn" style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">${t('host.copyId')}</button>
                       </div>
                     </div>
@@ -485,7 +485,7 @@ export class RetrospectivePage {
                       </label>
                       <div style="display: flex; gap: var(--spacing-sm);">
                         <input type="text" id="join-link-display" readonly value="${joinLink}"
-                          style="flex: 1; padding: var(--spacing-sm); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); font-size: 0.75rem;">
+                          style="flex: 1; padding: var(--spacing-sm); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.75rem;">
                         <button class="btn btn-secondary" id="copy-link-btn" style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">${t('host.copyLink')}</button>
                       </div>
                     </div>

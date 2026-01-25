@@ -85,7 +85,7 @@ export class HostPage {
                     </label>
                     <div style="display: flex; gap: var(--spacing-sm);">
                       <input type="text" id="meeting-id-display" readonly
-                        style="flex: 1; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary);">
+                        style="flex: 1; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);">
                       <button class="btn btn-secondary" id="copy-id-btn">${t('host.copyId')}</button>
                     </div>
                   </div>
@@ -96,7 +96,7 @@ export class HostPage {
                     </label>
                     <div style="display: flex; gap: var(--spacing-sm);">
                       <input type="text" id="join-link-display" readonly
-                        style="flex: 1; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); font-size: 0.875rem;">
+                        style="flex: 1; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.875rem;">
                       <button class="btn btn-secondary" id="copy-link-btn">${t('host.copyLink')}</button>
                     </div>
                   </div>
