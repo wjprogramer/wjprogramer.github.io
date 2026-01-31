@@ -301,7 +301,11 @@ export class JoinPage {
         }
       });
       
+      // 被踢除時 onKicked 會先執行，onDisconnected 隨後觸發；避免 onDisconnected 再次 reset 清空會議 ID
+      let wasKickedFromJoin = false;
+      
       this.participantMode.onDisconnected(() => {
+        if (wasKickedFromJoin) return;
         if (!hasReceivedSync) {
           this.resetJoinUI(joinBtn, meetingIdInput, nameInput, originalBtnText);
           Toast.warning('連線已斷開');
@@ -309,6 +313,7 @@ export class JoinPage {
       });
       
       this.participantMode.onKicked((reason) => {
+        wasKickedFromJoin = true;
         // 清理連接
         if (this.participantMode) {
           this.participantMode.leave();
