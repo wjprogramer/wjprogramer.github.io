@@ -1,4 +1,10 @@
 /* Modal Styles - 搖曳露營風格 */
+
+/* 防止在 backdrop 上滾動時帶動背後內容 */
+body.modal-open {
+  overflow: hidden;
+}
+
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -12,6 +18,9 @@
   z-index: var(--z-modal-backdrop);
   padding: var(--spacing-md);
   animation: fadeIn 0.3s ease forwards;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .modal-backdrop.closing {
@@ -39,6 +48,7 @@
   position: relative;
   z-index: var(--z-modal);
   animation: modalEnter 0.5s var(--transition-bounce) forwards;
+  overscroll-behavior: contain;
 }
 
 .modal.closing {
