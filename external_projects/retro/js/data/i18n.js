@@ -116,6 +116,7 @@ export const translations = {
       success: '成功',
       error: '錯誤',
       copied: '已複製',
+      you: '你',
       confirmDelete: '確定要刪除嗎？',
       confirmClear: '確定要清除所有資料嗎？此操作無法復原。'
     }
@@ -236,6 +237,7 @@ export const translations = {
       success: 'Success',
       error: 'Error',
       copied: 'Copied',
+      you: 'You',
       confirmDelete: 'Are you sure you want to delete?',
       confirmClear: 'Are you sure you want to clear all data? This action cannot be undone.'
     }

@@ -399,6 +399,9 @@ export class RetrospectivePage {
           }
         }
       });
+      this.participantMode.onParticipantsUpdate(() => {
+        this.updateParticipantsList();
+      });
       
       // 監聽編輯狀態變化
       await this.setupEditStateListeners(this.participantMode);
@@ -500,7 +503,7 @@ export class RetrospectivePage {
               </div>
             ` : ''}
             
-            <div style="display: grid; grid-template-columns: ${isHost ? '1fr 300px' : '1fr'}; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+            <div style="display: grid; grid-template-columns: ${this.isP2PMode ? '1fr 300px' : '1fr'}; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
               <div class="card">
                 <div class="card-header">
                   <h2 class="card-title">${this.currentRetro?.title || t('retrospective.title')}</h2>
@@ -508,7 +511,7 @@ export class RetrospectivePage {
                 </div>
               </div>
               
-              ${isHost ? `
+              ${this.isP2PMode ? `
                 <div class="card" style="max-height: 400px; overflow-y: auto;">
                   <div class="card-header">
                     <h3 class="card-title" style="font-size: 1rem; margin: 0;">${t('host.participants')}</h3>
@@ -542,10 +545,12 @@ export class RetrospectivePage {
     // 渲染項目列表
     this.renderItems();
     
-    // 如果是 host 模式，更新參與者列表並生成 QR Code
-    if (this.isP2PMode && this.hostMode) {
+    // P2P 模式：更新參與者列表（host 與參與者皆可看到）
+    if (this.isP2PMode) {
       this.updateParticipantsList();
-      // 預設顯示 QR Code
+    }
+    // 僅 host 顯示 QR Code
+    if (this.isP2PMode && this.hostMode) {
       this.generateQRCode();
     }
     
@@ -2062,31 +2067,44 @@ export class RetrospectivePage {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // 更新參與者列表（host 模式）
+  // 更新參與者列表（host 與參與者皆可看到完整名單；僅 host 可踢除）
   updateParticipantsList() {
-    if (!this.isP2PMode || !this.hostMode) return;
+    if (!this.isP2PMode) return;
     
-    const participants = this.hostMode.getParticipants();
     const container = document.getElementById('participants-list');
-    
     if (!container) return;
     
-    const host = this.hostMode.retro?.host ? { name: this.hostMode.retro.host.name } : null;
-    const list = new ParticipantList(participants, true, async (peerId) => {
-      const modal = new ConfirmModal({
-        title: t('common.confirm'),
-        message: '確定要踢除此參與者嗎？',
-        confirmText: t('common.delete'),
-        cancelText: t('common.cancel'),
-        confirmButtonClass: 'btn-danger',
-        onConfirm: async () => {
-          await this.hostMode.kickParticipant(peerId);
-          this.updateParticipantsList();
-        }
-      });
-      
-      modal.show();
-    }, host);
+    const isHost = !!this.hostMode;
+    const participants = isHost
+      ? this.hostMode.getParticipants()
+      : (this.participantMode?.getParticipants() || []);
+    const host = isHost
+      ? (this.hostMode.retro?.host ? { name: this.hostMode.retro.host.name } : null)
+      : (this.participantMode?.getRetro()?.host ? { name: this.participantMode.getRetro().host.name } : null);
+    const currentUserName = isHost
+      ? this.hostMode.retro?.host?.name
+      : this.participantMode?.name;
+    
+    const list = new ParticipantList(
+      participants,
+      isHost,
+      isHost ? async (peerId) => {
+        const modal = new ConfirmModal({
+          title: t('common.confirm'),
+          message: '確定要踢除此參與者嗎？',
+          confirmText: t('common.delete'),
+          cancelText: t('common.cancel'),
+          confirmButtonClass: 'btn-danger',
+          onConfirm: async () => {
+            await this.hostMode.kickParticipant(peerId);
+            this.updateParticipantsList();
+          }
+        });
+        modal.show();
+      } : null,
+      host,
+      currentUserName
+    );
     
     container.innerHTML = list.render();
     list.bindEvents(container);

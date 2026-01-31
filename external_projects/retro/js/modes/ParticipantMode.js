@@ -15,6 +15,7 @@ export class ParticipantMode {
     this.onItemUpdateCallbacks = [];
     this.onStatusChangeCallbacks = [];
     this.onKickedCallbacks = [];
+    this.onParticipantsUpdateCallbacks = [];
     this.hasReceivedSync = false; // 標記是否已收到 SYNC 訊息
     
     // 自動重連相關
@@ -111,6 +112,7 @@ export class ParticipantMode {
       
       this.retro = payload.retro;
       this.participants = payload.participants || [];
+      this.onParticipantsUpdateCallbacks.forEach(cb => cb());
       
       // 第一次收到 SYNC 時，保存 retro id 並觸發連線成功回調
       if (!this.hasReceivedSync) {
@@ -138,11 +140,13 @@ export class ParticipantMode {
     // 處理參與者加入
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.JOIN, (peerId, payload) => {
       this.participants = payload.participants || [];
+      this.onParticipantsUpdateCallbacks.forEach(cb => cb());
     });
 
     // 處理參與者離開
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.LEAVE, (peerId, payload) => {
       this.participants = payload.participants || [];
+      this.onParticipantsUpdateCallbacks.forEach(cb => cb());
     });
 
     // 處理新增項目
@@ -501,6 +505,10 @@ export class ParticipantMode {
 
   onKicked(callback) {
     this.onKickedCallbacks.push(callback);
+  }
+
+  onParticipantsUpdate(callback) {
+    this.onParticipantsUpdateCallbacks.push(callback);
   }
 
   // 取得回顧資料

@@ -3,11 +3,12 @@ import { t } from '../utils/i18n.js';
 import { iconoirIcons } from '../utils/iconoir.js';
 
 export class ParticipantList {
-  constructor(participants, isHost = false, onKick = null, host = null) {
+  constructor(participants, isHost = false, onKick = null, host = null, currentUserName = null) {
     this.participants = participants;
     this.isHost = isHost;
     this.onKick = onKick;
     this.host = host; // { name }，顯示在列表最上方且不可踢除
+    this.currentUserName = currentUserName != null ? String(currentUserName).trim() : null; // 目前使用者名稱，用來標示「你」
   }
 
   render() {
@@ -30,12 +31,15 @@ export class ParticipantList {
   renderHostRow() {
     const name = this.host.name || '';
     const initials = name ? name.charAt(0).toUpperCase() : 'H';
+    const isMe = this.currentUserName && name && name === this.currentUserName;
+    const isMeClass = isMe ? ' participant-item-is-me' : '';
+    const youBadge = isMe ? `<span class="participant-you-badge">${t('common.you')}</span>` : '';
     return `
-      <div class="participant-item participant-item-host" style="animation-delay: 0s;">
+      <div class="participant-item participant-item-host${isMeClass}" style="animation-delay: 0s;">
         <div class="participant-info">
           <div class="participant-avatar">${initials}</div>
           <div class="participant-details">
-            <div class="participant-name">${this.escapeHtml(name)}</div>
+            <div class="participant-name">${this.escapeHtml(name)} ${youBadge}</div>
             <div class="participant-status">
               <span class="status-dot connected"></span>
               ${t('host.hostLabel')}
@@ -49,13 +53,15 @@ export class ParticipantList {
   renderParticipant(participant, index) {
     const isConnected = !participant.leftAt;
     const initials = participant.name.charAt(0).toUpperCase();
-    
+    const isMe = this.currentUserName && participant.name && participant.name === this.currentUserName;
+    const isMeClass = isMe ? ' participant-item-is-me' : '';
+    const youBadge = isMe ? `<span class="participant-you-badge">${t('common.you')}</span>` : '';
     return `
-      <div class="participant-item" style="animation-delay: ${(this.host ? index + 1 : index) * 0.1}s;">
+      <div class="participant-item${isMeClass}" style="animation-delay: ${(this.host ? index + 1 : index) * 0.1}s;">
         <div class="participant-info">
           <div class="participant-avatar">${initials}</div>
           <div class="participant-details">
-            <div class="participant-name">${this.escapeHtml(participant.name)}</div>
+            <div class="participant-name">${this.escapeHtml(participant.name)} ${youBadge}</div>
             <div class="participant-status">
               <span class="status-dot ${isConnected ? 'connected' : 'disconnected'}"></span>
               ${isConnected ? '已連線' : '已斷線'}

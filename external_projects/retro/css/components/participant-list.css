@@ -101,3 +101,24 @@
   gap: var(--spacing-sm);
 }
 
+/* 代表自己的那一列：邊框與極淡底色，「你」標籤 */
+.participant-item-is-me {
+  border-color: var(--color-primary);
+  border-width: 1px;
+  /* 極淡主色（約 6%），不影響文字可讀性；不支援 color-mix 時用原卡片背景 */
+  background: var(--bg-card);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--bg-card));
+}
+
+.participant-you-badge {
+  display: inline-block;
+  margin-left: var(--spacing-xs);
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+

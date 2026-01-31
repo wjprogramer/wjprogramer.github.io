@@ -483,10 +483,11 @@ export class HostPage {
     }
     
     const host = this.hostMode.retro?.host ? { name: this.hostMode.retro.host.name } : null;
+    const currentUserName = this.hostMode.retro?.host?.name ?? null;
     const list = new ParticipantList(participants, true, async (peerId) => {
       await this.hostMode.kickParticipant(peerId);
       this.updateParticipantsList();
-    }, host);
+    }, host, currentUserName);
     
     container.innerHTML = list.render();
     list.bindEvents(container);
