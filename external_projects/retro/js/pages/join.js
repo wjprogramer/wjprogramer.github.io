@@ -293,10 +293,12 @@ export class JoinPage {
           // retroId: 從 URL 參數或 SYNC 訊息中取得
           // meetingId: peer id（用於 WebRTC 連線）
           // mode: 標記為參與者模式，避免重整時被誤判為 host
+          // 參與者模式：URL 含 participantName，重整時優先使用此名稱（避免多分頁時 lastUserName 被覆寫）
           const retroId = this.retroId || this.participantMode.getRetro()?.id || meetingId;
+          const participantNameParam = encodeURIComponent(name);
           setTimeout(() => {
             Toast.success('連線成功');
-            this.router.navigate(`/retrospective/${retroId}?meetingId=${meetingId}&mode=participant`);
+            this.router.navigate(`/retrospective/${retroId}?meetingId=${meetingId}&mode=participant&participantName=${participantNameParam}`);
           }, 500);
         }
       });

@@ -118,9 +118,10 @@ export class RetrospectivePage {
           </div>
         `;
         
-        // 恢復參與者連線
+        // 恢復參與者連線（優先使用 URL 的 participantName，避免多分頁重整時名稱被覆寫）
         try {
-          await this.restoreParticipantConnection(this.retroId, this.meetingId);
+          const participantNameFromUrl = this.queryParams.participantName || null;
+          await this.restoreParticipantConnection(this.retroId, this.meetingId, participantNameFromUrl);
           
           // 檢查頁面是否已被銷毀
           if (this.isDestroyed || this.renderContainer !== container) {
@@ -1948,8 +1949,8 @@ export class RetrospectivePage {
     console.log('Host meeting restored successfully');
   }
   
-  // 恢復參與者連線
-  async restoreParticipantConnection(retroId, meetingId) {
+  // 恢復參與者連線（participantNameFromUrl：來自 URL，重整時優先使用，避免多分頁共用 lastUserName）
+  async restoreParticipantConnection(retroId, meetingId, participantNameFromUrl = null) {
     const { ParticipantMode } = await import('../modes/ParticipantMode.js');
     
     // 從儲存中載入會議資料，取得 retro 資訊（用於驗證）
@@ -1964,12 +1965,14 @@ export class RetrospectivePage {
     this.participantMode = new ParticipantMode();
     this.isP2PMode = true;
     
-    // 從設定中取得上次使用的名稱（如果有的話）
+    // 優先使用 URL 的參與者名稱（此分頁當初加入時的名稱），否則才用 localStorage 的 lastUserName
     const settings = await storage.getSettings();
-    const lastUserName = settings?.lastUserName || 'Participant';
+    const nameToUse = (participantNameFromUrl && participantNameFromUrl.trim()) 
+      ? participantNameFromUrl.trim() 
+      : (settings?.lastUserName || 'Participant');
     
     // 重新加入會議（使用 retroId 進行驗證）
-    await this.participantMode.joinMeeting(meetingId, meetingId, lastUserName, retroId);
+    await this.participantMode.joinMeeting(meetingId, meetingId, nameToUse, retroId);
     
     // 等待連線建立和資料同步
     await new Promise((resolve, reject) => {
