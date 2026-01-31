@@ -455,6 +455,14 @@ export class RetrospectivePage {
                     ${iconoirIcons.qrCode(2, 20)}
                   </button>
                 ` : ''}
+                ${this.isP2PMode ? `
+                  <button class="btn btn-secondary" id="participants-btn" title="${t('host.participants')}">
+                    <span class="participants-btn-icon-wrap">
+                      ${iconoirIcons.user(2, 20)}
+                      <span id="participants-count-badge" class="participants-count-badge">0</span>
+                    </span>
+                  </button>
+                ` : ''}
                 <button class="btn btn-accent" id="export-btn">
                   ${t('retrospective.export')}
                 </button>
@@ -504,25 +512,28 @@ export class RetrospectivePage {
               </div>
             ` : ''}
             
-            <div style="display: grid; grid-template-columns: ${this.isP2PMode ? '1fr 300px' : '1fr'}; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+            <div style="margin-bottom: var(--spacing-lg);">
               <div class="card">
                 <div class="card-header">
                   <h2 class="card-title">${this.currentRetro?.title || t('retrospective.title')}</h2>
                   ${this.currentRetro?.description ? `<p class="text-muted">${this.currentRetro.description}</p>` : ''}
                 </div>
               </div>
-              
-              ${this.isP2PMode ? `
-                <div class="card" style="max-height: 400px; overflow-y: auto;">
-                  <div class="card-header">
-                    <h3 class="card-title" style="font-size: 1rem; margin: 0;">${t('host.participants')}</h3>
-                  </div>
-                  <div class="card-body">
-                    <div id="participants-list"></div>
-                  </div>
-                </div>
-              ` : ''}
             </div>
+            
+            ${this.isP2PMode ? `
+            <div id="participants-modal" class="modal-backdrop" style="display: none; z-index: var(--z-modal-backdrop);">
+              <div class="modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                  <h3 class="modal-title" style="margin: 0;">${t('host.participants')}</h3>
+                  <button class="modal-close" id="participants-modal-close" aria-label="${t('common.close')}" type="button" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); line-height: 1;">×</button>
+                </div>
+                <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                  <div id="participants-list"></div>
+                </div>
+              </div>
+            </div>
+            ` : ''}
             
             <style>
               @media (max-width: 1024px) {
@@ -1416,6 +1427,30 @@ export class RetrospectivePage {
       });
     }
     
+    // 參與者列表 modal（P2P 模式）
+    const participantsBtn = document.getElementById('participants-btn');
+    const participantsModal = document.getElementById('participants-modal');
+    const participantsModalClose = document.getElementById('participants-modal-close');
+    if (participantsBtn && participantsModal) {
+      participantsBtn.addEventListener('click', () => {
+        this.updateParticipantsList();
+        participantsModal.style.display = 'flex';
+        document.body.classList.add('modal-open');
+      });
+      const closeParticipantsModal = () => {
+        participantsModal.style.display = 'none';
+        if (!document.querySelector('.modal-backdrop[style*="display: flex"]')) {
+          document.body.classList.remove('modal-open');
+        }
+      };
+      if (participantsModalClose) {
+        participantsModalClose.addEventListener('click', closeParticipantsModal);
+      }
+      participantsModal.addEventListener('click', (e) => {
+        if (e.target === participantsModal) closeParticipantsModal();
+      });
+    }
+    
     // 分享功能（host 模式）
     if (this.isP2PMode && this.hostMode) {
       const showQrBtn = document.getElementById('show-qr-btn');
@@ -2111,6 +2146,11 @@ export class RetrospectivePage {
     
     container.innerHTML = list.render();
     list.bindEvents(container);
+    
+    // 更新參與者人數 badge（房主 + 參與者數）
+    const count = (host ? 1 : 0) + participants.length;
+    const badge = document.getElementById('participants-count-badge');
+    if (badge) badge.textContent = count;
   }
 
   // 設定編輯狀態監聽器（P2P 模式）

@@ -122,3 +122,46 @@
   border-radius: var(--radius-sm);
 }
 
+/* 參與者按鈕人數 badge：預設與 hover 由 CSS 控制（避免 inline 覆蓋 hover） */
+/* 用 inline-flex + line-height:0 讓 wrapper 緊貼 20x20 SVG，不產生多餘高度（與 QR 按鈕一致） */
+.participants-btn-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.participants-btn-icon-wrap svg {
+  display: block;
+}
+
+.participants-count-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  background: var(--color-primary);
+  color: white;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* hover 時 badge 圓圈改為白底，數字依主題保持可讀 */
+#participants-btn:hover .participants-count-badge {
+  background: white;
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] #participants-btn:hover .participants-count-badge {
+  color: var(--bg-primary);
+}
+
