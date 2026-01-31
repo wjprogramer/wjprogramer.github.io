@@ -10,9 +10,11 @@ export class RetroCard {
   }
 
   render(isEditing = false, isNewItem = false, editingBy = null) {
-    const authorName = this.item.author?.isAnonymous 
-      ? t('retrospective.anonymous') 
-      : (this.item.author?.name || 'Unknown');
+    const allowAnonymous = (window.retroState?.hostMode?.retro?.allowAnonymous ?? window.retroState?.participantMode?.getRetro?.()?.allowAnonymous) ?? false;
+    const showAuthor = !allowAnonymous;
+    const authorName = showAuthor
+      ? (this.item.author?.isAnonymous ? t('retrospective.anonymous') : (this.item.author?.name || 'Unknown'))
+      : '';
     
     // 只有新項目才添加動畫類別和延遲
     const animationClass = isNewItem ? 'card-enter' : '';
@@ -48,9 +50,11 @@ export class RetroCard {
         ` : ''}
         <div class="card-body">
           <p style="margin-bottom: var(--spacing-md); line-height: 1.6; white-space: pre-wrap;">${this.escapeHtml(this.item.text)}</p>
+          ${showAuthor ? `
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; color: var(--text-secondary);">
             <span>${authorName}</span>
           </div>
+          ` : ''}
           ${reactionsHtml}
         </div>
         <!-- Hover 時顯示的「＋」按鈕（原本投票按鈕的位置） -->
