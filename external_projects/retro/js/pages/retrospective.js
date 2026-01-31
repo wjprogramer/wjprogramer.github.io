@@ -1197,6 +1197,7 @@ export class RetrospectivePage {
     // 檢查是否已經有 picker
     let pickerElement = document.querySelector('.emoji-picker-modal');
     if (pickerElement) {
+      document.body.classList.remove('emoji-picker-open');
       pickerElement.remove();
     }
     
@@ -1207,6 +1208,7 @@ export class RetrospectivePage {
     
     const picker = new EmojiPicker((emoji) => {
       this.handleReaction(itemId, category, emoji);
+      document.body.classList.remove('emoji-picker-open');
       modal.remove();
     });
     
@@ -1218,6 +1220,7 @@ export class RetrospectivePage {
     `;
     
     document.body.appendChild(modal);
+    document.body.classList.add('emoji-picker-open');
     
     const wrapper = modal.querySelector('.emoji-picker-wrapper');
     const contentContainer = wrapper.querySelector('.emoji-picker-content');
@@ -1267,6 +1270,7 @@ export class RetrospectivePage {
     
     // 點擊背景關閉
     modal.querySelector('.emoji-picker-backdrop').addEventListener('click', () => {
+      document.body.classList.remove('emoji-picker-open');
       modal.remove();
     });
   }
