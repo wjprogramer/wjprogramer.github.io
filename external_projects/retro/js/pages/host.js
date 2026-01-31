@@ -33,6 +33,16 @@ export class HostPage {
               <div class="card-body">
                 <div style="margin-bottom: var(--spacing-md);">
                   <label style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500;">
+                    ${t('host.hostName')} *
+                  </label>
+                  <input type="text" id="host-name-input" 
+                    placeholder="${t('host.hostNamePlaceholder')}" 
+                    style="width: 100%; padding: var(--spacing-md); border: 1px solid var(--border-color); border-radius: var(--radius-md);"
+                    required>
+                </div>
+                
+                <div style="margin-bottom: var(--spacing-md);">
+                  <label style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500;">
                     ${t('host.meetingTitle')} *
                   </label>
                   <input type="text" id="meeting-title" 
@@ -125,6 +135,19 @@ export class HostPage {
     `;
     
     this.bindEvents();
+    this.prefillHostName();
+  }
+
+  async prefillHostName() {
+    const input = document.getElementById('host-name-input');
+    if (!input) return;
+    try {
+      const { storage } = await import('../utils/storage/index.js');
+      const settings = await storage.getSettings() || {};
+      if (settings.lastUserName) {
+        input.value = settings.lastUserName;
+      }
+    } catch (_) {}
   }
 
   bindEvents() {
@@ -154,10 +177,16 @@ export class HostPage {
   }
 
   async createMeeting() {
+    const hostName = document.getElementById('host-name-input').value.trim();
     const title = document.getElementById('meeting-title').value.trim();
     const description = document.getElementById('meeting-desc').value.trim();
     const date = document.getElementById('meeting-date').value;
     const allowAnonymous = document.getElementById('allow-anonymous').checked;
+    
+    if (!hostName) {
+      Toast.error(t('host.hostNameRequired'));
+      return;
+    }
     
     if (!title) {
       Toast.error('請輸入會議主題');
@@ -240,14 +269,15 @@ export class HostPage {
         Toast.info(`${participant.name} 已離開`);
       });
       
-      // 獲取使用者名稱（從設置中）
-      const settings = await storage.getSettings() || {};
-      const hostName = settings.lastUserName || 'Host';
-      
       const result = await this.hostMode.createMeeting(title, description, date, allowAnonymous, hostName);
       this.meetingId = result.meetingId;
       this.peerId = result.peerId;
       const retroId = result.retro.id; // 會議的 id（用於恢復資料）
+      
+      // 儲存房主名稱供下次預填
+      const settings = await storage.getSettings() || {};
+      settings.lastUserName = hostName;
+      await storage.saveSettings(settings);
       
       // 儲存到全域狀態（供 retrospective 頁面使用）
       if (!window.retroState) {

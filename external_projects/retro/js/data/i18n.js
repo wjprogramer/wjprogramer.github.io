@@ -17,6 +17,9 @@ export const translations = {
     },
     host: {
       title: '建立會議室',
+      hostName: '房主名稱',
+      hostNamePlaceholder: '輸入房主名稱...',
+      hostNameRequired: '請輸入房主名稱',
       meetingTitle: '會議主題',
       meetingTitlePlaceholder: '輸入會議主題...',
       meetingDesc: '會議描述',
@@ -133,6 +136,9 @@ export const translations = {
     },
     host: {
       title: 'Create Meeting Room',
+      hostName: 'Host Name',
+      hostNamePlaceholder: 'Enter your name as host...',
+      hostNameRequired: 'Please enter host name',
       meetingTitle: 'Meeting Title',
       meetingTitlePlaceholder: 'Enter meeting title...',
       meetingDesc: 'Meeting Description',
