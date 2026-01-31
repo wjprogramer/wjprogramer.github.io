@@ -179,7 +179,9 @@ external_projects/retro/
 │   │   └── settings.js           # 設定頁面
 │   ├── components/               # UI 元件（可重用的元件）
 │   │   ├── RetroCard.js          # 回顧卡片元件
-│   │   ├── VoteButton.js         # 投票按鈕元件
+│   │   ├── ReactionToolbar.js   # Emoji 反應工具列元件
+│   │   ├── EmojiPicker.js        # Emoji 選擇器元件
+│   │   ├── VoteButton.js         # （舊）投票按鈕，現已由反應功能取代
 │   │   ├── ExportModal.js        # 匯出模態框
 │   │   └── ParticipantList.js   # 參與者列表元件
 │   ├── modes/                    # 模式實作（業務邏輯）
@@ -289,7 +291,7 @@ external_projects/retro/
 
 ```javascript
 {
-  type: 'RETRO_START' | 'RETRO_END' | 'ITEM_ADD' | 'ITEM_UPDATE' | 'ITEM_DELETE' | 'VOTE' | 'PARTICIPANT_JOIN' | 'PARTICIPANT_LEAVE',
+  type: 'RETRO_START' | 'RETRO_END' | 'ITEM_ADD' | 'ITEM_UPDATE' | 'ITEM_DELETE' | 'REACTION' | 'PARTICIPANT_JOIN' | 'PARTICIPANT_LEAVE',
   data: {
     // 根據 type 不同而異
   },
@@ -305,7 +307,7 @@ external_projects/retro/
 3. **ITEM_ADD**：參與者新增回顧項目
 4. **ITEM_UPDATE**：參與者更新回顧項目
 5. **ITEM_DELETE**：參與者刪除回顧項目
-6. **VOTE**：參與者投票
+6. **REACTION**：參與者 Emoji 反應（新增/移除）
 7. **PARTICIPANT_JOIN**：參與者加入
 8. **PARTICIPANT_LEAVE**：參與者離開
 
@@ -569,19 +571,28 @@ export function exportToMarkdown(retrospective) {
   // 問題點
   markdown += `## 問題點\n\n`;
   retrospective.items.wentWrong.forEach(item => {
-    markdown += `- ${item.text} (投票: ${item.votes})\n`;
+    const reactionsStr = item.reactions && Object.keys(item.reactions).length
+      ? Object.entries(item.reactions).map(([emoji, d]) => `${emoji} ${d.count}`).join(' ')
+      : '-';
+    markdown += `- ${item.text} (反應: ${reactionsStr})\n`;
   });
   
   // 做得好的地方
   markdown += `\n## 做得好的地方\n\n`;
   retrospective.items.wentWell.forEach(item => {
-    markdown += `- ${item.text} (投票: ${item.votes})\n`;
+    const reactionsStr = item.reactions && Object.keys(item.reactions).length
+      ? Object.entries(item.reactions).map(([emoji, d]) => `${emoji} ${d.count}`).join(' ')
+      : '-';
+    markdown += `- ${item.text} (反應: ${reactionsStr})\n`;
   });
   
   // 改進建議
   markdown += `\n## 改進建議\n\n`;
   retrospective.items.actionItems.forEach(item => {
-    markdown += `- ${item.text} (投票: ${item.votes})\n`;
+    const reactionsStr = item.reactions && Object.keys(item.reactions).length
+      ? Object.entries(item.reactions).map(([emoji, d]) => `${emoji} ${d.count}`).join(' ')
+      : '-';
+    markdown += `- ${item.text} (反應: ${reactionsStr})\n`;
   });
   
   return markdown;

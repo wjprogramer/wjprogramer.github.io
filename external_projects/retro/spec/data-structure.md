@@ -83,8 +83,12 @@
           },
           createdAt: number,               // 建立時間戳記
           updatedAt: number,               // 更新時間戳記
-          votes: number,                  // 投票數
-          voters: string[]                // 投票者 Peer ID 列表
+          reactions: {                     // Emoji 反應（key 為 emoji 字元）
+            [emoji: string]: {
+              count: number,                // 該 emoji 的數量
+              users: string[]               // 反應者 Peer ID 列表
+            }
+          }
         }
       ],
       wentWell: [                          // 做得好的地方
@@ -451,18 +455,34 @@
 }
 ```
 
-#### 8. VOTE（投票）
+#### 8. REACTION（Emoji 反應）
 
 **發送者**：參與者 → 房主 → 所有參與者
 
 **資料結構**：
 ```javascript
 {
-  type: 'VOTE',
+  type: 'REACTION',
   data: {
+    category: string,                     // 分類：'wentWrong' | 'wentWell' | 'actionItems'
     itemId: string,                       // 項目 ID
-    action: 'add' | 'remove',            // 投票動作（新增/移除）
-    voterPeerId: string                   // 投票者 Peer ID
+    emoji: string,                         // emoji 字元（如 👍、❤️）
+    remove: boolean                       // true 為移除反應，false 為新增
+  },
+  timestamp: number,
+  from: string
+}
+```
+
+**房主廣播給參與者**（更新後完整 reactions）：
+```javascript
+{
+  type: 'REACTION',
+  data: {
+    category: string,
+    itemId: string,
+    emoji: string,
+    reactions: { [emoji: string]: { count: number, users: string[] } }  // 該項目最新 reactions
   },
   timestamp: number,
   from: string
@@ -472,11 +492,12 @@
 **範例**：
 ```javascript
 {
-  type: 'VOTE',
+  type: 'REACTION',
   data: {
+    category: 'wentWrong',
     itemId: 'item-123',
-    action: 'add',
-    voterPeerId: 'participant-peer-456'
+    emoji: '👍',
+    remove: false
   },
   timestamp: 1705276800000,
   from: 'participant-peer-456'
@@ -540,11 +561,12 @@
 - **格式**：ISO 日期字串（YYYY-MM-DD）
 - **範圍**：不能是未來日期（可選）
 
-### 5. 投票驗證
+### 5. Emoji 反應驗證
 
-- **投票者**：必須是已加入的參與者
+- **反應者**：必須是已加入的參與者
 - **項目**：必須是存在的回顧項目
-- **重複投票**：同一參與者對同一項目只能投票一次
+- **同一 emoji**：同一參與者對同一項目的同一 emoji 只能有一筆反應（點擊可切換新增/移除）
+- **多 emoji**：同一參與者可對同一項目添加多種不同 emoji 的反應
 
 ---
 

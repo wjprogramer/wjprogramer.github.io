@@ -55,36 +55,6 @@
 
 ---
 
-### 3. 投票改為 Emoji 反應
-- [ ] **Emoji 選擇器**
-  - 替換現有的投票按鈕為 emoji 反應按鈕
-  - 支援多種 emoji（👍, ❤️, 😂, 😮, 😢, 🔥 等）
-  - 可以選擇多個 emoji（不同於單一投票）
-  
-- [ ] **Emoji 顯示**
-  - Item 卡片上顯示所有 emoji 反應
-  - 顯示每個 emoji 的數量
-  - 顯示當前使用者已選擇的 emoji（高亮顯示）
-  
-- [ ] **Emoji 互動**
-  - 點擊 emoji 添加反應
-  - 再次點擊相同 emoji 移除反應
-  - 支援同時選擇多個不同的 emoji
-  
-- [ ] **資料結構調整**
-  - 將 `votes` 和 `voters` 改為 `reactions` 結構
-  - `reactions` 格式：`{ emoji: string, count: number, users: string[] }`
-
-**相關檔案：**
-- `js/components/VoteButton.js` - 需要改為 EmojiReactionButton
-- `js/components/RetroCard.js` - 需要更新顯示邏輯
-- `js/modes/HostMode.js` - 需要更新投票處理邏輯為 emoji 反應
-- `js/modes/ParticipantMode.js` - 需要更新投票處理邏輯為 emoji 反應
-- `js/webrtc/DataChannel.js` - 需要更新訊息類型（VOTE → REACTION）
-- `spec/data-structure.md` - 需要更新資料結構定義
-
----
-
 ## 技術考量
 
 ### 專案管理
@@ -98,19 +68,12 @@
 - 留言的編輯/刪除權限控制
 - 大量留言的效能考量（是否需要分頁）
 
-### Emoji 反應
-- Emoji 選擇器的 UI/UX 設計
-- 常用 emoji 列表的定義
-- 反應資料的儲存格式
-- 向後兼容性（舊的投票資料如何遷移）
-
 ---
 
 ## 優先順序建議
 
-1. **Emoji 反應** - 功能相對獨立，影響範圍較小
-2. **Item 留言** - 需要考慮資料結構和同步機制
-3. **專案管理** - 功能較複雜，需要較多規劃
+1. **Item 留言** - 需要考慮資料結構和同步機制
+2. **專案管理** - 功能較複雜，需要較多規劃
 
 ---
 
