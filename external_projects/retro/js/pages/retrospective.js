@@ -2071,6 +2071,7 @@ export class RetrospectivePage {
     
     if (!container) return;
     
+    const host = this.hostMode.retro?.host ? { name: this.hostMode.retro.host.name } : null;
     const list = new ParticipantList(participants, true, async (peerId) => {
       const modal = new ConfirmModal({
         title: t('common.confirm'),
@@ -2085,7 +2086,7 @@ export class RetrospectivePage {
       });
       
       modal.show();
-    });
+    }, host);
     
     container.innerHTML = list.render();
     list.bindEvents(container);

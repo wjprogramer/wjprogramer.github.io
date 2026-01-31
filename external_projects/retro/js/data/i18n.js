@@ -33,6 +33,7 @@ export const translations = {
       qrCode: 'QR Code',
       waitingParticipants: '等待參與者加入...',
       participants: '參與者',
+      hostLabel: '房主',
       startRetro: '開始回顧',
       endRetro: '結束回顧',
       endMeeting: '結束會議'
@@ -152,6 +153,7 @@ export const translations = {
       qrCode: 'QR Code',
       waitingParticipants: 'Waiting for participants...',
       participants: 'Participants',
+      hostLabel: 'Host',
       startRetro: 'Start Retrospective',
       endRetro: 'End Retrospective',
       endMeeting: 'End Meeting'
