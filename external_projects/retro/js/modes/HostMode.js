@@ -358,7 +358,7 @@ export class HostMode {
     this.autoSave();
   }
 
-  // 處理 Emoji 反應
+  // 處理 Emoji 反應（以使用者名稱判斷，重整後 peerId 會變，用名稱可避免同一人重複給 emoji）
   handleReaction(peerId, payload) {
     const { category, itemId, emoji, remove } = payload;
     const items = this.retro.items[category];
@@ -366,6 +366,10 @@ export class HostMode {
 
     const item = items.find(item => item.id === itemId);
     if (!item) return;
+
+    // 以參與者名稱判斷（參與者送來時 host 用 peerId 查表取得 name）
+    const participant = this.participants.get(peerId);
+    const userName = participant ? participant.name : peerId;
 
     // 初始化 reactions 結構（如果還沒有）
     if (!item.reactions) {
@@ -378,7 +382,7 @@ export class HostMode {
 
     if (remove) {
       // 移除反應
-      const userIndex = item.reactions[emoji].users.indexOf(peerId);
+      const userIndex = item.reactions[emoji].users.indexOf(userName);
       if (userIndex > -1) {
         item.reactions[emoji].users.splice(userIndex, 1);
         item.reactions[emoji].count = Math.max(0, item.reactions[emoji].count - 1);
@@ -388,8 +392,8 @@ export class HostMode {
       }
     } else {
       // 添加反應
-      if (!item.reactions[emoji].users.includes(peerId)) {
-        item.reactions[emoji].users.push(peerId);
+      if (!item.reactions[emoji].users.includes(userName)) {
+        item.reactions[emoji].users.push(userName);
         item.reactions[emoji].count = (item.reactions[emoji].count || 0) + 1;
       }
     }

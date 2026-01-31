@@ -1126,18 +1126,18 @@ export class RetrospectivePage {
       item.reactions = {};
     }
     
-    // 獲取當前使用者的 peerId（P2P 模式）或用戶名（單人模式）
+    // 以使用者名稱判斷（重整後 peerId 會變，用名稱可避免同一人重複給 emoji）
     const globalState = window.retroState || {};
-    const currentPeerId = globalState.participantMode?.peerManager?.peerId || 
-                         globalState.hostMode?.peerManager?.peerId ||
-                         'local-user';
+    const currentUserName = globalState.participantMode?.name ||
+                            globalState.hostMode?.retro?.host?.name ||
+                            'local-user';
     
     // 切換反應（如果已經有就移除，沒有就添加）
     if (!item.reactions[emoji]) {
       item.reactions[emoji] = { count: 0, users: [] };
     }
     
-    const userIndex = item.reactions[emoji].users.indexOf(currentPeerId);
+    const userIndex = item.reactions[emoji].users.indexOf(currentUserName);
     if (userIndex > -1) {
       // 移除反應
       item.reactions[emoji].users.splice(userIndex, 1);
@@ -1147,7 +1147,7 @@ export class RetrospectivePage {
       }
     } else {
       // 添加反應
-      item.reactions[emoji].users.push(currentPeerId);
+      item.reactions[emoji].users.push(currentUserName);
       item.reactions[emoji].count = (item.reactions[emoji].count || 0) + 1;
     }
     

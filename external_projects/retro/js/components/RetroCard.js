@@ -70,16 +70,16 @@ export class RetroCard {
       return '';
     }
     
-    // 獲取當前使用者的 peerId（P2P 模式）或用戶名（單人模式）
+    // 以使用者名稱判斷（重整後 peerId 會變，用名稱可避免同一人重複給 emoji）
     const globalState = window.retroState || {};
-    const currentPeerId = globalState.participantMode?.peerManager?.peerId || 
-                         globalState.hostMode?.peerManager?.peerId ||
-                         'local-user';
+    const currentUserName = globalState.participantMode?.name ||
+                            globalState.hostMode?.retro?.host?.name ||
+                            'local-user';
     
     const reactions = Object.entries(this.item.reactions)
       .filter(([emoji, data]) => data.count > 0)
       .map(([emoji, data]) => {
-        const hasUserReaction = data.users && data.users.includes(currentPeerId);
+        const hasUserReaction = data.users && data.users.includes(currentUserName);
         return {
           emoji,
           count: data.count,
