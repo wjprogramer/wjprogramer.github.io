@@ -3,6 +3,7 @@ export class DataChannel {
   constructor(peerManager) {
     this.peerManager = peerManager;
     this.messageHandlers = new Map();
+    this.anyMessageHandlers = []; // 任一訊息都會觸發（參與者用於心跳逾時偵測）
     this.setupMessageHandler();
   }
 
@@ -21,11 +22,16 @@ export class DataChannel {
   // 處理訊息
   handleMessage(peerId, message) {
     const { type, payload, timestamp } = message;
-    
+    this.anyMessageHandlers.forEach(h => h(peerId, message));
     if (this.messageHandlers.has(type)) {
       const handlers = this.messageHandlers.get(type);
       handlers.forEach(handler => handler(peerId, payload, timestamp));
     }
+  }
+
+  // 註冊「任一訊息」處理器（參與者用於更新最後收到 host 訊息的時間）
+  onAny(handler) {
+    this.anyMessageHandlers.push(handler);
   }
 
   // 註冊訊息處理器
@@ -72,7 +78,8 @@ export class DataChannel {
     SYNC: 'SYNC',
     KICK: 'KICK',
     EDIT_START: 'EDIT_START', // 開始編輯
-    EDIT_END: 'EDIT_END' // 結束編輯
+    EDIT_END: 'EDIT_END', // 結束編輯
+    HEARTBEAT: 'HEARTBEAT' // 心跳（host 定期發送，參與者用於偵測 host 離線）
   };
 }
 

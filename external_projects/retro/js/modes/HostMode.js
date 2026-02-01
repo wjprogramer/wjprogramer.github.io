@@ -16,7 +16,11 @@ export class HostMode {
     this.onItemUpdateCallbacks = [];
     this.onStatusChangeCallbacks = [];
     this.saveTimeout = null; // 用於 debounce 自動保存
+    this.heartbeatIntervalId = null; // 心跳定時器（參與者用於偵測 host 離線）
   }
+
+  /** 心跳間隔（ms），參與者逾時為此值的 3 倍 */
+  static HEARTBEAT_INTERVAL = 700;
 
   // 建立會議室
   async createMeeting(title, description, date, allowAnonymous, hostName = null) {
@@ -62,6 +66,7 @@ export class HostMode {
       // 初始化資料通道
       this.dataChannel = new DataChannel(this.peerManager);
       this.setupDataChannel();
+      this.startHeartbeat();
       
       return {
         meetingId: this.meetingId,
@@ -577,6 +582,7 @@ export class HostMode {
       // 重新初始化資料通道
       this.dataChannel = new DataChannel(this.peerManager);
       this.setupDataChannel();
+      this.startHeartbeat();
       
       // 恢復參與者列表（從 retro.participants）
       // 注意：恢復時，參與者可能還沒重新連線，所以先清空
@@ -628,6 +634,23 @@ export class HostMode {
     }
   }
 
+  /** 開始心跳：定期發送 HEARTBEAT 給所有參與者，供參與者偵測 host 離線 */
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatIntervalId = setInterval(() => {
+      if (this.dataChannel && this.peerManager.getConnectionCount() >= 0) {
+        this.dataChannel.send(DataChannel.MESSAGE_TYPES.HEARTBEAT, {});
+      }
+    }, HostMode.HEARTBEAT_INTERVAL);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatIntervalId) {
+      clearInterval(this.heartbeatIntervalId);
+      this.heartbeatIntervalId = null;
+    }
+  }
+
   // 結束會議
   async endMeeting() {
     // 清除 debounce timeout
@@ -635,6 +658,8 @@ export class HostMode {
       clearTimeout(this.saveTimeout);
       this.saveTimeout = null;
     }
+    
+    this.stopHeartbeat();
     
     // 立即儲存回顧記錄
     await this.saveRetro();

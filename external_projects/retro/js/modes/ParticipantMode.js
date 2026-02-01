@@ -21,13 +21,48 @@ export class ParticipantMode {
     // 自動重連相關
     this.isReconnecting = false;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 10; // 最多重試 10 次
-    this.reconnectDelay = 1000; // 初始延遲 1 秒
-    this.reconnectTimeout = null;
+    this.maxReconnectAttempts = 10;
+    this.reconnectLoopIntervalId = null;
+    this.reconnectLoopIntervalMs = 5000; // 每 5 秒嘗試一次
     
     // 本地緩存未同步的變更
     this.pendingChanges = [];
     this.isConnected = false;
+
+    /** 與 host 的連線狀態：'connected' | 'disconnected' | 'reconnecting' */
+    this.connectionStatus = 'disconnected';
+    this.onConnectionStatusChangeCallbacks = [];
+
+    /** 心跳逾時偵測（host 關閉分頁時 PeerJS 可能不觸發 close，改由逾時判定斷線） */
+    this.lastMessageFromHostAt = 0;
+    this.heartbeatCheckIntervalId = null;
+  }
+
+  /** 心跳逾時時間（ms），需大於 host 的 HEARTBEAT_INTERVAL * 2 */
+  static HEARTBEAT_TIMEOUT = 2000;
+
+  /** 取得目前與 host 的連線狀態 */
+  getConnectionStatus() {
+    return this.connectionStatus;
+  }
+
+  /** 設定連線狀態並通知訂閱者 */
+  setConnectionStatus(status) {
+    if (this.connectionStatus === status) return;
+    this.connectionStatus = status;
+    this.onConnectionStatusChangeCallbacks.forEach(cb => cb(status));
+  }
+
+  /** 訂閱連線狀態變化（參與者 UI 用於顯示斷線/重連橫幅） */
+  onConnectionStatusChange(callback) {
+    this.onConnectionStatusChangeCallbacks.push(callback);
+  }
+
+  /** 是否為「連到 host 失敗」類錯誤（Peer 已開、但 connectToHost 失敗） */
+  _isConnectionToHostFailed(err) {
+    if (!err) return false;
+    const msg = (err?.message || err?.type || String(err)).toLowerCase();
+    return msg.includes('could not connect to peer') || msg.includes('peer-unavailable');
   }
 
   // 加入會議
@@ -63,12 +98,15 @@ export class ParticipantMode {
 
       this.peerManager.onDisconnection(() => {
         this.isConnected = false;
+        this.setConnectionStatus('disconnected');
         this.onDisconnectedCallbacks.forEach(cb => cb());
-        
-        // 啟動自動重連（只有在非手動離開時才重連）
-        if (!this.isReconnecting && this.hostPeerId) {
-          this.startAutoReconnect();
-        }
+        if (this.hostPeerId) this.startReconnectLoop();
+      });
+      this.peerManager.onError((err) => {
+        if (!this._isConnectionToHostFailed(err)) return;
+        this.isConnected = false;
+        this.setConnectionStatus('disconnected');
+        if (this.hostPeerId) this.startReconnectLoop();
       });
       
       // 初始化 Peer（參與者模式）
@@ -99,6 +137,11 @@ export class ParticipantMode {
 
   // 設定資料通道
   setupDataChannel() {
+    // 任一來自 host 的訊息都更新時間，用於心跳逾時偵測（host 關閉分頁時 PeerJS 可能不觸發 close）
+    this.dataChannel.onAny(() => {
+      this.lastMessageFromHostAt = Date.now();
+    });
+
     // 處理狀態同步（這是連線成功的標誌）
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.SYNC, (peerId, payload) => {
       // 驗證 retro id 是否匹配（只有在重連時才需要驗證）
@@ -114,12 +157,17 @@ export class ParticipantMode {
       this.participants = payload.participants || [];
       this.onParticipantsUpdateCallbacks.forEach(cb => cb());
       
+      // 每次收到 SYNC 都表示已與 host 連線，更新連線狀態（含重連成功）
+      this.isConnected = true;
+      this.isReconnecting = false;
+      this.reconnectAttempts = 0;
+      this.lastMessageFromHostAt = Date.now();
+      this.setConnectionStatus('connected');
+      this.startHeartbeatCheck();
+      
       // 第一次收到 SYNC 時，保存 retro id 並觸發連線成功回調
       if (!this.hasReceivedSync) {
         this.hasReceivedSync = true;
-        this.isConnected = true;
-        this.isReconnecting = false;
-        this.reconnectAttempts = 0;
         
         // 保存 retro id，用於後續重連時的驗證
         // 如果已經有 expectedRetroId（從 URL 參數來的），就不需要再設置
@@ -336,10 +384,36 @@ export class ParticipantMode {
     }
   }
 
+  /** 開始心跳逾時檢查：逾時未收到 host 訊息則視為斷線 */
+  startHeartbeatCheck() {
+    this.stopHeartbeatCheck();
+    this.heartbeatCheckIntervalId = setInterval(() => {
+      if (this.connectionStatus !== 'connected' || !this.isConnected) return;
+      const elapsed = Date.now() - this.lastMessageFromHostAt;
+      if (elapsed >= ParticipantMode.HEARTBEAT_TIMEOUT) {
+        this.stopHeartbeatCheck();
+        this.isConnected = false;
+        this.isReconnecting = false;
+        this.peerManager.destroy();
+        this.setConnectionStatus('disconnected');
+        this.onDisconnectedCallbacks.forEach(cb => cb());
+        if (this.hostPeerId) this.startReconnectLoop();
+      }
+    }, 1500);
+  }
+
+  stopHeartbeatCheck() {
+    if (this.heartbeatCheckIntervalId) {
+      clearInterval(this.heartbeatCheckIntervalId);
+      this.heartbeatCheckIntervalId = null;
+    }
+  }
+
   // 離開會議
   leave() {
-    // 停止自動重連
-    this.stopAutoReconnect();
+    this.stopHeartbeatCheck();
+    this.stopReconnectLoop();
+    this.setConnectionStatus('disconnected');
     
     if (this.dataChannel) {
       this.dataChannel.send(DataChannel.MESSAGE_TYPES.LEAVE, {});
@@ -347,131 +421,116 @@ export class ParticipantMode {
     this.peerManager.destroy();
   }
 
-  // 啟動自動重連
-  startAutoReconnect() {
-    if (this.isReconnecting) {
-      return; // 已經在重連中
-    }
-    
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('Max reconnect attempts reached');
-      return;
-    }
-    
-    this.isReconnecting = true;
-    this.reconnectAttempts++;
-    
-    // 計算延遲（指數退避：1s, 2s, 4s, 8s...，最多 10 秒）
-    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), 10000);
-    
-    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms...`);
-    
-    this.reconnectTimeout = setTimeout(async () => {
-      try {
-        // 如果 peerManager 已經被銷毀，需要重新創建
-        if (this.peerManager.peer && this.peerManager.peer.destroyed) {
-          this.peerManager = new (await import('../webrtc/PeerManager.js')).PeerManager();
-          this.dataChannel = new (await import('../webrtc/DataChannel.js')).DataChannel(this.peerManager);
-          this.setupDataChannel();
-          
-          // 重新註冊事件監聽器
-          this.peerManager.onConnection(() => {
-            if (!this.hasSentJoin && this.dataChannel) {
-              this.hasSentJoin = true;
-              setTimeout(() => {
-                if (this.dataChannel) {
-                  this.dataChannel.send(DataChannel.MESSAGE_TYPES.JOIN, {
-                    name: this.name,
-                    expectedRetroId: this.expectedRetroId // 發送期望的 retro id，讓 host 驗證（重連時才有值）
-                  });
-                }
-              }, 100);
-            }
-          });
-          
-          this.peerManager.onDisconnection(() => {
-            this.isConnected = false;
-            this.onDisconnectedCallbacks.forEach(cb => cb());
-            if (!this.isReconnecting && this.hostPeerId) {
-              this.startAutoReconnect();
-            }
-          });
-        }
-        
-        // 重新初始化 Peer 並連線
-        await this.peerManager.init(false, this.hostPeerId);
-        
-        // 等待連線建立（最多等待 5 秒）
-        // 檢查是否已經有連線
-        const connections = this.peerManager.getConnections();
-        if (connections.length > 0) {
-          // 已經有連線，直接繼續
-          console.log('Connection already established');
-        } else {
-          // 等待連線建立
-          await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-              reject(new Error('Reconnection timeout'));
-            }, 5000);
-            
-            const connectionHandler = () => {
-              clearTimeout(timeout);
-              // 移除這個回調（避免重複觸發）
-              const index = this.peerManager.onConnectionCallbacks.indexOf(connectionHandler);
-              if (index > -1) {
-                this.peerManager.onConnectionCallbacks.splice(index, 1);
-              }
-              resolve();
-            };
-            
-            this.peerManager.onConnection(connectionHandler);
-          });
-        }
-        
-        // 重新發送 JOIN 訊息
-        this.hasSentJoin = false;
-        setTimeout(() => {
-                if (this.dataChannel) {
-                  this.dataChannel.send(DataChannel.MESSAGE_TYPES.JOIN, {
-                    name: this.name,
-                    expectedRetroId: this.expectedRetroId // 發送期望的 retro id，讓 host 驗證（重連時才有值）
-                  });
-                }
-        }, 100);
-        
-        console.log('Reconnected successfully');
-        this.isReconnecting = false;
-      } catch (error) {
-        console.error('Reconnection failed:', error);
-        // 繼續重試
-        this.isReconnecting = false;
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.startAutoReconnect();
-        } else {
-          console.error('Max reconnect attempts reached, giving up');
-        }
-      }
-    }, delay);
+  /** 啟動重連迴圈：每 N 秒嘗試一次，不依賴 catch 排程，失敗後仍會持續重試 */
+  startReconnectLoop() {
+    if (this.reconnectLoopIntervalId) return;
+    this.setConnectionStatus('reconnecting');
+    this.runOneReconnectAttempt();
+    this.reconnectLoopIntervalId = setInterval(() => this.runOneReconnectAttempt(), this.reconnectLoopIntervalMs);
   }
 
-  // 停止自動重連
-  stopAutoReconnect() {
-    this.isReconnecting = false;
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
+  stopReconnectLoop() {
+    if (this.reconnectLoopIntervalId) {
+      clearInterval(this.reconnectLoopIntervalId);
+      this.reconnectLoopIntervalId = null;
     }
+    this.isReconnecting = false;
     this.reconnectAttempts = 0;
+  }
+
+  /** 執行單次重連（由迴圈呼叫，失敗不排程下一輪，由 setInterval 固定間隔再試） */
+  async runOneReconnectAttempt() {
+    if (this.peerManager.isPeerDisconnected()) {
+      this.isReconnecting = false;
+    }
+    if (this.isReconnecting) return;
+    if (this.connectionStatus === 'connected' && this.isConnected) return;
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.stopReconnectLoop();
+      this.setConnectionStatus('disconnected');
+      return;
+    }
+    this.isReconnecting = true;
+    this.reconnectAttempts++;
+    this.setConnectionStatus('reconnecting');
+    try {
+      if (!this.peerManager.peer || this.peerManager.peer.destroyed) {
+        this.peerManager = new (await import('../webrtc/PeerManager.js')).PeerManager();
+        this.dataChannel = new (await import('../webrtc/DataChannel.js')).DataChannel(this.peerManager);
+        this.setupDataChannel();
+        this.peerManager.onConnection(() => {
+          if (!this.hasSentJoin && this.dataChannel) {
+            this.hasSentJoin = true;
+            setTimeout(() => {
+              if (this.dataChannel) {
+                this.dataChannel.send(DataChannel.MESSAGE_TYPES.JOIN, {
+                  name: this.name,
+                  expectedRetroId: this.expectedRetroId // 發送期望的 retro id，讓 host 驗證（重連時才有值）
+                });
+              }
+            }, 100);
+          }
+        });
+        this.peerManager.onDisconnection(() => {
+          this.isConnected = false;
+          this.setConnectionStatus('disconnected');
+          this.onDisconnectedCallbacks.forEach(cb => cb());
+          if (this.hostPeerId) this.startReconnectLoop();
+        });
+        this.peerManager.onError((err) => {
+          if (!this._isConnectionToHostFailed(err)) return;
+          this.isConnected = false;
+          this.setConnectionStatus('disconnected');
+          if (this.hostPeerId) this.startReconnectLoop();
+        });
+      }
+      await this.peerManager.init(false, this.hostPeerId);
+      const connections = this.peerManager.getConnections();
+      if (connections.length === 0) {
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Reconnection timeout')), 5000);
+          const connectionHandler = () => {
+            clearTimeout(timeout);
+            // 移除這個回調（避免重複觸發）
+            const idx = this.peerManager.onConnectionCallbacks.indexOf(connectionHandler);
+            if (idx > -1) this.peerManager.onConnectionCallbacks.splice(idx, 1);
+            resolve();
+          };
+          this.peerManager.onConnection(connectionHandler);
+        });
+      }
+
+      // 重新發送 JOIN 訊息
+      this.hasSentJoin = false;
+      setTimeout(() => {
+        if (this.dataChannel) {
+          this.dataChannel.send(DataChannel.MESSAGE_TYPES.JOIN, {
+            name: this.name,
+            expectedRetroId: this.expectedRetroId // 發送期望的 retro id，讓 host 驗證（重連時才有值）
+          });
+        }
+      }, 100);
+      this.stopReconnectLoop();
+      this.isReconnecting = false;
+    } catch (error) {
+      console.error('Reconnection failed:', error);
+      this.isReconnecting = false;
+      try {
+        if (this.peerManager) this.peerManager.destroy();
+      } catch (e) {
+        console.error('Error during destroy after reconnect fail:', e);
+      }
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        this.stopReconnectLoop();
+        this.setConnectionStatus('disconnected');
+      }
+    }
   }
 
   // 發送本地緩存的變更
   flushPendingChanges() {
-    if (!this.isConnected || !this.dataChannel || this.pendingChanges.length === 0) {
-      return;
-    }
-    
-    console.log(`Flushing ${this.pendingChanges.length} pending changes...`);
-    
+    if (!this.isConnected || !this.dataChannel || this.pendingChanges.length === 0) return;
+
     // 依序發送緩存的變更
     this.pendingChanges.forEach(change => {
       try {
@@ -483,7 +542,6 @@ export class ParticipantMode {
     
     // 清空緩存
     this.pendingChanges = [];
-    console.log('Pending changes flushed');
   }
 
   // 註冊回調

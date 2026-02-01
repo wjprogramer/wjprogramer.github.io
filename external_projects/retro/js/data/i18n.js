@@ -68,7 +68,9 @@ export const translations = {
       export: '匯出',
       noItems: '尚無項目',
       itemText: '內容',
-      itemTextPlaceholder: '輸入內容...'
+      itemTextPlaceholder: '輸入內容...',
+      connectionDisconnected: '已與房主斷線',
+      connectionReconnecting: '正在重新連線…'
     },
     history: {
       title: '歷史記錄',
@@ -189,7 +191,9 @@ export const translations = {
       export: 'Export',
       noItems: 'No items yet',
       itemText: 'Content',
-      itemTextPlaceholder: 'Enter content...'
+      itemTextPlaceholder: 'Enter content...',
+      connectionDisconnected: 'Disconnected from host',
+      connectionReconnecting: 'Reconnecting…'
     },
     history: {
       title: 'History',

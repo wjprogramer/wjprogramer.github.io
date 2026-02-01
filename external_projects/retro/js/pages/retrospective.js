@@ -403,6 +403,9 @@ export class RetrospectivePage {
       this.participantMode.onParticipantsUpdate(() => {
         this.updateParticipantsList();
       });
+      this.participantMode.onConnectionStatusChange(() => {
+        this.updateConnectionStatusBanner();
+      });
       
       // 監聽編輯狀態變化
       await this.setupEditStateListeners(this.participantMode);
@@ -468,6 +471,10 @@ export class RetrospectivePage {
                 </button>
               </div>
             </div>
+            
+            ${!isHost && this.isP2PMode ? `
+            <div id="connection-status-banner" class="connection-status-banner" style="display: none;" role="status" aria-live="polite"></div>
+            ` : ''}
             
             ${isHost && joinLink ? `
               <div id="share-section" class="card" style="margin-bottom: var(--spacing-lg); display: block;">
@@ -568,6 +575,33 @@ export class RetrospectivePage {
     
     // 綁定事件
     this.bindEvents();
+    
+    // 參與者：顯示與 host 的連線狀態橫幅（斷線/重連）
+    if (this.isP2PMode && this.participantMode) {
+      this.updateConnectionStatusBanner();
+    }
+  }
+
+  /** 參與者專用：更新與 host 連線狀態橫幅（斷線 / 重連中） */
+  updateConnectionStatusBanner() {
+    if (!this.participantMode || this.hostMode) return;
+    const banner = document.getElementById('connection-status-banner');
+    if (!banner) return;
+    const status = this.participantMode.getConnectionStatus();
+    if (status === 'connected') {
+      banner.style.display = 'none';
+      banner.className = 'connection-status-banner';
+      banner.textContent = '';
+      return;
+    }
+    banner.style.display = 'block';
+    banner.className = `connection-status-banner connection-status-banner--${status}`;
+    banner.setAttribute('aria-live', 'polite');
+    if (status === 'disconnected') {
+      banner.textContent = t('retrospective.connectionDisconnected');
+    } else if (status === 'reconnecting') {
+      banner.textContent = t('retrospective.connectionReconnecting');
+    }
   }
 
   renderColumns() {

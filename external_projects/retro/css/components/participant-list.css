@@ -165,3 +165,42 @@
   color: var(--bg-primary);
 }
 
+/* 參與者與 host 連線狀態橫幅（斷線 / 重連中） */
+.connection-status-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.connection-status-banner--disconnected {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--bg-card));
+  color: var(--color-danger);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+
+.connection-status-banner--reconnecting {
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--bg-card));
+  color: var(--color-warning);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
+
+.connection-status-banner--reconnecting::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: connection-status-spin 0.7s linear infinite;
+}
+
+@keyframes connection-status-spin {
+  to { transform: rotate(360deg); }
+}
+

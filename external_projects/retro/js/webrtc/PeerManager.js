@@ -5,6 +5,9 @@ export class PeerManager {
     this.peerId = null;
     this.connections = new Map();
     this.isHost = false;
+    this._isDestroying = false;
+    /** 參與者：連到 host 失敗（Could not connect to peer），視同斷線 */
+    this._connectionToHostFailed = false;
     this.onConnectionCallbacks = [];
     this.onDisconnectionCallbacks = [];
     this.onErrorCallbacks = [];
@@ -13,6 +16,7 @@ export class PeerManager {
   // 初始化 Peer（房主或參與者）
   async init(isHost = false, hostPeerId = null) {
     this.isHost = isHost;
+    if (!isHost && hostPeerId) this.hostPeerIdForDisconnection = hostPeerId;
     
     return new Promise((resolve, reject) => {
       // 先檢查 window.Peer 是否可用
@@ -130,8 +134,16 @@ export class PeerManager {
     });
   }
 
-  // 建立 Peer
+  /** 是否為「連到 host 失敗」類錯誤（Peer 已開、但 connectToHost 失敗） */
+  _isConnectionToHostFailed(err) {
+    if (!err) return false;
+    const msg = (err.message || err.type || String(err)).toLowerCase();
+    return msg.includes('could not connect to peer') || msg.includes('peer-unavailable');
+  }
+
+  /** 建立 Peer */
   createPeer(isHost, hostPeerId, resolve, reject) {
+    this._isDestroying = false;
     let isResolved = false;
     let isRejected = false;
     let timeout = null;
@@ -183,8 +195,7 @@ export class PeerManager {
         
         isResolved = true;
         this.peerId = id;
-        console.log('Peer ID:', id);
-        
+
         if (isHost) {
           resolve(id);
         } else if (hostPeerId) {
@@ -203,6 +214,11 @@ export class PeerManager {
           // 如果已經 resolve 或 reject，只記錄錯誤但不再次 reject
           console.error('Peer error after initialization:', err);
           this.onErrorCallbacks.forEach(cb => cb(err));
+          // 「Could not connect to peer」代表 Peer 已開、但連到 host 失敗，應觸發斷線回調讓參與者重連
+          if (this._isConnectionToHostFailed(err) && this.hostPeerIdForDisconnection) {
+            this._connectionToHostFailed = true;
+            this.onDisconnectionCallbacks.forEach(cb => cb(this.hostPeerIdForDisconnection));
+          }
           return;
         }
         
@@ -212,13 +228,7 @@ export class PeerManager {
         
         isRejected = true;
         console.error('Peer error:', err);
-        console.error('Peer error details:', {
-          type: err?.type,
-          message: err?.message,
-          toString: err?.toString?.()
-        });
-        
-        // 處理常見錯誤
+
         let errorMessage = 'Peer 連線錯誤';
         
         // PeerJS 錯誤物件可能有 type 屬性
@@ -250,8 +260,11 @@ export class PeerManager {
       });
 
       this.peer.on('disconnected', () => {
-        console.log('Peer disconnected');
-        if (!this.peer.destroyed) {
+        if (this._isDestroying) return;
+        // 參與者重連由 ParticipantMode.startReconnectLoop() 處理（destroy + 新 PeerManager + init），
+        // 此處呼叫 peer.reconnect() 會在 destroy 時觸發、導致 WebSocket id=null 錯誤
+        if (!this.isHost && this.peer && !this.peer.destroyed) return;
+        if (this.peer && !this.peer.destroyed) {
           this.peer.reconnect();
         }
       });
@@ -295,6 +308,7 @@ export class PeerManager {
 
   // 處理連線
   handleConnection(conn) {
+    this._connectionToHostFailed = false;
     const peerId = conn.peer;
     this.connections.set(peerId, conn);
 
@@ -381,6 +395,8 @@ export class PeerManager {
 
   // 關閉 Peer
   destroy() {
+    this._isDestroying = true;
+    this._connectionToHostFailed = false;
     this.disconnectAll();
     if (this.peer && !this.peer.destroyed) {
       this.peer.destroy();
@@ -397,6 +413,17 @@ export class PeerManager {
   // 取得連線數量
   getConnectionCount() {
     return this.connections.size;
+  }
+
+  /**
+   * 是否處於「斷線」狀態：無 peer、已銷毀、與 signaling 斷開、或「連到 host 失敗」。
+   * 「Could not connect to peer」時會設 _connectionToHostFailed，此處也回傳 true。
+   */
+  isPeerDisconnected() {
+    if (this._connectionToHostFailed) return true;
+    if (!this.peer) return true;
+    if (this.peer.destroyed) return true;
+    return this.peer.disconnected === true;
   }
 }
 
