@@ -36,7 +36,18 @@ export const translations = {
       hostLabel: '房主',
       startRetro: '開始回顧',
       endRetro: '結束回顧',
-      endMeeting: '結束會議'
+      endMeeting: '結束會議',
+      shareMeeting: '分享會議',
+      joinLink: '加入連結'
+    },
+    peerError: {
+      default: 'Peer 連線錯誤',
+      peerUnavailable: 'Peer ID 不可用，請嘗試其他 ID',
+      network: '網路連線錯誤，請檢查網路設定',
+      serverError: 'PeerJS 伺服器錯誤，請稍後再試',
+      socketError: 'PeerJS 連線中斷，請檢查網路連線',
+      browserIncompatible: '瀏覽器不相容，請使用 Chrome、Firefox 或 Edge',
+      initFailed: '無法建立 Peer 連線：'
     },
     join: {
       title: '加入會議',
@@ -159,7 +170,18 @@ export const translations = {
       hostLabel: 'Host',
       startRetro: 'Start Retrospective',
       endRetro: 'End Retrospective',
-      endMeeting: 'End Meeting'
+      endMeeting: 'End Meeting',
+      shareMeeting: 'Share Meeting',
+      joinLink: 'Join Link'
+    },
+    peerError: {
+      default: 'Peer connection error',
+      peerUnavailable: 'Peer ID unavailable, please try another ID',
+      network: 'Network error, please check your network settings',
+      serverError: 'PeerJS server error, please try again later',
+      socketError: 'PeerJS connection lost, please check your network',
+      browserIncompatible: 'Browser incompatible, please use Chrome, Firefox or Edge',
+      initFailed: 'Failed to create Peer connection: '
     },
     join: {
       title: 'Join Meeting',

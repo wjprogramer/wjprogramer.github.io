@@ -1,4 +1,6 @@
 // P2P 連線管理
+import { t } from '../utils/i18n.js';
+
 export class PeerManager {
   constructor() {
     this.peer = null;
@@ -229,20 +231,19 @@ export class PeerManager {
         isRejected = true;
         console.error('Peer error:', err);
 
-        let errorMessage = 'Peer 連線錯誤';
-        
-        // PeerJS 錯誤物件可能有 type 屬性
+        let errorMessage = t('peerError.default');
+
         if (err && typeof err === 'object') {
           if (err.type === 'peer-unavailable') {
-            errorMessage = 'Peer ID 不可用，請嘗試其他 ID';
+            errorMessage = t('peerError.peerUnavailable');
           } else if (err.type === 'network') {
-            errorMessage = '網路連線錯誤，請檢查網路設定';
+            errorMessage = t('peerError.network');
           } else if (err.type === 'server-error') {
-            errorMessage = 'PeerJS 伺服器錯誤，請稍後再試';
+            errorMessage = t('peerError.serverError');
           } else if (err.type === 'socket-error' || err.type === 'socket-closed') {
-            errorMessage = 'PeerJS 連線中斷，請檢查網路連線';
+            errorMessage = t('peerError.socketError');
           } else if (err.type === 'browser-incompatible') {
-            errorMessage = '瀏覽器不相容，請使用 Chrome、Firefox 或 Edge';
+            errorMessage = t('peerError.browserIncompatible');
           } else if (err.message) {
             errorMessage = err.message;
           } else if (err.toString && typeof err.toString === 'function') {
@@ -274,7 +275,7 @@ export class PeerManager {
       }
       isRejected = true;
       console.error('Failed to create Peer:', error);
-      reject(new Error('無法建立 Peer 連線：' + (error.message || '未知錯誤')));
+      reject(new Error(t('peerError.initFailed') + (error.message || '未知錯誤')));
     }
   }
 

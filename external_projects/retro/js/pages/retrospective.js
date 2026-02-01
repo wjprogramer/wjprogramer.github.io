@@ -477,38 +477,35 @@ export class RetrospectivePage {
             ` : ''}
             
             ${isHost && joinLink ? `
-              <div id="share-section" class="card" style="margin-bottom: var(--spacing-lg); display: block;">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                  <h3 class="card-title" style="margin: 0;">分享會議</h3>
-                  <button class="btn btn-text" id="close-share-btn" style="padding: 0; min-width: auto;">
-                    ${iconoirIcons.cancel(2, 20)}
-                  </button>
+            <div id="share-modal" class="modal-backdrop" style="display: none;" aria-hidden="true">
+              <div class="modal" style="max-width: 520px;" onclick="event.stopPropagation()">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                  <h3 class="modal-title" style="margin: 0;">${t('host.shareMeeting')}</h3>
+                  <button class="modal-close" id="share-modal-close" aria-label="${t('common.close')}" type="button">×</button>
                 </div>
-                <div class="card-body">
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <div class="modal-body">
+                  <div style="display: flex; flex-direction: column; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
                     <div>
-                      <label style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500; font-size: 0.875rem;">
+                      <label for="meeting-id-display" style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500; font-size: 0.875rem;">
                         ${t('host.meetingId')}
                       </label>
                       <div style="display: flex; gap: var(--spacing-sm);">
-                        <input type="text" id="meeting-id-display" readonly value="${this.meetingId}"
+                        <input type="text" id="meeting-id-display" readonly value="${this.meetingId}" aria-label="${t('host.meetingId')}"
                           style="flex: 1; padding: var(--spacing-sm); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.875rem;">
                         <button class="btn btn-secondary" id="copy-id-btn" style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">${t('host.copyId')}</button>
                       </div>
                     </div>
-                    
                     <div>
-                      <label style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500; font-size: 0.875rem;">
-                        加入連結
+                      <label for="join-link-display" style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500; font-size: 0.875rem;">
+                        ${t('host.joinLink')}
                       </label>
                       <div style="display: flex; gap: var(--spacing-sm);">
-                        <input type="text" id="join-link-display" readonly value="${joinLink}"
+                        <input type="text" id="join-link-display" readonly value="${joinLink}" aria-label="${t('host.joinLink')}"
                           style="flex: 1; padding: var(--spacing-sm); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.75rem;">
                         <button class="btn btn-secondary" id="copy-link-btn" style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">${t('host.copyLink')}</button>
                       </div>
                     </div>
                   </div>
-                  
                   <div style="text-align: center;">
                     <label style="display: block; margin-bottom: var(--spacing-sm); font-weight: 500; font-size: 0.875rem;">
                       ${t('host.qrCode')}
@@ -517,6 +514,7 @@ export class RetrospectivePage {
                   </div>
                 </div>
               </div>
+            </div>
             ` : ''}
             
             <div style="margin-bottom: var(--spacing-lg);">
@@ -568,11 +566,7 @@ export class RetrospectivePage {
     if (this.isP2PMode) {
       this.updateParticipantsList();
     }
-    // 僅 host 顯示 QR Code
-    if (this.isP2PMode && this.hostMode) {
-      this.generateQRCode();
-    }
-    
+
     // 綁定事件
     this.bindEvents();
     
@@ -1489,49 +1483,53 @@ export class RetrospectivePage {
       });
     }
     
-    // 分享功能（host 模式）
+    // 分享 modal（host 模式：QR Code / 會議 ID / 加入連結）
     if (this.isP2PMode && this.hostMode) {
       const showQrBtn = document.getElementById('show-qr-btn');
-      const shareSection = document.getElementById('share-section');
-      const closeShareBtn = document.getElementById('close-share-btn');
+      const shareModal = document.getElementById('share-modal');
+      const shareModalClose = document.getElementById('share-modal-close');
       const copyIdBtn = document.getElementById('copy-id-btn');
       const copyLinkBtn = document.getElementById('copy-link-btn');
-      
-      // 顯示/隱藏分享區塊（QR Code）
-      if (showQrBtn && shareSection) {
+
+      const closeShareModal = () => {
+        if (!shareModal) return;
+        shareModal.style.display = 'none';
+        shareModal.setAttribute('aria-hidden', 'true');
+        if (!document.querySelector('.modal-backdrop[style*="display: flex"]')) {
+          document.body.classList.remove('modal-open');
+        }
+      };
+
+      if (showQrBtn && shareModal) {
         showQrBtn.addEventListener('click', () => {
-          const isHidden = shareSection.style.display === 'none' || !shareSection.style.display;
-          shareSection.style.display = isHidden ? 'block' : 'none';
-          // 如果顯示分享區塊，生成 QR Code
-          if (isHidden) {
-            this.generateQRCode();
-          }
+          shareModal.style.display = 'flex';
+          shareModal.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('modal-open');
+          this.generateQRCode();
         });
       }
-      
-      if (closeShareBtn && shareSection) {
-        closeShareBtn.addEventListener('click', () => {
-          shareSection.style.display = 'none';
+
+      if (shareModalClose) {
+        shareModalClose.addEventListener('click', closeShareModal);
+      }
+
+      if (shareModal) {
+        shareModal.addEventListener('click', (e) => {
+          if (e.target === shareModal) closeShareModal();
         });
       }
-      
-      // 複製會議 ID
+
       if (copyIdBtn) {
         copyIdBtn.addEventListener('click', () => {
           const meetingId = document.getElementById('meeting-id-display')?.value;
-          if (meetingId) {
-            copyToClipboard(meetingId);
-          }
+          if (meetingId) copyToClipboard(meetingId);
         });
       }
-      
-      // 複製連結
+
       if (copyLinkBtn) {
         copyLinkBtn.addEventListener('click', () => {
           const joinLink = document.getElementById('join-link-display')?.value;
-          if (joinLink) {
-            copyToClipboard(joinLink);
-          }
+          if (joinLink) copyToClipboard(joinLink);
         });
       }
     }
