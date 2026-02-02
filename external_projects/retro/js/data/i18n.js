@@ -2,15 +2,15 @@
 export const translations = {
   'zh-TW': {
     app: {
-      title: 'Retro - 團隊回顧工具',
+      title: 'Retro',
       description: '輕鬆進行敏捷回顧會議'
     },
     home: {
       title: '歡迎使用 Retro',
-      subtitle: '選擇您的模式',
-      hostMode: '房主模式',
+      subtitle: '團隊回顧工具',
+      hostMode: '建立會議',
       hostModeDesc: '建立會議室，管理回顧流程',
-      participantMode: '參與者模式',
+      participantMode: '加入會議',
       participantModeDesc: '加入會議，提出回顧意見',
       soloMode: '單人模式',
       soloModeDesc: '個人回顧，無需協作'
@@ -136,15 +136,15 @@ export const translations = {
   },
   'en': {
     app: {
-      title: 'Retro - Team Retrospective Tool',
+      title: 'Retro',
       description: 'Easy agile retrospective meetings'
     },
     home: {
       title: 'Welcome to Retro',
-      subtitle: 'Choose your mode',
-      hostMode: 'Host Mode',
+      subtitle: 'Team Retrospective Tool',
+      hostMode: 'Create Meeting',
       hostModeDesc: 'Create meeting room, manage retrospective flow',
-      participantMode: 'Participant Mode',
+      participantMode: 'Join Meeting',
       participantModeDesc: 'Join meeting, submit retrospective items',
       soloMode: 'Solo Mode',
       soloModeDesc: 'Personal retrospective, no collaboration needed'

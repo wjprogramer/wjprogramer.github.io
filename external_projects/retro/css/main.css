@@ -136,6 +136,10 @@ h3 {
   letter-spacing: 0;
 }
 
+[data-theme="dark"] .retro-logo {
+  color: var(--bg-primary);
+}
+
 /* SVG 濾鏡定義（僅供 filter 引用，不佔空間） */
 .retro-logo-svg-defs {
   position: absolute;
@@ -248,16 +252,10 @@ h3 {
   background: transparent;
 }
 
-.retro-logo-circle--orange {
-  color: white;
-}
-
-.retro-logo-circle--blue {
-  color: white;
-}
-
+.retro-logo-circle--orange,
+.retro-logo-circle--blue,
 .retro-logo-circle--triangle {
-  color: white;
+  color: inherit;
 }
 
 .retro-logo-circle--triangle svg {
