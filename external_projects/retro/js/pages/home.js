@@ -29,7 +29,9 @@ export class HomePage {
               </p>
               
               <div class="card-grid" style="max-width: 900px; margin: 0 auto;">
-                <div class="card card-interactive" data-mode="host">
+                <div class="card card-interactive home-card" data-mode="host">
+                  <div class="home-card-overlay"></div>
+                  <div class="home-card-emoji">🏕️</div>
                   <div class="card-header">
                     <h3 class="card-title">${t('home.hostMode')}</h3>
                   </div>
@@ -38,7 +40,9 @@ export class HomePage {
                   </div>
                 </div>
                 
-                <div class="card card-interactive" data-mode="participant">
+                <div class="card card-interactive home-card" data-mode="participant">
+                  <div class="home-card-overlay"></div>
+                  <div class="home-card-emoji">👥</div>
                   <div class="card-header">
                     <h3 class="card-title">${t('home.participantMode')}</h3>
                   </div>
@@ -47,7 +51,9 @@ export class HomePage {
                   </div>
                 </div>
                 
-                <div class="card card-interactive" data-mode="solo">
+                <div class="card card-interactive home-card" data-mode="solo">
+                  <div class="home-card-overlay"></div>
+                  <div class="home-card-emoji">🧘</div>
                   <div class="card-header">
                     <h3 class="card-title">${t('home.soloMode')}</h3>
                   </div>
@@ -56,7 +62,9 @@ export class HomePage {
                   </div>
                 </div>
                 
-                <div class="card card-interactive" data-mode="history">
+                <div class="card card-interactive home-card" data-mode="history">
+                  <div class="home-card-overlay"></div>
+                  <div class="home-card-emoji">📚</div>
                   <div class="card-header">
                     <h3 class="card-title">${t('history.title')}</h3>
                   </div>

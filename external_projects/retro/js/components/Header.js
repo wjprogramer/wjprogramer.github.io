@@ -45,11 +45,18 @@ export class Header {
                       title="${t('settings.title')}"
                       onclick="window.location.hash='/settings'"
                       style="
-                        padding: var(--spacing-sm) var(--spacing-md);
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 1.25rem;
                         border: 1px solid var(--border-color);
-                        border-radius: var(--radius-md);
+                        background: var(--bg-secondary);
+                        transition: all var(--transition-base);
                       ">
-                ⚙️ ${t('settings.title')}
+                ⚙️
               </button>
             ` : ''}
           </div>
