@@ -23,7 +23,46 @@ export class HomePage {
         <div class="main-content">
           <div class="container">
             <div style="text-align: center; padding: var(--spacing-2xl) 0;">
-              <h1>${t('home.title')}</h1>
+              <div class="retro-logo-block">
+                <div class="retro-logo-brand" aria-hidden="true">RETROSPECT</div>
+                <h1 class="retro-logo" aria-label="RETRO">
+                <svg class="retro-logo-svg-defs" aria-hidden="true" focusable="false">
+                  <defs>
+                    <filter id="retro-logo-goo-filter" x="-25%" y="-25%" width="150%" height="150%">
+                      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+                      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/>
+                    </filter>
+                  </defs>
+                </svg>
+                <span class="retro-logo-goo" aria-hidden="true">
+                  <span class="retro-logo-shape retro-logo-shape--bar"></span>
+                  <span class="retro-logo-shape retro-logo-shape--circle retro-logo-shape--primary"></span>
+                  <span class="retro-logo-shape retro-logo-shape--circle retro-logo-shape--primary"></span>
+                  <span class="retro-logo-shape retro-logo-shape--circle retro-logo-shape--primary"></span>
+                  <span class="retro-logo-shape retro-logo-shape--circle retro-logo-shape--primary"></span>
+                  <span class="retro-logo-shape retro-logo-shape--circle retro-logo-shape--primary"></span>
+                  <span class="retro-logo-shape retro-logo-shape--circle retro-logo-shape--primary"></span>
+                </span>
+                <span class="retro-logo-secondary" aria-hidden="true">
+                  <span class="retro-logo-secondary-dot"></span>
+                  <span class="retro-logo-secondary-placeholder"></span>
+                  <span class="retro-logo-secondary-dot"></span>
+                  <span class="retro-logo-secondary-placeholder"></span>
+                  <span class="retro-logo-secondary-dot"></span>
+                  <span class="retro-logo-secondary-placeholder"></span>
+                </span>
+                <span class="retro-logo-content">
+                  <span class="retro-logo-circle retro-logo-circle--orange">フ</span>
+                  <span class="retro-logo-circle retro-logo-circle--blue">リ</span>
+                  <span class="retro-logo-circle retro-logo-circle--orange">カ</span>
+                  <span class="retro-logo-circle retro-logo-circle--blue">エ</span>
+                  <span class="retro-logo-circle retro-logo-circle--orange">リ</span>
+                  <span class="retro-logo-circle retro-logo-circle--blue retro-logo-circle--triangle" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="60%" height="60%"><path d="M12 4L4 20h16L12 4z"/></svg>
+                  </span>
+                </span>
+                </h1>
+              </div>
               <p class="text-muted" style="font-size: 1.25rem; margin-bottom: var(--spacing-2xl);">
                 ${t('home.subtitle')}
               </p>

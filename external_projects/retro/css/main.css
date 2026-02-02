@@ -96,10 +96,182 @@ h3 {
   to { transform: rotate(360deg); }
 }
 
+/* Logo 區塊：上方品牌字 ＋ 下方 Gooey Logo */
+.retro-logo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7em;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* 品牌字「RETROSPECT」：搖曳露營風格，灰色大寫、字距略開 */
+.retro-logo-brand {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: clamp(0.9rem, 3.5vw, 1.15rem);
+  font-weight: 500;
+  letter-spacing: clamp(0.2rem, 3vw, 1rem);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+  line-height: 1;
+}
+
+[data-theme="dark"] .retro-logo-brand {
+  color: var(--text-secondary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* RETRO Logo（搖曳露營風格：六圓圈 ＋ 三角形 ＋ 長條，Gooey 融合） */
+.retro-logo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: clamp(1.8rem, 8vw, 3.2rem);
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* SVG 濾鏡定義（僅供 filter 引用，不佔空間） */
+.retro-logo-svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* 形狀層：圓圈與長條，套用 Gooey 濾鏡 */
+.retro-logo-goo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.07em;
+  filter: url(#retro-logo-goo-filter);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.retro-logo-shape {
+  flex-shrink: 0;
+}
+
+.retro-logo-shape--bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 0.5em;
+  background: var(--color-primary);
+  border-radius: 0.2em;
+}
+
+.retro-logo-shape--circle {
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 50%;
+}
+
+.retro-logo-shape--circle.retro-logo-shape--primary {
+  background: var(--color-primary);
+}
+
+/* 疊加層：index 0、2、4 的 secondary 圓圈 */
+.retro-logo-secondary {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.07em;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.retro-logo-secondary-dot,
+.retro-logo-secondary-placeholder {
+  width: 1.2em;
+  height: 1.2em;
+  flex-shrink: 0;
+}
+
+.retro-logo-secondary-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* 略大於格子，蓋住 gooey 底部露出的 primary */
+.retro-logo-secondary-dot::before {
+  content: '';
+  position: absolute;
+  width: 1.32em;
+  height: 1.32em;
+  border-radius: 50%;
+  background: var(--color-secondary);
+}
+
+/* .retro-logo-secondary-placeholder 與 .retro-logo-secondary-dot 共用上方 width/height，僅佔位對齊 */
+
+/* 內容層：文字與三角形，不套濾鏡、保持清晰 */
+.retro-logo-content {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.07em;
+}
+
+.retro-logo-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.retro-logo-circle--orange {
+  color: white;
+}
+
+.retro-logo-circle--blue {
+  color: white;
+}
+
+.retro-logo-circle--triangle {
+  color: white;
+}
+
+.retro-logo-circle--triangle svg {
+  display: block;
+}
+
 /* 響應式 */
 @media (max-width: 768px) {
   .main-content {
     padding: var(--spacing-md);
+  }
+  
+  .retro-logo {
+    font-size: clamp(1.5rem, 10vw, 2.5rem);
   }
   
   h1 {
