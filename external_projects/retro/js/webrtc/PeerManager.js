@@ -284,28 +284,85 @@ export class PeerManager {
   // 連線到房主（參與者使用）
   async connectToHost(hostPeerId) {
     return new Promise((resolve, reject) => {
-      if (!this.peer) {
-        reject(new Error('Peer not initialized'));
-        return;
+      try {
+        if (!this.peer) {
+          console.error('[PeerManager] Peer not initialized');
+          reject(new Error('Peer not initialized'));
+          return;
+        }
+
+        console.log('[PeerManager] Connecting to host:', hostPeerId);
+        console.log('[PeerManager] Peer state:', this.peer.open ? 'open' : 'not open', 'destroyed:', this.peer.destroyed);
+        
+        const conn = this.peer.connect(hostPeerId, {
+          reliable: true
+        });
+
+        if (!conn) {
+          console.error('[PeerManager] Failed to create connection object');
+          reject(new Error('Failed to create connection'));
+          return;
+        }
+
+        console.log('[PeerManager] Connection object created, waiting for open event...');
+
+        let isResolved = false;
+        let isRejected = false;
+
+        // 設置連接超時（15 秒）
+        const timeout = setTimeout(() => {
+          if (!isResolved && !isRejected) {
+            isRejected = true;
+            console.error('[PeerManager] Connection timeout after 15s');
+            if (conn && !conn.open) {
+              try {
+                conn.close();
+              } catch (e) {
+                console.error('[PeerManager] Error closing connection:', e);
+              }
+            }
+            reject(new Error('連線超時，請檢查會議 ID 是否正確或房主是否在線'));
+          }
+        }, 15000);
+
+        conn.on('open', () => {
+          if (isRejected) return;
+          if (isResolved) return;
+          isResolved = true;
+          console.log('[PeerManager] Connection opened successfully');
+          clearTimeout(timeout);
+          this.handleConnection(conn);
+          resolve(conn);
+        });
+
+        conn.on('error', (err) => {
+          if (isResolved) return;
+          if (isRejected) return;
+          isRejected = true;
+          console.error('[PeerManager] Connection error:', err);
+          console.error('[PeerManager] Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+          clearTimeout(timeout);
+          reject(err);
+        });
+
+        conn.on('close', () => {
+          console.log('[PeerManager] Connection closed, open state:', conn.open);
+          // 只有在連接未打開且未 resolve 時才 reject
+          if (!conn.open && !isResolved && !isRejected) {
+            isRejected = true;
+            clearTimeout(timeout);
+            reject(new Error('連線已關閉，請檢查會議 ID 是否正確或房主是否在線'));
+          }
+        });
+
+        // 監聽連接狀態變化
+        conn.on('iceStateChange', (state) => {
+          console.log('[PeerManager] ICE state changed:', state);
+        });
+      } catch (error) {
+        console.error('[PeerManager] Exception in connectToHost:', error);
+        reject(error);
       }
-
-      const conn = this.peer.connect(hostPeerId, {
-        reliable: true
-      });
-
-      if (!conn) {
-        reject(new Error('Failed to create connection'));
-        return;
-      }
-
-      conn.on('open', () => {
-        this.handleConnection(conn);
-        resolve(conn);
-      });
-
-      conn.on('error', (err) => {
-        reject(err);
-      });
     });
   }
 
