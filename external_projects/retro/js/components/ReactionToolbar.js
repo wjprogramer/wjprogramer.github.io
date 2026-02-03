@@ -2,12 +2,13 @@
 import { iconoirIcons } from '../utils/iconoir.js';
 
 export class ReactionToolbar {
-  constructor(itemId, category, onReaction, onMoreEmoji, onMoreOptions) {
+  constructor(itemId, category, onReaction, onMoreEmoji, onMoreOptions, onComment) {
     this.itemId = itemId;
     this.category = category;
     this.onReaction = onReaction; // 點擊 emoji 時的回調
     this.onMoreEmoji = onMoreEmoji; // 點擊「更多 emoji」時的回調
     this.onMoreOptions = onMoreOptions; // 點擊「更多選項」時的回調
+    this.onComment = onComment; // 點擊「留言」時的回調
   }
 
   render() {
@@ -22,11 +23,10 @@ export class ReactionToolbar {
               ${emoji}
             </button>
           `).join('')}
-          <button class="reaction-more-emoji-btn" title="更多 emoji">
-            <span style="font-size: 1.2rem;">✨</span>
-            <span style="font-size: 0.75rem; margin-left: 4px;">more reactions</span>
+          <button class="reaction-more-emoji-btn" title="更多 emoji" style="color: var(--text-secondary);">
+            ${iconoirIcons.plus(2, 18)}
           </button>
-          <button class="reaction-comment-btn" title="留言" style="display: none;">
+          <button class="reaction-comment-btn" title="留言" style="color: var(--text-secondary);">
             ${iconoirIcons.chatBubble(2, 18)}
           </button>
           <button class="reaction-more-options-btn" title="更多選項">
@@ -62,6 +62,17 @@ export class ReactionToolbar {
         e.stopPropagation();
         if (this.onMoreEmoji) {
           this.onMoreEmoji(this.itemId, this.category, element);
+        }
+      });
+    }
+
+    // 點擊「留言」按鈕
+    const commentBtn = element.querySelector('.reaction-comment-btn');
+    if (commentBtn) {
+      commentBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onComment) {
+          this.onComment(this.itemId, this.category);
         }
       });
     }

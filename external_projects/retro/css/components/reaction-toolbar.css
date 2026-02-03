@@ -105,8 +105,9 @@ body.modal-open .reaction-toolbar-container {
 .reaction-more-emoji-btn,
 .reaction-comment-btn,
 .reaction-more-options-btn {
+  width: 32px;
   height: 32px;
-  padding: 0 var(--spacing-sm);
+  padding: 0;
   border-radius: var(--radius-md);
   border: none;
   background: var(--bg-secondary);
@@ -115,8 +116,6 @@ body.modal-open .reaction-toolbar-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 0.75rem;
   transition: all var(--transition-base);
 }
 

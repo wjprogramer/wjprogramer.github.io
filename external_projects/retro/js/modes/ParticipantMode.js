@@ -255,6 +255,42 @@ export class ParticipantMode {
       }
     });
 
+    // 處理新增留言
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.COMMENT_ADD, (peerId, payload) => {
+      const { category, itemId, comments } = payload;
+      if (this.retro && this.retro.items[category]) {
+        const item = this.retro.items[category].find(item => item.id === itemId);
+        if (item) {
+          item.comments = comments;
+          this.onItemUpdateCallbacks.forEach(cb => cb());
+        }
+      }
+    });
+
+    // 處理更新留言
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.COMMENT_UPDATE, (peerId, payload) => {
+      const { category, itemId, comments } = payload;
+      if (this.retro && this.retro.items[category]) {
+        const item = this.retro.items[category].find(item => item.id === itemId);
+        if (item) {
+          item.comments = comments;
+          this.onItemUpdateCallbacks.forEach(cb => cb());
+        }
+      }
+    });
+
+    // 處理刪除留言
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.COMMENT_DELETE, (peerId, payload) => {
+      const { category, itemId, comments } = payload;
+      if (this.retro && this.retro.items[category]) {
+        const item = this.retro.items[category].find(item => item.id === itemId);
+        if (item) {
+          item.comments = comments;
+          this.onItemUpdateCallbacks.forEach(cb => cb());
+        }
+      }
+    });
+
     // 處理狀態變化
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.STATUS_CHANGE, (peerId, payload) => {
       if (this.retro) {
@@ -379,6 +415,76 @@ export class ParticipantMode {
       this.pendingChanges.push({
         type: DataChannel.MESSAGE_TYPES.REACTION,
         payload: { category, itemId, emoji, remove },
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  // 新增留言
+  addComment(category, itemId, comment) {
+    if (!this.retro || !this.retro.items[category]) {
+      return;
+    }
+
+    // 如果已連線，直接發送；否則加入緩存
+    if (this.isConnected && this.dataChannel) {
+      this.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_ADD, {
+        category,
+        itemId,
+        comment
+      });
+    } else {
+      // 加入本地緩存
+      this.pendingChanges.push({
+        type: DataChannel.MESSAGE_TYPES.COMMENT_ADD,
+        payload: { category, itemId, comment },
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  // 更新留言
+  updateComment(category, itemId, commentId, text) {
+    if (!this.retro || !this.retro.items[category]) {
+      return;
+    }
+
+    // 如果已連線，直接發送；否則加入緩存
+    if (this.isConnected && this.dataChannel) {
+      this.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_UPDATE, {
+        category,
+        itemId,
+        commentId,
+        text
+      });
+    } else {
+      // 加入本地緩存
+      this.pendingChanges.push({
+        type: DataChannel.MESSAGE_TYPES.COMMENT_UPDATE,
+        payload: { category, itemId, commentId, text },
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  // 刪除留言
+  deleteComment(category, itemId, commentId) {
+    if (!this.retro || !this.retro.items[category]) {
+      return;
+    }
+
+    // 如果已連線，直接發送；否則加入緩存
+    if (this.isConnected && this.dataChannel) {
+      this.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_DELETE, {
+        category,
+        itemId,
+        commentId
+      });
+    } else {
+      // 加入本地緩存
+      this.pendingChanges.push({
+        type: DataChannel.MESSAGE_TYPES.COMMENT_DELETE,
+        payload: { category, itemId, commentId },
         timestamp: Date.now()
       });
     }

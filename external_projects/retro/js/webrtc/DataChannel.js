@@ -74,6 +74,9 @@ export class DataChannel {
     DELETE_ITEM: 'DELETE_ITEM',
     VOTE: 'VOTE',
     REACTION: 'REACTION', // Emoji 反應
+    COMMENT_ADD: 'COMMENT_ADD', // 新增留言
+    COMMENT_UPDATE: 'COMMENT_UPDATE', // 更新留言
+    COMMENT_DELETE: 'COMMENT_DELETE', // 刪除留言
     STATUS_CHANGE: 'STATUS_CHANGE',
     SYNC: 'SYNC',
     KICK: 'KICK',

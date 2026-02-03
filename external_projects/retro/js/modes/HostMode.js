@@ -116,6 +116,21 @@ export class HostMode {
       this.handleReaction(peerId, payload);
     });
 
+    // 處理新增留言
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.COMMENT_ADD, (peerId, payload) => {
+      this.handleCommentAdd(peerId, payload);
+    });
+
+    // 處理更新留言
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.COMMENT_UPDATE, (peerId, payload) => {
+      this.handleCommentUpdate(peerId, payload);
+    });
+
+    // 處理刪除留言
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.COMMENT_DELETE, (peerId, payload) => {
+      this.handleCommentDelete(peerId, payload);
+    });
+
     // 處理編輯狀態（轉發給所有參與者）
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.EDIT_START, (peerId, payload) => {
       // 轉發給所有參與者（不包括發送者）
@@ -411,6 +426,130 @@ export class HostMode {
       itemId,
       emoji,
       reactions: item.reactions
+    });
+
+    this.onItemUpdateCallbacks.forEach(cb => cb());
+    
+    // 自動保存
+    this.autoSave();
+  }
+
+  // 處理新增留言（以使用者名稱判斷）
+  handleCommentAdd(peerId, payload) {
+    const { category, itemId, comment } = payload;
+    const items = this.retro.items[category];
+    if (!items) return;
+
+    const item = items.find(item => item.id === itemId);
+    if (!item) return;
+
+    // 以參與者名稱判斷（參與者送來時 host 用 peerId 查表取得 name）
+    const participant = this.participants.get(peerId);
+    const userName = participant ? participant.name : peerId;
+
+    // 初始化 comments 結構（如果還沒有）
+    if (!item.comments) {
+      item.comments = [];
+    }
+
+    // 確保 comment 的 author.name 使用正確的使用者名稱
+    const newComment = {
+      ...comment,
+      author: {
+        ...comment.author,
+        name: userName
+      }
+    };
+
+    item.comments.push(newComment);
+    this.retro.updatedAt = Date.now();
+
+    // 廣播給所有參與者（包含完整 comments 列表）
+    this.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_ADD, {
+      category,
+      itemId,
+      comments: item.comments
+    });
+
+    this.onItemUpdateCallbacks.forEach(cb => cb());
+    
+    // 自動保存
+    this.autoSave();
+  }
+
+  // 處理更新留言（只有留言作者可以更新）
+  handleCommentUpdate(peerId, payload) {
+    const { category, itemId, commentId, text } = payload;
+    const items = this.retro.items[category];
+    if (!items) return;
+
+    const item = items.find(item => item.id === itemId);
+    if (!item || !item.comments) return;
+
+    // 以參與者名稱判斷
+    const participant = this.participants.get(peerId);
+    const userName = participant ? participant.name : peerId;
+
+    const comment = item.comments.find(c => c.id === commentId);
+    if (!comment) return;
+
+    // 檢查權限：只有留言作者可以更新
+    if (comment.author.name !== userName) {
+      console.warn('Unauthorized comment update attempt');
+      return;
+    }
+
+    // 更新留言
+    comment.text = text;
+    comment.updatedAt = Date.now();
+    this.retro.updatedAt = Date.now();
+
+    // 廣播給所有參與者（包含完整 comments 列表）
+    this.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_UPDATE, {
+      category,
+      itemId,
+      comments: item.comments
+    });
+
+    this.onItemUpdateCallbacks.forEach(cb => cb());
+    
+    // 自動保存
+    this.autoSave();
+  }
+
+  // 處理刪除留言（只有留言作者可以刪除）
+  handleCommentDelete(peerId, payload) {
+    const { category, itemId, commentId } = payload;
+    const items = this.retro.items[category];
+    if (!items) return;
+
+    const item = items.find(item => item.id === itemId);
+    if (!item || !item.comments) return;
+
+    // 以參與者名稱判斷
+    const participant = this.participants.get(peerId);
+    const userName = participant ? participant.name : peerId;
+
+    const commentIndex = item.comments.findIndex(c => c.id === commentId);
+    if (commentIndex === -1) return;
+
+    const comment = item.comments[commentIndex];
+
+    // 檢查權限：只有留言作者可以刪除
+    if (comment.author.name !== userName) {
+      console.warn('Unauthorized comment delete attempt');
+      return;
+    }
+
+    // 刪除留言
+    item.comments.splice(commentIndex, 1);
+    this.retro.updatedAt = Date.now();
+
+    // 廣播給所有參與者（包含完整 comments 列表）
+    this.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_DELETE, {
+      category,
+      itemId,
+      comments: item.comments
     });
 
     this.onItemUpdateCallbacks.forEach(cb => cb());

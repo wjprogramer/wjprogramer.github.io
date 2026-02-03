@@ -39,6 +39,9 @@ export class RetroCard {
     // 渲染反應顯示
     const reactionsHtml = this.renderReactions();
     
+    // 渲染留言 UI
+    const commentsHtml = this.renderComments(showAuthor);
+    
     return `
       <div class="card  card-no-transform-hover ${animationClass} ${clickableClass}" style="margin-bottom: var(--spacing-md); ${animationStyle} ${cursorStyle}; position: relative;" ${isBeingEdited ? 'data-being-edited="true"' : ''} data-item-id="${this.item.id}" data-category="${this.category}">
         ${isBeingEdited ? `
@@ -48,6 +51,7 @@ export class RetroCard {
             </div>
           </div>
         ` : ''}
+        ${commentsHtml}
         <div class="card-body">
           <p style="margin-bottom: var(--spacing-md); line-height: 1.6; white-space: pre-wrap;">${this.escapeHtml(this.item.text)}</p>
           ${showAuthor ? `
@@ -120,6 +124,50 @@ export class RetroCard {
         `).join('')}
       </div>
     `;
+  }
+
+  renderComments(showAuthor) {
+    const comments = this.item.comments || [];
+    const commentCount = comments.length;
+    
+    // 如果留言數量為 0，不顯示留言區塊
+    if (commentCount === 0) {
+      return '';
+    }
+    
+    // 留言按鈕顯示在右上角（小的 icon，相對於右下角的 + 號）
+    const commentButtonHtml = `
+      <!-- 留言按鈕（右上角） -->
+      <div class="comment-toggle-btn-container" style="
+        position: absolute;
+        top: var(--spacing-sm);
+        right: var(--spacing-sm);
+        z-index: 5;
+        padding: 2px 4px 0 0;
+      ">
+        <button class="comment-toggle-btn" 
+                data-item-id="${this.item.id}"
+                style="
+                  width: 24px;
+                  height: 24px;
+                  padding: 0;
+                  border: none;
+                  background: transparent;
+                  color: var(--text-secondary);
+                  cursor: pointer;
+                  transition: all var(--transition-base);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+                title="${commentCount} ${t('retrospective.comments')}">
+          ${iconoirIcons.chatBubble(2, 16)}
+          ${commentCount > 0 ? `<span style="position: absolute; top: -4px; right: -4px; background: var(--color-primary); color: white; border-radius: 50%; width: 14px; height: 14px; font-size: 0.625rem; display: flex; align-items: center; justify-content: center; font-weight: 600;">${commentCount}</span>` : ''}
+        </button>
+      </div>
+    `;
+    
+    return commentButtonHtml;
   }
 
   escapeHtml(text) {

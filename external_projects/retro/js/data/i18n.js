@@ -81,7 +81,12 @@ export const translations = {
       itemText: '內容',
       itemTextPlaceholder: '輸入內容...',
       connectionDisconnected: '已與房主斷線',
-      connectionReconnecting: '正在重新連線…'
+      connectionReconnecting: '正在重新連線…',
+      comments: '留言',
+      commentPlaceholder: '新增留言...',
+      editComment: '編輯留言',
+      deleteComment: '刪除留言',
+      noComments: '尚無留言'
     },
     history: {
       title: '歷史記錄',
@@ -121,6 +126,7 @@ export const translations = {
     common: {
       save: '儲存',
       cancel: '取消',
+      submit: '送出',
       delete: '刪除',
       edit: '編輯',
       close: '關閉',
@@ -132,6 +138,12 @@ export const translations = {
       you: '你',
       confirmDelete: '確定要刪除嗎？',
       confirmClear: '確定要清除所有資料嗎？此操作無法復原。'
+    },
+    time: {
+      justNow: '剛剛',
+      minutesAgo: '{{minutes}} 分鐘前',
+      hoursAgo: '{{hours}} 小時前',
+      daysAgo: '{{days}} 天前'
     },
     emoji: {
       categories: {
@@ -234,7 +246,12 @@ export const translations = {
       itemText: 'Content',
       itemTextPlaceholder: 'Enter content...',
       connectionDisconnected: 'Disconnected from host',
-      connectionReconnecting: 'Reconnecting…'
+      connectionReconnecting: 'Reconnecting…',
+      comments: 'Comments',
+      commentPlaceholder: 'Add a comment...',
+      editComment: 'Edit Comment',
+      deleteComment: 'Delete Comment',
+      noComments: 'No comments yet'
     },
     history: {
       title: 'History',
@@ -274,6 +291,7 @@ export const translations = {
     common: {
       save: 'Save',
       cancel: 'Cancel',
+      submit: 'Submit',
       delete: 'Delete',
       edit: 'Edit',
       close: 'Close',
@@ -285,6 +303,12 @@ export const translations = {
       you: 'You',
       confirmDelete: 'Are you sure you want to delete?',
       confirmClear: 'Are you sure you want to clear all data? This action cannot be undone.'
+    },
+    time: {
+      justNow: 'Just now',
+      minutesAgo: '{{minutes}} minutes ago',
+      hoursAgo: '{{hours}} hours ago',
+      daysAgo: '{{days}} days ago'
     },
     emoji: {
       categories: {

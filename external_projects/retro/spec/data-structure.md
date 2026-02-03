@@ -88,7 +88,20 @@
               count: number,                // 該 emoji 的數量
               users: string[]               // 反應者名稱列表（以名稱判斷；重整後 peerId 會變，用名稱可避免同一人重複給 emoji）
             }
-          }
+          },
+          comments: [                       // 留言列表
+            {
+              id: string,                   // UUID v4
+              text: string,                  // 留言內容
+              author: {
+                peerId: string,             // 作者 Peer ID
+                name: string | 'anonymous', // 作者名稱（匿名時為 'anonymous'）
+                isAnonymous: boolean        // 是否匿名
+              },
+              createdAt: number,           // 建立時間戳記
+              updatedAt: number             // 更新時間戳記
+            }
+          ]
         }
       ],
       wentWell: [                          // 做得好的地方
@@ -504,7 +517,130 @@
 }
 ```
 
-#### 9. SYNC_STATE（同步狀態）
+#### 9. COMMENT_ADD（新增留言）
+
+**發送者**：參與者 → 房主 → 所有參與者
+
+**資料結構**：
+```javascript
+{
+  type: 'COMMENT_ADD',
+  data: {
+    category: string,                     // 分類：'howDoYouFeel' | 'whatWentWell' | 'whatDidntGoWell' | 'whatNeedsChange' | 'shoutOuts'
+    itemId: string,                        // 項目 ID
+    comment: {
+      id: string,                          // UUID v4
+      text: string,                        // 留言內容
+      author: {
+        peerId: string,                    // 作者 Peer ID
+        name: string,                       // 作者名稱
+        isAnonymous: boolean              // 是否匿名
+      },
+      createdAt: number,                   // 建立時間戳記
+      updatedAt: number                    // 更新時間戳記
+    }
+  },
+  timestamp: number,
+  from: string
+}
+```
+
+**房主廣播給參與者**（更新後完整 comments 列表）：
+```javascript
+{
+  type: 'COMMENT_ADD',
+  data: {
+    category: string,
+    itemId: string,
+    comments: [                            // 該項目最新 comments 列表
+      {
+        id: string,
+        text: string,
+        author: {
+          peerId: string,
+          name: string,
+          isAnonymous: boolean
+        },
+        createdAt: number,
+        updatedAt: number
+      }
+    ]
+  },
+  timestamp: number,
+  from: string
+}
+```
+
+#### 10. COMMENT_UPDATE（更新留言）
+
+**發送者**：參與者 → 房主 → 所有參與者
+
+**資料結構**：
+```javascript
+{
+  type: 'COMMENT_UPDATE',
+  data: {
+    category: string,                      // 分類
+    itemId: string,                        // 項目 ID
+    commentId: string,                      // 留言 ID
+    text: string                           // 更新後的留言內容
+  },
+  timestamp: number,
+  from: string
+}
+```
+
+**房主廣播給參與者**（更新後完整 comments 列表）：
+```javascript
+{
+  type: 'COMMENT_UPDATE',
+  data: {
+    category: string,
+    itemId: string,
+    comments: [                            // 該項目最新 comments 列表
+      // ... 同上
+    ]
+  },
+  timestamp: number,
+  from: string
+}
+```
+
+#### 11. COMMENT_DELETE（刪除留言）
+
+**發送者**：參與者 → 房主 → 所有參與者
+
+**資料結構**：
+```javascript
+{
+  type: 'COMMENT_DELETE',
+  data: {
+    category: string,                      // 分類
+    itemId: string,                        // 項目 ID
+    commentId: string                       // 留言 ID
+  },
+  timestamp: number,
+  from: string
+}
+```
+
+**房主廣播給參與者**（更新後完整 comments 列表）：
+```javascript
+{
+  type: 'COMMENT_DELETE',
+  data: {
+    category: string,
+    itemId: string,
+    comments: [                            // 該項目最新 comments 列表
+      // ... 同上
+    ]
+  },
+  timestamp: number,
+  from: string
+}
+```
+
+#### 12. SYNC_STATE（同步狀態）
 
 **發送者**：房主 → 參與者（當參與者加入時）
 
@@ -567,6 +703,18 @@
 - **項目**：必須是存在的回顧項目
 - **同一 emoji**：同一名稱對同一項目的同一 emoji 只能有一筆反應（點擊可切換新增/移除）
 - **多 emoji**：同一參與者可對同一項目添加多種不同 emoji 的反應
+
+### 6. 留言驗證
+
+- **留言者**：必須是已加入的參與者；以**使用者名稱**判斷（重整後 peerId 會變，用名稱可避免同一人重複留言）
+- **項目**：必須是存在的回顧項目
+- **留言內容**：長度 1-1000 字元，不能為空、不能只包含空格
+- **編輯權限**：只有留言作者可以編輯或刪除自己的留言
+- **時間顯示**：
+  - 短時間內（1 小時內）顯示相對時間（如「2 分鐘前」）
+  - 超過時間閾值後顯示絕對時間（如「2024-01-15 14:30」）
+  - 無論是否在 P2P 模式下，都會持續更新相對時間文字（只更新文字內容，不重新 render 整個留言列表）
+  - 相對時間的文字需有 tooltip，顯示完整的絕對時間
 
 ---
 

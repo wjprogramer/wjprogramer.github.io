@@ -12,6 +12,8 @@ import { EmojiPicker } from '../components/EmojiPicker.js';
 import { ConfirmModal } from '../components/ConfirmModal.js';
 import { iconoirIcons } from '../utils/iconoir.js';
 import { DataChannel } from '../webrtc/DataChannel.js';
+import { formatTime, updateTimeElement, initTimeUpdater } from '../utils/timeFormat.js';
+import { CommentModal } from '../components/CommentModal.js';
 
 export class RetrospectivePage {
   constructor(params = {}, query = '') {
@@ -936,6 +938,15 @@ export class RetrospectivePage {
       });
     });
     
+    // 留言按鈕事件綁定（右上角）
+    const commentToggleBtn = cardElement.querySelector('.comment-toggle-btn');
+    if (commentToggleBtn) {
+      commentToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.handleCommentToggle(item.id);
+      });
+    }
+    
     // Hover 到「＋」按鈕時顯示反應工具欄
     if (reactionPlusBtn && reactionToolbarContainer) {
       let toolbarInstance = null;
@@ -970,7 +981,8 @@ export class RetrospectivePage {
               (itemId, cat, container) => this.showEmojiPicker(itemId, cat, container),
               (itemId, cat, isOpen) => {
                 // 更多選項打開/關閉的回調
-              }
+              },
+              (itemId, cat) => this.handleCommentButtonClick(itemId, cat)
             );
             
             reactionToolbarContainer.innerHTML = toolbar.render();
@@ -1218,6 +1230,227 @@ export class RetrospectivePage {
     
     // 重新渲染項目以顯示更新後的反應
     this.renderItems();
+  }
+  
+  /** 打開留言 modal */
+  showCommentModal(itemId, category) {
+    const item = this.items[category]?.find(i => i.id === itemId);
+    if (!item) return;
+    
+    // 初始化 comments 結構（如果還沒有）
+    if (!item.comments) {
+      item.comments = [];
+    }
+    
+    const modal = new CommentModal(
+      itemId,
+      category,
+      item,
+      (itemId, category, text) => {
+        this.handleCommentAdd(itemId, category, text);
+      },
+      (itemId, commentId, text) => {
+        this.handleCommentUpdate(itemId, commentId, text);
+      },
+      (itemId, commentId) => {
+        this.handleCommentDelete(itemId, commentId);
+      },
+      this.isP2PMode,
+      (itemId, category) => {
+        // 獲取最新的 item 資料
+        return this.items[category]?.find(i => i.id === itemId);
+      }
+    );
+    
+    modal.show();
+  }
+  
+  /**處理留言按鈕點擊（從反應工具欄觸發） */
+  handleCommentButtonClick(itemId, category) {
+    this.showCommentModal(itemId, category);
+  }
+  
+  // 處理留言相關功能（從右上角按鈕觸發）
+  handleCommentToggle(itemId) {
+    const item = Object.values(this.items).flat().find(i => i.id === itemId);
+    if (!item) return;
+    
+    const category = Object.keys(this.items).find(cat => 
+      this.items[cat].some(i => i.id === itemId)
+    );
+    if (!category) return;
+    
+    this.showCommentModal(itemId, category);
+  }
+  
+  handleCommentAdd(itemId, category, text) {
+    const item = this.items[category]?.find(i => i.id === itemId);
+    if (!item) return;
+    
+    if (!text.trim()) return;
+    
+    // 初始化 comments 結構（如果還沒有）
+    if (!item.comments) {
+      item.comments = [];
+    }
+    
+    // 以使用者名稱判斷
+    const globalState = window.retroState || {};
+    const currentUserName = globalState.participantMode?.name ||
+                            globalState.hostMode?.retro?.host?.name ||
+                            'local-user';
+    
+    const allowAnonymous = (window.retroState?.hostMode?.retro?.allowAnonymous ?? window.retroState?.participantMode?.getRetro?.()?.allowAnonymous) ?? false;
+    
+    const newComment = {
+      id: this.generateId(),
+      text: text.trim(),
+      author: {
+        peerId: null,
+        name: currentUserName,
+        isAnonymous: allowAnonymous && currentUserName === 'anonymous'
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    // 在 P2P 模式下同步留言
+    if (this.isP2PMode) {
+      if (this.participantMode) {
+        // 參與者模式：發送留言給 host
+        this.participantMode.addComment(category, itemId, newComment);
+      } else if (this.hostMode && this.hostMode.dataChannel) {
+        // Host 模式：直接處理並廣播
+        item.comments.push(newComment);
+        this.hostMode.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_ADD, {
+          category,
+          itemId,
+          comments: item.comments
+        });
+        this.hostMode.onItemUpdateCallbacks.forEach(cb => cb());
+        this.hostMode.autoSave();
+      }
+    } else {
+      // 單人模式：直接添加
+      item.comments.push(newComment);
+    }
+    
+    // 重新渲染項目以更新留言數量顯示
+    this.renderItems();
+  }
+  
+  handleCommentUpdate(itemId, commentId, text) {
+    const item = Object.values(this.items).flat().find(i => i.id === itemId);
+    if (!item || !item.comments) return;
+    
+    if (!text.trim()) return;
+    
+    const comment = item.comments.find(c => c.id === commentId);
+    if (!comment) return;
+    
+    // 以使用者名稱判斷
+    const globalState = window.retroState || {};
+    const currentUserName = globalState.participantMode?.name ||
+                            globalState.hostMode?.retro?.host?.name ||
+                            'local-user';
+    
+    // 檢查權限
+    if (comment.author.name !== currentUserName) {
+      Toast.warning('您沒有權限編輯此留言');
+      return;
+    }
+    
+    const category = Object.keys(this.items).find(cat => 
+      this.items[cat].some(i => i.id === itemId)
+    );
+    if (!category) return;
+    
+    // 在 P2P 模式下同步留言
+    if (this.isP2PMode) {
+      if (this.participantMode) {
+        // 參與者模式：發送更新給 host
+        this.participantMode.updateComment(category, itemId, commentId, text.trim());
+      } else if (this.hostMode && this.hostMode.dataChannel) {
+        // Host 模式：直接處理並廣播
+        comment.text = text.trim();
+        comment.updatedAt = Date.now();
+        this.hostMode.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_UPDATE, {
+          category,
+          itemId,
+          comments: item.comments
+        });
+        this.hostMode.onItemUpdateCallbacks.forEach(cb => cb());
+        this.hostMode.autoSave();
+      }
+    } else {
+      // 單人模式：直接更新
+      comment.text = text.trim();
+      comment.updatedAt = Date.now();
+    }
+    
+    // 重新渲染項目以更新留言數量顯示
+    this.renderItems();
+  }
+  
+  handleCommentDelete(itemId, commentId) {
+    const item = Object.values(this.items).flat().find(i => i.id === itemId);
+    if (!item || !item.comments) return;
+    
+    const comment = item.comments.find(c => c.id === commentId);
+    if (!comment) return;
+    
+    // 以使用者名稱判斷
+    const globalState = window.retroState || {};
+    const currentUserName = globalState.participantMode?.name ||
+                            globalState.hostMode?.retro?.host?.name ||
+                            'local-user';
+    
+    // 檢查權限
+    if (comment.author.name !== currentUserName) {
+      Toast.warning('您沒有權限刪除此留言');
+      return;
+    }
+    
+    const category = Object.keys(this.items).find(cat => 
+      this.items[cat].some(i => i.id === itemId)
+    );
+    if (!category) return;
+    
+    // 在 P2P 模式下同步留言
+    if (this.isP2PMode) {
+      if (this.participantMode) {
+        // 參與者模式：發送刪除給 host
+        this.participantMode.deleteComment(category, itemId, commentId);
+      } else if (this.hostMode && this.hostMode.dataChannel) {
+        // Host 模式：直接處理並廣播
+        const index = item.comments.findIndex(c => c.id === commentId);
+        if (index !== -1) {
+          item.comments.splice(index, 1);
+          this.hostMode.dataChannel.send(DataChannel.MESSAGE_TYPES.COMMENT_DELETE, {
+            category,
+            itemId,
+            comments: item.comments
+          });
+          this.hostMode.onItemUpdateCallbacks.forEach(cb => cb());
+          this.hostMode.autoSave();
+        }
+      }
+    } else {
+      // 單人模式：直接刪除
+      const index = item.comments.findIndex(c => c.id === commentId);
+      if (index !== -1) {
+        item.comments.splice(index, 1);
+      }
+    }
+    
+    // 重新渲染項目以更新留言數量顯示
+    this.renderItems();
+  }
+  
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
   
   // 顯示 emoji picker
