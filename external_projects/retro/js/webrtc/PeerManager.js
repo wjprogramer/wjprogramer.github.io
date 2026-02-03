@@ -197,10 +197,12 @@ export class PeerManager {
         
         isResolved = true;
         this.peerId = id;
+        console.log('[PeerManager] Peer opened with ID:', id);
 
         if (isHost) {
           resolve(id);
         } else if (hostPeerId) {
+          console.log('[PeerManager] Initiating connection to host:', hostPeerId);
           this.connectToHost(hostPeerId).then(resolve).catch(reject);
         } else {
           resolve(id);
