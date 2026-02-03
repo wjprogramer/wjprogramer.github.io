@@ -132,6 +132,25 @@ export const translations = {
       you: '你',
       confirmDelete: '確定要刪除嗎？',
       confirmClear: '確定要清除所有資料嗎？此操作無法復原。'
+    },
+    emoji: {
+      categories: {
+        common: '常用',
+        faces: '表情',
+        gestures: '手勢',
+        celebration: '慶祝',
+        symbols: '符號',
+        animals: '動物',
+        food: '食物',
+        transport: '交通工具',
+        objects: '物件',
+        flags: '標誌',
+        arrows: '箭頭',
+        time: '時間',
+        searchResults: '搜尋結果'
+      },
+      searchPlaceholder: '搜尋 emoji...',
+      noResults: '找不到符合的 emoji'
     }
   },
   'en': {
@@ -266,6 +285,25 @@ export const translations = {
       you: 'You',
       confirmDelete: 'Are you sure you want to delete?',
       confirmClear: 'Are you sure you want to clear all data? This action cannot be undone.'
+    },
+    emoji: {
+      categories: {
+        common: 'Common',
+        faces: 'Faces',
+        gestures: 'Gestures',
+        celebration: 'Celebration',
+        symbols: 'Symbols',
+        animals: 'Animals',
+        food: 'Food',
+        transport: 'Transport',
+        objects: 'Objects',
+        flags: 'Flags',
+        arrows: 'Arrows',
+        time: 'Time',
+        searchResults: 'Search Results'
+      },
+      searchPlaceholder: 'Search emoji...',
+      noResults: 'No matching emoji found'
     }
   }
 };
