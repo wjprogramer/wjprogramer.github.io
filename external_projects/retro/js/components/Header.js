@@ -13,7 +13,7 @@ export class Header {
 
   render() {
     const currentTheme = getCurrentTheme();
-    const themeIcon = currentTheme === 'dark' ? '☀️' : '🌙';
+    const themeIconClass = currentTheme === 'dark' ? 'iconoir-sun-light' : 'iconoir-half-moon';
     
     return `
       <header class="header">
@@ -37,7 +37,7 @@ export class Header {
                         background: var(--bg-secondary);
                         transition: all var(--transition-base);
                       ">
-                ${themeIcon}
+                <span class="${themeIconClass}"></span>
               </button>
             ` : ''}
             ${this.showSettings ? `
@@ -56,7 +56,7 @@ export class Header {
                         background: var(--bg-secondary);
                         transition: all var(--transition-base);
                       ">
-                ⚙️
+                <span class="iconoir-settings"></span>
               </button>
             ` : ''}
           </div>
@@ -71,7 +71,10 @@ export class Header {
       if (themeBtn) {
         const updateThemeIcon = async () => {
           const currentTheme = await getCurrentTheme();
-          themeBtn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+          const iconSpan = themeBtn.querySelector('span');
+          if (iconSpan) {
+            iconSpan.className = currentTheme === 'dark' ? 'iconoir-sun-light' : 'iconoir-half-moon';
+          }
           themeBtn.title = currentTheme === 'dark' ? t('settings.themeLight') : t('settings.themeDark');
         };
         

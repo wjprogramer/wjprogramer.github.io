@@ -30,6 +30,19 @@
   align-items: center;
 }
 
+/* Header action buttons hover effects */
+.theme-toggle-btn:hover,
+#settings-btn:hover {
+  background: var(--bg-primary) !important;
+  border-color: var(--color-primary) !important;
+  transform: scale(1.05);
+}
+
+.theme-toggle-btn:hover span,
+#settings-btn:hover span {
+  color: var(--color-primary);
+}
+
 @media (max-width: 768px) {
   .header {
     padding: var(--spacing-sm) var(--spacing-md);
