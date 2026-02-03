@@ -75,5 +75,5 @@ body.emoji-picker-open {
 
 .emoji-item:hover {
   background: var(--bg-secondary);
-  transform: scale(1.2);
+  transform: scale(1.5);
 }
