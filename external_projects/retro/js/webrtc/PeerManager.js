@@ -210,6 +210,7 @@ export class PeerManager {
       });
 
       this.peer.on('connection', (conn) => {
+        console.log('[PeerManager] Incoming connection from:', conn.peer);
         this.handleConnection(conn);
       });
 
@@ -368,24 +369,46 @@ export class PeerManager {
 
   // 處理連線
   handleConnection(conn) {
+    console.log('[PeerManager] handleConnection called for peer:', conn.peer, 'open:', conn.open);
     this._connectionToHostFailed = false;
     const peerId = conn.peer;
     this.connections.set(peerId, conn);
+
+    // 監聽連接打開事件
+    if (!conn.open) {
+      conn.on('open', () => {
+        console.log('[PeerManager] Connection opened in handleConnection for peer:', peerId);
+      });
+    } else {
+      console.log('[PeerManager] Connection already open for peer:', peerId);
+    }
 
     conn.on('data', (data) => {
       this.handleMessage(peerId, data);
     });
 
     conn.on('close', () => {
+      console.log('[PeerManager] Connection closed for peer:', peerId);
       this.connections.delete(peerId);
       this.onDisconnectionCallbacks.forEach(cb => cb(peerId));
     });
 
     conn.on('error', (err) => {
-      console.error('Connection error:', err);
+      console.error('[PeerManager] Connection error for peer:', peerId, err);
       this.connections.delete(peerId);
       this.onDisconnectionCallbacks.forEach(cb => cb(peerId));
     });
+
+    // 監聽 ICE 狀態變化
+    if (conn.peerConnection) {
+      conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
+        console.log('[PeerManager] ICE connection state changed for peer:', peerId, 'state:', conn.peerConnection.iceConnectionState);
+      });
+      
+      conn.peerConnection.addEventListener('connectionstatechange', () => {
+        console.log('[PeerManager] Connection state changed for peer:', peerId, 'state:', conn.peerConnection.connectionState);
+      });
+    }
 
     this.onConnectionCallbacks.forEach(cb => cb(peerId, conn));
   }
