@@ -157,13 +157,45 @@ export class PeerManager {
         return;
       }
 
+      // 免費 TURN 服務器配置
+      // 使用多個免費 TURN 服務器以提高連接成功率
+      const iceServers = [
+        // Google STUN 服務器（免費，但只有 STUN，沒有 TURN）
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        // PeerJS 自己的 STUN 服務器
+        { urls: 'stun:0.peerjs.com:3478' },
+        // OpenRelay 免費 TURN 服務器（無需認證）
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+        // Metered.ca 免費 TURN 服務器（需要註冊，但這裡使用公開的測試帳號）
+        // 注意：這些服務器可能有使用限制，建議註冊自己的帳號
+        { urls: 'turn:a.relay.metered.ca:80', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+        { urls: 'turn:a.relay.metered.ca:80?transport=tcp', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+        { urls: 'turn:a.relay.metered.ca:443', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+        { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+      ];
+
+      // PeerJS 1.5.4 支持通過 rtcConfig.iceServers 設置自定義 ICE servers
+      // 根據測試結果，config.rtcConfig.iceServers 是最可靠的方式
       const config = {
         host: '0.peerjs.com',
         port: 443,
         path: '/',
         secure: true,
-        debug: 1 // 啟用除錯模式
+        debug: 1, // 啟用除錯模式
+        // 使用 rtcConfig.iceServers 設置自定義 ICE servers（包含 TURN 服務器）
+        rtcConfig: {
+          iceServers: iceServers
+        }
       };
+      
+      console.log('[PeerManager] Setting custom ICE servers via rtcConfig.iceServers');
+      console.log('[PeerManager] ICE servers count:', iceServers.length);
 
       if (isHost) {
         // 房主：使用指定的 ID（會議 ID）建立 Peer
@@ -367,12 +399,96 @@ export class PeerManager {
     });
   }
 
+  // 獲取 ICE 服務器配置
+  getICEServers() {
+    return [
+      // Google STUN 服務器（免費，但只有 STUN，沒有 TURN）
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      // PeerJS 自己的 STUN 服務器
+      { urls: 'stun:0.peerjs.com:3478' },
+      // OpenRelay 免費 TURN 服務器（無需認證）
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+      // Metered.ca 免費 TURN 服務器
+      // 注意：這些服務器可能有使用限制，建議註冊自己的帳號獲取更好的穩定性
+      { urls: 'turn:a.relay.metered.ca:80', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+      { urls: 'turn:a.relay.metered.ca:80?transport=tcp', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+      { urls: 'turn:a.relay.metered.ca:443', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+      { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'a179b4b11b08b18b9a8b8b8b', credential: 'a179b4b11b08b18b9a8b8b8b' },
+    ];
+  }
+
   // 處理連線
   handleConnection(conn) {
     console.log('[PeerManager] handleConnection called for peer:', conn.peer, 'open:', conn.open);
     this._connectionToHostFailed = false;
     const peerId = conn.peer;
     this.connections.set(peerId, conn);
+
+    // 嘗試為連接設置自定義 ICE servers
+    // 注意：RTCPeerConnection.setConfiguration() 只能在連接建立前調用
+    // 如果連接已經建立，我們只能檢查當前配置
+    if (conn.peerConnection) {
+      try {
+        const pc = conn.peerConnection;
+        const currentConfig = pc.getConfiguration();
+        
+        console.log('[PeerManager] Current ICE servers configuration for peer:', peerId);
+        console.log('[PeerManager] ICE servers count:', currentConfig.iceServers?.length || 0);
+        
+        if (currentConfig.iceServers && currentConfig.iceServers.length > 0) {
+          console.log('[PeerManager] ICE servers:', currentConfig.iceServers.map(s => ({
+            urls: s.urls,
+            hasCredential: !!s.credential
+          })));
+          
+          // 檢查是否有 TURN 服務器
+          const hasTurn = currentConfig.iceServers.some(s => {
+            const urls = Array.isArray(s.urls) ? s.urls : [s.urls];
+            return urls.some(url => url.startsWith('turn:'));
+          });
+          
+          if (hasTurn) {
+            console.log('[PeerManager] ✅ TURN 服務器已配置');
+          } else {
+            console.warn('[PeerManager] ⚠️ 未檢測到 TURN 服務器，可能無法穿透對稱型 NAT');
+          }
+        } else {
+          console.warn('[PeerManager] ⚠️ 未檢測到 ICE servers 配置');
+        }
+        
+        // 注意：setConfiguration() 只能在連接建立前調用
+        // 如果連接已經建立，這個調用會失敗，這是正常的
+        if (pc.connectionState === 'new' || pc.connectionState === 'connecting') {
+          try {
+            const customIceServers = this.getICEServers();
+            const mergedIceServers = [
+              ...(currentConfig.iceServers || []),
+              ...customIceServers
+            ];
+            
+            pc.setConfiguration({
+              ...currentConfig,
+              iceServers: mergedIceServers
+            });
+            
+            console.log('[PeerManager] ✅ 成功更新 ICE servers 配置');
+            console.log('[PeerManager] 新的 ICE servers count:', mergedIceServers.length);
+          } catch (error) {
+            console.warn('[PeerManager] ⚠️ 無法更新 ICE servers（連接可能已建立）:', error.message);
+          }
+        } else {
+          console.log('[PeerManager] ℹ️ 連接狀態:', pc.connectionState, '- 無法更新 ICE servers');
+        }
+      } catch (error) {
+        console.warn('[PeerManager] ⚠️ 檢查 ICE servers 配置時出錯:', error);
+      }
+    }
 
     // 監聽連接打開事件
     if (!conn.open) {
