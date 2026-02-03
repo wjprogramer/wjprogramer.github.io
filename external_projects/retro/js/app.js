@@ -3,6 +3,8 @@ import { Router } from './router.js';
 import { initTheme } from './utils/theme.js';
 import { initI18n } from './utils/i18n.js';
 import { storage } from './utils/storage/index.js';
+// 導入診斷工具（自動掛載到 window.diagnoseConnection）
+import './utils/connectionDiagnostics.js';
 
 // 初始化全域狀態
 window.retroState = {
