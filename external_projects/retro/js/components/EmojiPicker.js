@@ -238,7 +238,10 @@ export class EmojiPicker {
         allEmojis.push(...emojis);
       });
       
-      const filteredEmojis = allEmojis.filter(emoji => {
+      // 使用 Set 去重，避免同一個 emoji 在多個分類中重複出現
+      const uniqueEmojis = [...new Set(allEmojis)];
+      
+      const filteredEmojis = uniqueEmojis.filter(emoji => {
         // 直接匹配 emoji 字符
         if (emoji.includes(query)) return true;
         
