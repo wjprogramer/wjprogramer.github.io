@@ -44,6 +44,7 @@ export class RetrospectivePage {
     this.isDestroyed = false; // 追蹤頁面是否已被銷毀
     this.renderContainer = null; // 追蹤當前渲染的 container
     this.googleDriveInitHandler = null; // Google Drive 初始化完成事件處理器
+    this.draggingItem = null; // 追蹤當前拖動的項目 { itemId, category, index }
     
     this.from = this.queryParams.from || null; // 記錄來源頁面
   }
@@ -723,6 +724,22 @@ export class RetrospectivePage {
         margin-bottom: 0;
       }
       
+      /* 拖放相關樣式 */
+      .card.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+      }
+      
+      .retro-column.drag-over {
+        border-color: var(--color-secondary);
+        background: color-mix(in srgb, var(--color-secondary-light) 10%, var(--bg-card));
+        border-width: 2px;
+      }
+      
+      .retro-column.drag-over .retro-column-items {
+        min-height: 100px;
+      }
+      
       .retro-item-input {
         width: 100%;
         min-height: 80px;
@@ -894,6 +911,44 @@ export class RetrospectivePage {
     const reactionTrigger = cardElement.querySelector('.card-reaction-trigger');
     const reactionPlusBtn = cardElement.querySelector('.reaction-plus-btn');
     const reactionToolbarContainer = cardElement.querySelector('.reaction-toolbar-container');
+    
+    // 拖放事件處理
+    const draggableCard = cardElement.querySelector('.card');
+    if (draggableCard && draggableCard.draggable) {
+      draggableCard.addEventListener('dragstart', (e) => {
+        // 如果正在被其他人編輯，不允許拖動
+        if (cardElement.dataset.beingEdited === 'true') {
+          e.preventDefault();
+          return false;
+        }
+        // 如果正在編輯，不允許拖動
+        if (this.editingItemId === item.id) {
+          e.preventDefault();
+          return false;
+        }
+        e.dataTransfer.effectAllowed = 'move';
+        const dragData = {
+          itemId: item.id,
+          category: category,
+          index: index
+        };
+        e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+        this.draggingItem = dragData; // 保存拖動的項目資訊
+        draggableCard.classList.add('dragging');
+      });
+      
+      draggableCard.addEventListener('dragend', (e) => {
+        draggableCard.classList.remove('dragging');
+        // 移除所有 drag over 樣式和插入指示器
+        document.querySelectorAll('.retro-column').forEach(col => {
+          col.classList.remove('drag-over');
+          col.querySelectorAll('.drag-insert-indicator').forEach(indicator => {
+            indicator.remove();
+          });
+        });
+        this.draggingItem = null; // 清除拖動的項目資訊
+      });
+    }
     
     // 點擊卡片進入編輯模式
     if (cardClickable) {
@@ -1684,6 +1739,164 @@ export class RetrospectivePage {
       });
     });
     
+    // 拖放事件處理（column 層級）
+    document.querySelectorAll('.retro-column').forEach(column => {
+      const columnItems = column.querySelector('.retro-column-items');
+      let dragOverItem = null;
+      
+      // 允許拖動到 column
+      column.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        column.classList.add('drag-over');
+        
+        // 檢測是否在同一個 column 內拖動，並且可以插入到其他 item 之間
+        if (this.draggingItem) {
+          const { category: sourceCategory } = this.draggingItem;
+          const targetCategory = column.dataset.category;
+          
+          // 找到最接近的 item（無論是否同一個 column）
+          const items = columnItems.querySelectorAll('[data-item-id]');
+          let closestItem = null;
+          let closestDistance = Infinity;
+          
+          items.forEach(item => {
+            const rect = item.getBoundingClientRect();
+            const itemCenterY = rect.top + rect.height / 2;
+            const distance = Math.abs(e.clientY - itemCenterY);
+            
+            // 如果是同一個 column，排除正在拖動的項目
+            if (sourceCategory === targetCategory && item.dataset.itemId === this.draggingItem.itemId) {
+              return;
+            }
+            
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestItem = item;
+            }
+          });
+          
+          // 移除之前的指示器
+          columnItems.querySelectorAll('.drag-insert-indicator').forEach(indicator => {
+            indicator.remove();
+          });
+          
+          if (closestItem) {
+            const rect = closestItem.getBoundingClientRect();
+            const insertBefore = e.clientY < rect.top + rect.height / 2;
+            
+            // 創建插入位置指示器
+            const indicator = document.createElement('div');
+            indicator.className = 'drag-insert-indicator';
+            indicator.style.cssText = `
+              height: 2px;
+              background: var(--color-secondary);
+              margin: var(--spacing-xs) 0;
+              border-radius: 1px;
+              pointer-events: none;
+            `;
+            
+            if (insertBefore) {
+              closestItem.parentNode.insertBefore(indicator, closestItem);
+            } else {
+              const nextSibling = closestItem.nextSibling;
+              if (nextSibling) {
+                closestItem.parentNode.insertBefore(indicator, nextSibling);
+              } else {
+                closestItem.parentNode.appendChild(indicator);
+              }
+            }
+            
+            dragOverItem = {
+              element: closestItem,
+              insertBefore: insertBefore
+            };
+          } else if (items.length === 0) {
+            // 如果目標 column 是空的，在底部顯示指示器
+            const indicator = document.createElement('div');
+            indicator.className = 'drag-insert-indicator';
+            indicator.style.cssText = `
+              height: 2px;
+              background: var(--color-secondary);
+              margin: var(--spacing-xs) 0;
+              border-radius: 1px;
+              pointer-events: none;
+            `;
+            columnItems.appendChild(indicator);
+            
+            dragOverItem = {
+              element: null,
+              insertBefore: false
+            };
+          }
+        }
+      });
+      
+      column.addEventListener('dragleave', (e) => {
+        // 只有當離開整個 column 時才移除樣式
+        if (!column.contains(e.relatedTarget)) {
+          column.classList.remove('drag-over');
+          columnItems.querySelectorAll('.drag-insert-indicator').forEach(indicator => {
+            indicator.remove();
+          });
+          dragOverItem = null;
+        }
+      });
+      
+      column.addEventListener('drop', (e) => {
+        e.preventDefault();
+        column.classList.remove('drag-over');
+        columnItems.querySelectorAll('.drag-insert-indicator').forEach(indicator => {
+          indicator.remove();
+        });
+        
+        try {
+          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+          const { itemId, category: sourceCategory, index: sourceIndex } = data;
+          const targetCategory = column.dataset.category;
+          
+          // 如果是同一個 column，重新排序
+          if (sourceCategory === targetCategory && dragOverItem) {
+            const targetItemId = dragOverItem.element.dataset.itemId;
+            const targetIndex = parseInt(dragOverItem.element.dataset.itemIndex);
+            const insertBefore = dragOverItem.insertBefore;
+            
+            // 計算新的 index（基於移除前的索引）
+            let newIndex;
+            if (insertBefore) {
+              newIndex = targetIndex;
+            } else {
+              newIndex = targetIndex + 1;
+            }
+            
+            // 如果移動到相同位置，不做任何事
+            if (sourceIndex === newIndex) {
+              return;
+            }
+            
+            // 使用 moveItem 處理同 category 內的重新排序
+            // moveItem 內部會處理 index 調整（移除後索引會改變）
+            this.moveItem(itemId, sourceCategory, sourceCategory, newIndex);
+          } else if (sourceCategory !== targetCategory) {
+            // 不同 column，移動項目並根據位置決定插入位置
+            let targetIndex = undefined;
+            if (dragOverItem && dragOverItem.element) {
+              const targetItemIndex = parseInt(dragOverItem.element.dataset.itemIndex);
+              targetIndex = dragOverItem.insertBefore ? targetItemIndex : targetItemIndex + 1;
+            } else if (dragOverItem && !dragOverItem.element) {
+              // 空 column，插入到最後
+              targetIndex = this.items[targetCategory]?.length || 0;
+            }
+            this.moveItem(itemId, sourceCategory, targetCategory, targetIndex);
+          }
+        } catch (error) {
+          console.error('Error parsing drag data:', error);
+        }
+        
+        dragOverItem = null;
+      });
+    });
+    
     // 匯出
     const exportBtn = document.getElementById('export-btn');
     if (exportBtn) {
@@ -2122,6 +2335,98 @@ export class RetrospectivePage {
     
     this.renderItems();
     // 移除成功通知，避免頻繁顯示
+  }
+
+  async moveItem(itemId, sourceCategory, targetCategory, targetIndex = undefined) {
+    // 找到要移動的 item
+    const sourceItems = this.items[sourceCategory] || [];
+    const itemIndex = sourceItems.findIndex(item => item.id === itemId);
+    
+    if (itemIndex === -1) {
+      console.error('Item not found:', itemId);
+      return;
+    }
+    
+    const item = sourceItems[itemIndex];
+    
+    // 如果目標 category 與來源相同，且沒有指定 targetIndex，不做任何事
+    if (sourceCategory === targetCategory && targetIndex === undefined) {
+      return;
+    }
+    
+    // 如果是同一個 category 且指定了 targetIndex，需要調整 targetIndex（因為要先移除）
+    if (sourceCategory === targetCategory && targetIndex !== undefined) {
+      // targetIndex 是基於移除前的索引計算的目標位置
+      // 如果目標位置在移除位置之後，移除後目標位置會自動減 1
+      // 如果目標位置在移除位置之前或相同，不需要調整
+      let adjustedTargetIndex = targetIndex;
+      if (itemIndex < targetIndex) {
+        adjustedTargetIndex = targetIndex - 1;
+      }
+      // 如果位置相同，不做任何事
+      if (itemIndex === adjustedTargetIndex) {
+        return;
+      }
+      targetIndex = adjustedTargetIndex;
+    }
+    
+    // 從舊 category 移除
+    sourceItems.splice(itemIndex, 1);
+    
+    // 添加到新 category
+    if (!this.items[targetCategory]) {
+      this.items[targetCategory] = [];
+    }
+    
+    // 如果指定了 targetIndex，插入到指定位置；否則添加到最後
+    if (targetIndex !== undefined && targetIndex >= 0 && targetIndex <= this.items[targetCategory].length) {
+      this.items[targetCategory].splice(targetIndex, 0, item);
+    } else {
+      this.items[targetCategory].push(item);
+    }
+    
+    // 更新 item 的 updatedAt
+    item.updatedAt = Date.now();
+    
+    // P2P 模式同步
+    if (this.isP2PMode && this.participantMode) {
+      // 參與者模式：發送移動請求給 host
+      this.participantMode.moveItem(itemId, sourceCategory, targetCategory, targetIndex);
+    } else if (this.isP2PMode && this.hostMode) {
+      // Host 模式：直接更新 retro 資料並廣播
+      this.currentRetro = this.hostMode.retro;
+      if (this.currentRetro) {
+        this.currentRetro.items = this.items;
+        this.currentRetro.updatedAt = Date.now();
+      }
+      
+      // 廣播給所有參與者
+      const { DataChannel } = await import('../webrtc/DataChannel.js');
+      this.hostMode.dataChannel.send(DataChannel.MESSAGE_TYPES.MOVE_ITEM, {
+        itemId,
+        sourceCategory,
+        targetCategory,
+        targetIndex
+      });
+      
+      // 觸發更新回調
+      this.hostMode.onItemUpdateCallbacks.forEach(cb => cb());
+      
+      // 自動保存
+      this.hostMode.autoSave();
+    } else {
+      // 單人模式：保存到 storage
+      await this.saveRetro();
+    }
+    
+    // 重新渲染
+    this.renderItems();
+  }
+
+  // reorderItem 已合併到 moveItem，保留此方法作為向後兼容的 wrapper
+  async reorderItem(itemId, category, oldIndex, newIndex) {
+    // 直接調用 moveItem，sourceCategory === targetCategory 表示重新排序
+    await this.moveItem(itemId, category, category, newIndex);
   }
 
   async deleteItem(index, category) {

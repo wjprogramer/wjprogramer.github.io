@@ -218,6 +218,11 @@ export class ParticipantMode {
       }
     });
 
+    // 處理移動項目（包括跨 category 移動和同 category 內重新排序）
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.MOVE_ITEM, (peerId, payload) => {
+      this.handleMoveItem(peerId, payload);
+    });
+
     // 處理刪除項目
     this.dataChannel.on(DataChannel.MESSAGE_TYPES.DELETE_ITEM, (peerId, payload) => {
       const { category, itemId } = payload;
@@ -228,6 +233,11 @@ export class ParticipantMode {
           this.onItemUpdateCallbacks.forEach(cb => cb());
         }
       }
+    });
+
+    // 處理移動項目
+    this.dataChannel.on(DataChannel.MESSAGE_TYPES.MOVE_ITEM, (peerId, payload) => {
+      this.handleMoveItem(peerId, payload);
     });
 
     // 處理投票
@@ -373,6 +383,30 @@ export class ParticipantMode {
     }
   }
 
+  // 移動項目
+  moveItem(itemId, sourceCategory, targetCategory, targetIndex = undefined) {
+    if (!this.retro || !this.retro.items[sourceCategory]) {
+      return;
+    }
+
+    // 如果已連線，直接發送；否則加入緩存
+    if (this.isConnected && this.dataChannel) {
+      this.dataChannel.send(DataChannel.MESSAGE_TYPES.MOVE_ITEM, {
+        itemId,
+        sourceCategory,
+        targetCategory,
+        targetIndex
+      });
+    } else {
+      // 加入本地緩存
+      this.pendingChanges.push({
+        type: DataChannel.MESSAGE_TYPES.MOVE_ITEM,
+        payload: { itemId, sourceCategory, targetCategory, targetIndex },
+        timestamp: Date.now()
+      });
+    }
+  }
+
   // 投票
   vote(category, itemId, vote) {
     if (!this.retro || !this.retro.items[category]) {
@@ -488,6 +522,60 @@ export class ParticipantMode {
         timestamp: Date.now()
       });
     }
+  }
+
+  // 處理移動項目（從 host 收到，包括跨 category 移動和同 category 內重新排序）
+  handleMoveItem(peerId, payload) {
+    const { itemId, sourceCategory, targetCategory, targetIndex } = payload;
+    
+    if (!this.retro || !this.retro.items[sourceCategory]) {
+      return;
+    }
+    
+    const itemIndex = this.retro.items[sourceCategory].findIndex(item => item.id === itemId);
+    if (itemIndex === -1) return;
+    
+    // 如果是同一個 category 且沒有指定 targetIndex，不做任何事
+    if (sourceCategory === targetCategory && targetIndex === undefined) {
+      return;
+    }
+    
+    // 如果是同一個 category 且指定了 targetIndex，需要調整 targetIndex（因為要先移除）
+    let adjustedTargetIndex = targetIndex;
+    if (sourceCategory === targetCategory && targetIndex !== undefined) {
+      // targetIndex 是基於移除前的索引計算的目標位置
+      // 如果目標位置在移除位置之後，移除後目標位置會自動減 1
+      // 如果目標位置在移除位置之前或相同，不需要調整
+      if (itemIndex < targetIndex) {
+        adjustedTargetIndex = targetIndex - 1;
+      }
+      // 如果位置相同，不做任何事
+      if (itemIndex === adjustedTargetIndex) {
+        return;
+      }
+    }
+    
+    // 從舊 category 移除
+    const item = this.retro.items[sourceCategory][itemIndex];
+    this.retro.items[sourceCategory].splice(itemIndex, 1);
+    
+    // 添加到新 category
+    if (!this.retro.items[targetCategory]) {
+      this.retro.items[targetCategory] = [];
+    }
+    
+    // 如果指定了 targetIndex，插入到指定位置；否則添加到最後
+    if (adjustedTargetIndex !== undefined && adjustedTargetIndex >= 0 && adjustedTargetIndex <= this.retro.items[targetCategory].length) {
+      this.retro.items[targetCategory].splice(adjustedTargetIndex, 0, item);
+    } else {
+      this.retro.items[targetCategory].push(item);
+    }
+    
+    // 更新 item 的 updatedAt
+    item.updatedAt = Date.now();
+    
+    // 通知 UI 更新
+    this.onItemUpdateCallbacks.forEach(cb => cb());
   }
 
   /** 開始心跳逾時檢查：逾時未收到 host 訊息則視為斷線 */

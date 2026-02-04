@@ -43,7 +43,7 @@ export class RetroCard {
     const commentsHtml = this.renderComments(showAuthor);
     
     return `
-      <div class="card  card-no-transform-hover ${animationClass} ${clickableClass}" style="margin-bottom: var(--spacing-md); ${animationStyle} ${cursorStyle}; position: relative;" ${isBeingEdited ? 'data-being-edited="true"' : ''} data-item-id="${this.item.id}" data-category="${this.category}">
+      <div class="card  card-no-transform-hover ${animationClass} ${clickableClass}" style="margin-bottom: var(--spacing-md); ${animationStyle} ${cursorStyle}; position: relative;" ${isBeingEdited ? 'data-being-edited="true"' : ''} data-item-id="${this.item.id}" data-category="${this.category}" draggable="true">
         ${isBeingEdited ? `
           <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 217, 61, 0.3); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none;">
             <div style="width: 48px; height: 48px; background: var(--color-warning); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">

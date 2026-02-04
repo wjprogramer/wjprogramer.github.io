@@ -72,6 +72,7 @@ export class DataChannel {
     ADD_ITEM: 'ADD_ITEM',
     UPDATE_ITEM: 'UPDATE_ITEM',
     DELETE_ITEM: 'DELETE_ITEM',
+    MOVE_ITEM: 'MOVE_ITEM', // 移動項目（跨 category 移動或同 category 內重新排序，根據 sourceCategory === targetCategory 判斷）
     VOTE: 'VOTE',
     REACTION: 'REACTION', // Emoji 反應
     COMMENT_ADD: 'COMMENT_ADD', // 新增留言

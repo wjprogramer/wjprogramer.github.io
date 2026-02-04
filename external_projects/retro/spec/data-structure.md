@@ -468,7 +468,84 @@
 }
 ```
 
-#### 8. REACTION（Emoji 反應）
+#### 8. MOVE_ITEM（移動項目）
+
+**發送者**：參與者 → 房主 → 所有參與者
+
+**功能描述**：
+- 支援跨 category 移動項目
+- 支援同 category 內重新排序項目
+- 根據 `sourceCategory === targetCategory` 判斷是重新排序還是跨 category 移動
+
+**資料結構**：
+```javascript
+{
+  type: 'MOVE_ITEM',
+  payload: {
+    itemId: string,                        // 項目 ID
+    sourceCategory: string,                // 來源分類：'howDoYouFeel' | 'whatWentWell' | 'whatDidntGoWell' | 'whatNeedsChange' | 'shoutOuts'
+    targetCategory: string,                // 目標分類：'howDoYouFeel' | 'whatWentWell' | 'whatDidntGoWell' | 'whatNeedsChange' | 'shoutOuts'
+    targetIndex: number | undefined        // 目標位置索引（可選，用於指定插入位置）
+  },
+  timestamp: number
+}
+```
+
+**說明**：
+- `targetIndex` 為可選參數
+  - 如果未指定，項目會添加到目標 category 的最後
+  - 如果指定，項目會插入到指定位置
+- 當 `sourceCategory === targetCategory` 時：
+  - 表示在同一 category 內重新排序
+  - `targetIndex` 必須指定
+  - Host 端會自動調整 `targetIndex`（因為移除項目後索引會改變）
+- 當 `sourceCategory !== targetCategory` 時：
+  - 表示跨 category 移動
+  - `targetIndex` 可選，用於指定插入位置
+
+**範例 1：跨 category 移動（添加到最後）**：
+```javascript
+{
+  type: 'MOVE_ITEM',
+  payload: {
+    itemId: 'item-123',
+    sourceCategory: 'whatWentWell',
+    targetCategory: 'whatDidntGoWell',
+    targetIndex: undefined
+  },
+  timestamp: 1705276800000
+}
+```
+
+**範例 2：跨 category 移動（指定位置）**：
+```javascript
+{
+  type: 'MOVE_ITEM',
+  payload: {
+    itemId: 'item-123',
+    sourceCategory: 'whatWentWell',
+    targetCategory: 'whatDidntGoWell',
+    targetIndex: 2  // 插入到 index 2 的位置
+  },
+  timestamp: 1705276800000
+}
+```
+
+**範例 3：同 category 內重新排序**：
+```javascript
+{
+  type: 'MOVE_ITEM',
+  payload: {
+    itemId: 'item-123',
+    sourceCategory: 'whatWentWell',
+    targetCategory: 'whatWentWell',  // 相同 category
+    targetIndex: 3  // 移動到 index 3 的位置（Host 會自動調整為移除後的實際索引）
+  },
+  timestamp: 1705276800000
+}
+```
+
+#### 9. REACTION（Emoji 反應）
 
 **發送者**：參與者 → 房主 → 所有參與者
 
@@ -571,7 +648,7 @@
 }
 ```
 
-#### 10. COMMENT_UPDATE（更新留言）
+#### 11. COMMENT_UPDATE（更新留言）
 
 **發送者**：參與者 → 房主 → 所有參與者
 
@@ -606,7 +683,7 @@
 }
 ```
 
-#### 11. COMMENT_DELETE（刪除留言）
+#### 12. COMMENT_DELETE（刪除留言）
 
 **發送者**：參與者 → 房主 → 所有參與者
 
@@ -640,7 +717,7 @@
 }
 ```
 
-#### 12. SYNC_STATE（同步狀態）
+#### 13. SYNC_STATE（同步狀態）
 
 **發送者**：房主 → 參與者（當參與者加入時）
 
