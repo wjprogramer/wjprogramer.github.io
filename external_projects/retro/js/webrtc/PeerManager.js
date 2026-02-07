@@ -342,7 +342,7 @@ export class PeerManager {
         let isResolved = false;
         let isRejected = false;
 
-        // 設置連接超時（15 秒）
+        // 設置連接超時
         const timeout = setTimeout(() => {
           if (!isResolved && !isRejected) {
             isRejected = true;
@@ -356,14 +356,14 @@ export class PeerManager {
             }
             reject(new Error('連線超時，請檢查會議 ID 是否正確或房主是否在線'));
           }
-        }, 15000);
+        }, 60000);
 
         conn.on('open', () => {
           if (isRejected) return;
           if (isResolved) return;
           isResolved = true;
           console.log('[PeerManager] Connection opened successfully');
-          clearTimeout(timeout);
+          // clearTimeout(timeout);
           this.handleConnection(conn);
           resolve(conn);
         });
